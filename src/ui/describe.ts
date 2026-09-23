@@ -1,5 +1,5 @@
 import { RESOURCES, WORLDS } from '../engine/content';
-import { formatMultiplier, formatNumber } from '../engine/format';
+import { formatMultiplier, formatNumber, formatPerHour } from '../engine/format';
 import type { Effect, ResourceId, WorldId } from '../engine/types';
 
 /** Human text for one effect at a given strength, e.g. "+0.5 Wood/s" or "All Realm production ×1.25". */
@@ -16,7 +16,7 @@ export function describeEffect(effect: Effect, amount: number): string {
       : `Crowding −${formatNumber((1 - amount) * 100)}%`;
   }
   if (effect.stat === 'deaths') {
-    return effect.kind === 'add' ? `Kills ${formatNumber(amount)} people/hour` : `Deaths ${formatMultiplier(amount)}`;
+    return effect.kind === 'add' ? `Kills ${formatPerHour(amount)} people` : `Deaths ${formatMultiplier(amount)}`;
   }
   if (effect.stat.startsWith('speed:')) {
     return `${WORLDS[effect.stat.slice('speed:'.length) as WorldId].name} build speed ${formatMultiplier(amount)}`;

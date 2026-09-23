@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialState, tick } from '../src/engine/engine';
-import { formatDuration, formatMultiplier, formatNumber } from '../src/engine/format';
+import { formatDuration, formatMultiplier, formatNumber, formatPerHour } from '../src/engine/format';
 import { deserialize, loadGame, saveGame, serialize } from '../src/engine/save';
 
 describe('save', () => {
@@ -95,5 +95,12 @@ describe('formatDuration', () => {
     [4800, '1h 20m'],
   ])('%s -> %s', (n, expected) => {
     expect(formatDuration(n)).toBe(expected);
+  });
+
+  it('shows death rates per hour, switching to per minute above 60 an hour', () => {
+    expect(formatPerHour(6)).toBe('6/hour');
+    expect(formatPerHour(60)).toBe('60/hour');
+    expect(formatPerHour(90)).toBe('1.5/min');
+    expect(formatPerHour(3600)).toBe('60/min');
   });
 });

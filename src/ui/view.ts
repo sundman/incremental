@@ -55,7 +55,7 @@ import {
   type ActiveLink,
   type Modifiers,
 } from '../engine/engine';
-import { formatDuration, formatNumber } from '../engine/format';
+import { formatDuration, formatNumber, formatPerHour } from '../engine/format';
 import type { GameState, JobId, MetaId, NodeId, ResourceId, WorldId } from '../engine/types';
 import { describeEffect } from './describe';
 
@@ -328,7 +328,7 @@ export class GameView {
     const deaths = deathRate(mods) * 3600;
     if (deaths > 0) {
       const horde = state.demons > 0 ? `${formatNumber(Math.floor(state.demons))} demons` : 'demons';
-      text += ` · ${horde} kill ${formatNumber(deaths)}/hour`;
+      text += ` · ${horde} kill ${formatPerHour(deaths)}`;
     }
     setText(summary, text);
     summary.classList.toggle('attention', idle > 0 || blocker === 'food');

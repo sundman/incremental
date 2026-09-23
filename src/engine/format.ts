@@ -38,3 +38,8 @@ export function formatDuration(seconds: number): string {
   if (s < 3600) return `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`;
   return `${Math.floor(s / 3600)}h ${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}m`;
 }
+
+/** A rate given per hour, e.g. "6/hour"; above 60 an hour it reads per minute instead, e.g. "4.02/min". */
+export function formatPerHour(perHour: number): string {
+  return perHour > 60 ? `${formatNumber(perHour / 60)}/min` : `${formatNumber(perHour)}/hour`;
+}
