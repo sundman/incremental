@@ -3,6 +3,7 @@ import {
   activeLinks,
   runningLevel,
   toggleSpell,
+  buildSlots,
   setRandom,
   canResetWorld,
   upkeepRate,
@@ -323,6 +324,36 @@ describe('resets and Echoes', () => {
     const state = withJobs({ woodcutter: 2 });
     state.meta.resonanceRealm = 2;
     expect(grossRate(state, computeModifiers(state), 'wood')).toBeCloseTo(1 * 1.1 ** 2);
+  });
+});
+
+describe('build slots', () => {
+  it('builds one thing per world at a time, while other worlds build in parallel', () => {
+    const state = unlockAll(withNodes({ hut: 1, library: 1, shrine: 1 }));
+    Object.assign(state.resources, { wood: 1000, stone: 1000, research: 1000, mana: 1000 });
+    expect(buyNode(state, 'hut')).toBe(true);
+    expect(buyNode(state, 'lumberCamp')).toBe(false); // the Realm is busy
+    expect(buyNode(state, 'scientificMethod')).toBe(true); // the Lab has its own slot
+    expect(buyNode(state, 'manaWell')).toBe(true);
+    tick(state, 60);
+    expect(buyNode(state, 'lumberCamp')).toBe(true); // the Hut is done
+  });
+
+  it('adds a slot per world with each Master Builders level, up to 5', () => {
+    const state = unlockAll(withNodes({ hut: 1 }));
+    Object.assign(state.resources, { wood: 1e6, stone: 1e6, food: 1e6 });
+    state.meta.masterBuilders = 2;
+    expect(buildSlots(state)).toBe(3);
+    expect(['hut', 'lumberCamp', 'quarry', 'farm'].map((id) => buyNode(state, id as NodeId))).toEqual([
+      true,
+      true,
+      true,
+      false,
+    ]);
+    state.echoes = 1e6;
+    state.meta.masterBuilders = 4;
+    expect(buyMeta(state, 'masterBuilders')).toBe(false);
+    expect(buildSlots(state)).toBe(5);
   });
 });
 

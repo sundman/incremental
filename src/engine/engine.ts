@@ -474,10 +474,25 @@ export function isUnderConstruction(state: GameState, id: NodeId): boolean {
   return state.construction[id] !== undefined;
 }
 
+/** How many things a world can build, discover or research at once. */
+export function buildSlots(state: GameState): number {
+  return 1 + state.meta.masterBuilders;
+}
+
+/** Things under construction in a world right now. */
+export function activeBuilds(state: GameState, world: WorldId): number {
+  return NODE_ORDER.filter((id) => NODES[id].world === world && isUnderConstruction(state, id)).length;
+}
+
+export function hasFreeBuildSlot(state: GameState, world: WorldId): boolean {
+  return activeBuilds(state, world) < buildSlots(state);
+}
+
 export function canBuyNode(state: GameState, id: NodeId): boolean {
   return (
     isNodeAvailable(state, id) &&
     !isUnderConstruction(state, id) &&
+    hasFreeBuildSlot(state, NODES[id].world) &&
     state.nodes[id] < maxLevel(id) &&
     canAfford(state, nodeCost(state, id))
   );

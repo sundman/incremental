@@ -232,6 +232,7 @@ export type MetaId =
   | 'amplify'
   | 'attunement'
   | 'swiftHands'
+  | 'masterBuilders'
   | 'retainedKnowledge';
 
 export interface MetaDef {

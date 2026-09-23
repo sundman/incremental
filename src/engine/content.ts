@@ -1249,6 +1249,14 @@ const metaList: MetaDef[] = [
     ],
   },
   {
+    id: 'masterBuilders',
+    name: 'Master Builders',
+    description: 'Each world can work on one more building, discovery or tech at the same time (up to 5).',
+    baseCost: 3,
+    costGrowth: 2,
+    maxLevel: 4,
+  },
+  {
     id: 'retainedKnowledge',
     name: 'Retained Knowledge',
     description: 'Lab resets keep your most expensive tech (one more per level).',

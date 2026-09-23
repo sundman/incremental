@@ -36,6 +36,9 @@ import {
   computeModifiers,
   echoGain,
   canResetWorld,
+  activeBuilds,
+  buildSlots,
+  hasFreeBuildSlot,
   resetBlocker,
   isHordeActive,
   effectiveAmount,
@@ -586,6 +589,9 @@ export class GameView {
       const have = buildingCount(state, node.world);
       if (have < node.requiresBuildings) needs.push(`${have}/${node.requiresBuildings} ${WORLDS[node.world].name} buildings`);
     }
+    if (available && !building && !maxed && !hasFreeBuildSlot(state, node.world)) {
+      needs.push(`a free build slot (${activeBuilds(state, node.world)}/${buildSlots(state)} in use)`);
+    }
     if (node.horde && level > 0 && !isSpellActive(state, id) && state.population <= DEMONS.survivors) {
       needs.push(`more than ${DEMONS.survivors} people to feed on`);
     }
@@ -597,6 +603,6 @@ export class GameView {
     c.card.classList.toggle('horde', !!node.horde);
     c.button.disabled = learnedSpell
       ? !isSpellActive(state, id) && !canCastSpell(state, id)
-      : maxed || !!building || !available || !canAfford(state, nodeCost(state, id, mods));
+      : maxed || !!building || !available || !hasFreeBuildSlot(state, node.world) || !canAfford(state, nodeCost(state, id, mods));
   }
 }
