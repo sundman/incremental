@@ -23,6 +23,16 @@ describe('save', () => {
     expect(loaded.echoes).toBe(7);
   });
 
+  it('keeps a summoned horde only while its spell is on', () => {
+    const state = createInitialState();
+    state.nodes.summoningCircle = 1;
+    state.activeSpells = ['summoningCircle'];
+    state.demons = 12.5;
+    expect(deserialize(serialize(state)).demons).toBe(12.5);
+    state.activeSpells = [];
+    expect(deserialize(serialize(state)).demons).toBe(0);
+  });
+
   it('falls back to defaults for missing, unknown or broken fields', () => {
     const loaded = deserialize(
       JSON.stringify({ resources: { wood: 5, stone: 'lots', unobtainium: 9 }, nodes: null, unlockedWorlds: ['nowhere'] }),

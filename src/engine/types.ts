@@ -54,6 +54,8 @@ export interface Effect {
   /** `add` sums `amount * level`; `mul` multiplies by `amount ^ level`. */
   kind: 'add' | 'mul';
   amount: number;
+  /** For `mul`: grow linearly instead, multiplying by `1 + (amount - 1) * level`. */
+  linear?: boolean;
 }
 
 export interface WorldDef {
@@ -121,6 +123,12 @@ export interface NodeDef {
    * apply while it is on.
    */
   spell?: boolean;
+  /**
+   * A horde spell (Summon Demons): once cast it cannot be switched off. The horde grows
+   * over time and its effects scale with its size instead of the level. It ends when the
+   * Realm is down to its last survivors, and the horde vanishes with it.
+   */
+  horde?: boolean;
   /** Owning at least one level opens this world for good. */
   unlocksWorld?: WorldId;
 }
@@ -241,6 +249,8 @@ export interface GameState {
   jobs: Record<JobId, number>;
   /** Learned spells that are currently switched on. */
   activeSpells: NodeId[];
+  /** Size of the summoned demon horde; 0 unless a horde spell is on. Fractional while growing. */
+  demons: number;
   /** Levels being built right now, in base seconds of work (before build speed). */
   construction: Partial<Record<NodeId, { done: number; needed: number }>>;
   /** Fraction (0..1) of each upkeep node's effect that ran last tick. */

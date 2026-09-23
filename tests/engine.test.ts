@@ -359,17 +359,52 @@ describe('population', () => {
     expect(arrivalRate(computeModifiers(state))).toBeCloseTo((0.05 + 0.02) * 1.1 ** 2 * 1.5 * 1.3);
   });
 
-  it('lets summoned demons kill people every hour, even with no room to grow', () => {
-    const state = unlockAll(withJobs({ woodcutter: 10 }, withNodes({ summoningCircle: 2 })));
+  it('casts Summon Demons for good: it cannot be switched off and needs people to feed on', () => {
+    const state = unlockAll(withNodes({ summoningCircle: 1 }));
+    state.population = 2;
+    expect(toggleSpell(state, 'summoningCircle')).toBe(false); // only the 2 survivors: nothing to eat
     state.population = 10;
+    expect(toggleSpell(state, 'summoningCircle')).toBe(true);
+    expect(state.demons).toBe(1);
+    expect(toggleSpell(state, 'summoningCircle')).toBe(true); // still on
+    expect(state.activeSpells).toContain('summoningCircle');
+  });
+
+  it('grows the demon horde over time, scaling both its boost and its killing', () => {
+    const state = unlockAll(withJobs({ woodcutter: 10 }, withNodes({ summoningCircle: 1 })));
+    toggleSpell(state, 'summoningCircle');
+    tick(state, 180); // one doubling; no housing free, so nobody new arrives
+    expect(state.demons).toBeCloseTo(2);
+    expect(runningLevel(state, 'summoningCircle')).toBeCloseTo(2);
     const mods = computeModifiers(state);
-    expect(deathRate(mods) * 3600).toBeCloseTo(12);
-    expect(grossRate(state, mods, 'mana')).toBe(0);
-    tick(state, 1800); // half an hour, no housing free, so nobody new arrives
-    expect(state.population).toBeCloseTo(4);
-    expect(state.jobs.woodcutter).toBe(4);
+    expect(mods.get('prod:arcana')?.mul).toBeCloseTo(1 + 0.2 * 2);
+    expect(deathRate(mods) * 3600).toBeCloseTo(6 * 2);
+    expect(state.population).toBeLessThan(10);
     const link = activeLinks(state).find((l) => l.source === 'summoningCircle' && l.to === 'realm');
-    expect(link).toMatchObject({ helpful: false, total: 12 });
+    expect(link).toMatchObject({ helpful: false });
+    expect(link?.total).toBeCloseTo(12);
+  });
+
+  it('ends the horde once only 2 survivors are left, and lets you summon again later', () => {
+    const state = unlockAll(withJobs({ woodcutter: 10 }, withNodes({ summoningCircle: 1 })));
+    toggleSpell(state, 'summoningCircle');
+    tick(state, 3600);
+    expect(state.population).toBe(2);
+    expect(state.jobs.woodcutter).toBe(2);
+    expect(state.demons).toBe(0);
+    expect(state.activeSpells).not.toContain('summoningCircle');
+    expect(deathRate(computeModifiers(state))).toBe(0);
+    state.population = 5;
+    expect(toggleSpell(state, 'summoningCircle')).toBe(true);
+  });
+
+  it('banishes the horde when Arcana is reset', () => {
+    const state = unlockAll(withJobs({ woodcutter: 10 }, withNodes({ summoningCircle: 1 })));
+    toggleSpell(state, 'summoningCircle');
+    tick(state, 60);
+    resetWorld(state, 'arcana');
+    expect(state.demons).toBe(0);
+    expect(state.activeSpells).toEqual([]);
   });
 
   it('stops people arriving when Food runs out', () => {

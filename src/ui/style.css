@@ -424,3 +424,10 @@ button {
   background: color-mix(in srgb, var(--accent) 18%, var(--card));
   box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent);
 }
+
+/* A summoned horde glows red: it can't be switched off. */
+.node.horde.spell-on .node-button {
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 18%, var(--card));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--bad) 55%, transparent);
+}

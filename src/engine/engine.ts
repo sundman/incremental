@@ -1,5 +1,6 @@
 import {
   BUILD_TIME_GROWTH,
+  DEMONS,
   JOBS,
   JOB_ORDER,
   META,
@@ -38,6 +39,7 @@ export function createInitialState(): GameState {
     population: POPULATION.start,
     jobs: zeroes(JOB_ORDER),
     activeSpells: [],
+    demons: 0,
     construction: {},
     efficiency: {},
   };
@@ -84,33 +86,63 @@ export interface StatValue {
 
 export type Modifiers = Map<Stat, StatValue>;
 
-function bump(mods: Modifiers, stat: Stat, kind: Effect['kind'], amount: number, times: number) {
-  const v = mods.get(stat) ?? { add: 0, mul: 1 };
-  if (kind === 'add') v.add += amount * times;
-  else v.mul *= Math.pow(amount, times);
-  mods.set(stat, v);
+/** Combined value of an effect applied `times` times: a sum for `add`, a product for `mul`. */
+function combined(effect: Effect, amount: number, times: number): number {
+  if (effect.kind === 'add') return amount * times;
+  return effect.linear ? 1 + (amount - 1) * times : Math.pow(amount, times);
+}
+
+function bump(mods: Modifiers, effect: Effect, amount: number, times: number) {
+  const v = mods.get(effect.stat) ?? { add: 0, mul: 1 };
+  if (effect.kind === 'add') v.add += combined(effect, amount, times);
+  else v.mul *= combined(effect, amount, times);
+  mods.set(effect.stat, v);
 }
 
 export function isSpellActive(state: GameState, id: NodeId): boolean {
   return state.activeSpells.includes(id);
 }
 
-/** Levels whose effects and upkeep apply right now: a switched-off spell counts as 0. */
+/**
+ * Levels whose effects and upkeep apply right now: a switched-off spell counts as 0,
+ * and a horde spell counts its demons.
+ */
 export function runningLevel(state: GameState, id: NodeId): number {
   if (NODES[id].spell && !isSpellActive(state, id)) return 0;
+  if (NODES[id].horde) return state.demons;
   return state.nodes[id];
 }
 
-/** Switches a learned spell on or off. Returns whether it is now on. */
+/** Whether a learned spell can be cast now. A horde needs more people than it leaves alive. */
+export function canCastSpell(state: GameState, id: NodeId): boolean {
+  const node = NODES[id];
+  if (!node.spell || state.nodes[id] <= 0 || isSpellActive(state, id)) return false;
+  return !node.horde || state.population > DEMONS.survivors;
+}
+
+/** Switches a learned spell on or off. A horde spell can't be switched off. Returns whether it is now on. */
 export function toggleSpell(state: GameState, id: NodeId): boolean {
   if (!NODES[id].spell || state.nodes[id] <= 0) return false;
   if (isSpellActive(state, id)) {
+    if (NODES[id].horde) return true;
     state.activeSpells = state.activeSpells.filter((s) => s !== id);
     delete state.efficiency[id];
     return false;
   }
+  if (!canCastSpell(state, id)) return false;
   state.activeSpells.push(id);
+  if (NODES[id].horde) state.demons = DEMONS.start;
   return true;
+}
+
+export function isHordeActive(state: GameState): boolean {
+  return state.activeSpells.some((id) => NODES[id].horde);
+}
+
+/** The horde is done: it vanishes and the spell switches itself off. */
+function endHorde(state: GameState) {
+  state.activeSpells = state.activeSpells.filter((id) => !NODES[id].horde);
+  state.demons = 0;
 }
 
 export function computeModifiers(state: GameState): Modifiers {
@@ -121,7 +153,7 @@ export function computeModifiers(state: GameState): Modifiers {
     const node = NODES[id];
     const times = level * (node.upkeep ? (state.efficiency[id] ?? 1) : 1);
     for (const effect of node.effects) {
-      bump(mods, effect.stat, effect.kind, effectiveAmount(state, effect, node.world), times);
+      bump(mods, effect, effectiveAmount(state, effect, node.world), times);
     }
   }
   for (const id of JOB_ORDER) {
@@ -129,14 +161,14 @@ export function computeModifiers(state: GameState): Modifiers {
     const job = JOBS[id];
     if (workers <= 0) continue;
     for (const effect of job.effects ?? []) {
-      bump(mods, effect.stat, effect.kind, effectiveAmount(state, effect, 'realm'), workers);
+      bump(mods, effect, effectiveAmount(state, effect, 'realm'), workers);
     }
   }
   for (const id of META_ORDER) {
     const level = state.meta[id];
     const effects = META[id].effects;
     if (level <= 0 || !effects) continue;
-    for (const effect of effects) bump(mods, effect.stat, effect.kind, effect.amount, level);
+    for (const effect of effects) bump(mods, effect, effect.amount, level);
   }
   return mods;
 }
@@ -228,7 +260,7 @@ export function activeLinks(state: GameState): ActiveLink[] {
         from: node.world,
         to,
         effect,
-        total: effect.kind === 'add' ? amount * times : Math.pow(amount, times),
+        total: combined(effect, amount, times),
         helpful: isHelpful(effect),
         efficiency,
       });
@@ -491,11 +523,18 @@ function step(state: GameState, dt: number) {
   advanceConstruction(state, mods, dt);
 
   // 4. Deaths, then new people move into free housing, eating Food as they arrive.
+  //    A demon horde feeds until only the survivors are left, then vanishes.
   const dying = deathRate(mods) * dt;
   if (dying > 0) {
-    state.population = Math.max(0, state.population - dying);
+    if (isHordeActive(state) && state.population - dying <= DEMONS.survivors) {
+      state.population = Math.min(state.population, DEMONS.survivors);
+      endHorde(state);
+    } else {
+      state.population = Math.max(0, state.population - dying);
+    }
     settleJobs(state);
   }
+  if (isHordeActive(state)) state.demons *= Math.pow(2, dt / DEMONS.doublingSeconds);
   const cap = housing(mods);
   if (state.population < cap) {
     let arriving = Math.min(cap - state.population, arrivalRate(mods) * dt);
@@ -581,6 +620,7 @@ export function resetWorld(state: GameState, world: WorldId): number {
     delete state.construction[id];
     state.activeSpells = state.activeSpells.filter((s) => s !== id);
   }
+  if (!isHordeActive(state)) state.demons = 0;
   if (world === 'realm') {
     state.population = POPULATION.start;
     for (const id of JOB_ORDER) state.jobs[id] = 0;

@@ -1,6 +1,6 @@
 import { createInitialState, SAVE_VERSION } from './engine';
 import type { GameState } from './types';
-import { NODES, NODE_ORDER, WORLD_ORDER } from './content';
+import { DEMONS, NODES, NODE_ORDER, WORLD_ORDER } from './content';
 
 export const SAVE_KEY = 'incremental-worlds-save';
 
@@ -48,6 +48,9 @@ export function deserialize(text: string): GameState {
     ? WORLD_ORDER.filter((w) => (raw.unlockedWorlds as unknown[]).includes(w))
     : fresh.unlockedWorlds;
   const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
+  const activeSpells = Array.isArray(raw.activeSpells)
+    ? NODE_ORDER.filter((id) => NODES[id].spell && (raw.activeSpells as unknown[]).includes(id))
+    : [];
 
   return {
     version: SAVE_VERSION,
@@ -61,9 +64,9 @@ export function deserialize(text: string): GameState {
     meta: mergeNumbers(fresh.meta, raw.meta),
     population: num(raw.population, fresh.population),
     jobs: mergeNumbers(fresh.jobs, raw.jobs),
-    activeSpells: Array.isArray(raw.activeSpells)
-      ? NODE_ORDER.filter((id) => NODES[id].spell && (raw.activeSpells as unknown[]).includes(id))
-      : [],
+    activeSpells,
+    // A horde only exists while its spell is on.
+    demons: activeSpells.some((id) => NODES[id].horde) ? Math.max(DEMONS.start, num(raw.demons, 0)) : 0,
     construction: readConstruction(raw.construction),
     efficiency: {},
   };

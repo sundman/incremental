@@ -17,7 +17,12 @@ export function describeEffect(effect: Effect, amount: number): string {
     return `${WORLDS[effect.stat.slice('speed:'.length) as WorldId].name} build speed ${formatMultiplier(amount)}`;
   }
   const [type, target] = effect.stat.split(':') as [string, string];
-  const value = effect.kind === 'add' ? `${amount >= 0 ? '+' : ''}${formatNumber(amount)}` : formatMultiplier(amount);
+  const value =
+    effect.kind === 'add'
+      ? `${amount >= 0 ? '+' : ''}${formatNumber(amount)}`
+      : effect.linear
+        ? `+${formatNumber((amount - 1) * 100)}%`
+        : formatMultiplier(amount);
   switch (type) {
     case 'rate': {
       const name = RESOURCES[target as ResourceId].name;

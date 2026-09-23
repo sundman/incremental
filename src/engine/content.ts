@@ -68,6 +68,15 @@ export const TIER_SECONDS = { 1: 5, 2: 15, 3: 45, 4: 120, 5: 300, 6: 600 } as co
 export const BUILD_TIME_GROWTH = 1.05;
 
 /** Realm population rules. */
+export const DEMONS = {
+  /** Demons that answer the first summoning. */
+  start: 1,
+  /** The horde doubles this often, so demons arrive faster and faster. */
+  doublingSeconds: 180,
+  /** People left alive when the horde has eaten everyone else; then the spell ends. */
+  survivors: 2,
+};
+
 export const POPULATION = {
   /** People at the start of every Realm run. */
   start: 2,
@@ -602,15 +611,19 @@ const nodeList: NodeDef[] = [
   {
     id: 'summoningCircle',
     world: 'arcana',
-    kind: 'building',
+    kind: 'tech',
     name: 'Summon Demons',
-    description: 'Demons pour power into Arcana, and they feed on the Realm\'s people.',
+    description:
+      'Spell with no way back: once cast it cannot be switched off. The horde doubles every 3 minutes, ' +
+      'pouring power into Arcana while it eats the Realm\'s people. It only ends when 2 survivors are left.',
     baseCost: { mana: 300, essence: 30 },
-    costGrowth: 1.6,
+    costGrowth: 1,
     tier: 3,
     requires: ['condenser'],
+    spell: true,
+    horde: true,
     effects: [
-      { stat: 'prod:arcana', kind: 'mul', amount: 1.25 },
+      { stat: 'prod:arcana', kind: 'mul', amount: 1.2, linear: true },
       { stat: 'deaths', kind: 'add', amount: 6 },
     ],
   },

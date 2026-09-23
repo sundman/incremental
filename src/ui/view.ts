@@ -1,4 +1,5 @@
 import {
+  DEMONS,
   JOBS,
   JOB_ORDER,
   META,
@@ -35,6 +36,7 @@ import {
   effectiveAmount,
   isHelpful,
   isSpellActive,
+  canCastSpell,
   toggleSpell,
   isNodeAvailable,
   isResourceRevealed,
@@ -248,7 +250,7 @@ export class GameView {
       buildings,
       ...(techs.childElementCount ? [h('h3', {}, world === 'arcana' ? 'Discoveries' : 'Research'), techs] : []),
       ...(spells.childElementCount
-        ? [h('h3', {}, 'Spells'), h('p', { class: 'muted small' }, 'Learn a spell once, then click it to switch it on or off. It only costs upkeep while on.'), spells]
+        ? [h('h3', {}, 'Spells'), h('p', { class: 'muted small' }, 'Learn a spell once, then click it to switch it on or off. It only costs upkeep while on. Summon Demons is the exception: once cast, it runs until the Realm is down to 2 survivors.'), spells]
         : []),
       h('details', { class: 'link-box' }, h('summary', {}, 'Effects this world sends out'), outgoing),
       h('div', { class: 'reset-box' }, resetButton, resetNote),
@@ -317,7 +319,10 @@ export class GameView {
       text += ` · growing ${formatNumber(growth * 60)}/min, next in ${secs}s`;
     }
     const deaths = deathRate(mods) * 3600;
-    if (deaths > 0) text += ` · demons kill ${formatNumber(deaths)}/hour`;
+    if (deaths > 0) {
+      const horde = state.demons > 0 ? `${formatNumber(Math.floor(state.demons))} demons` : 'demons';
+      text += ` · ${horde} kill ${formatNumber(deaths)}/hour`;
+    }
     setText(summary, text);
     summary.classList.toggle('attention', idle > 0 || blocker === 'food');
 
@@ -496,6 +501,9 @@ export class GameView {
       c.button.style.setProperty('--progress', `${pct.toFixed(1)}%`);
       const verb = node.kind === 'building' ? 'Building' : node.world === 'arcana' ? 'Discovering' : 'Researching';
       setText(c.level, `${verb}… ${formatDuration(constructionSecondsLeft(state, id, mods))}`);
+    } else if (node.horde && level > 0) {
+      const on = isSpellActive(state, id);
+      setText(c.level, on ? `${formatNumber(Math.floor(state.demons))} demons · no way back` : 'Not summoned');
     } else if (node.spell && level > 0) {
       const on = isSpellActive(state, id);
       const eff = state.efficiency[id] ?? 1;
@@ -515,7 +523,7 @@ export class GameView {
         const amount = effectiveAmount(state, e, node.world);
         const helpful = isHelpful({ ...e, amount });
         const tag = cross ? `<span class="tag tag-${to}">${WORLDS[to].name}</span> ` : '';
-        const per = node.kind === 'building' ? ' each' : '';
+        const per = node.kind === 'building' ? ' each' : node.horde ? ' per demon' : '';
         return `<li class="${cross ? (helpful ? 'good' : 'bad') : ''}">${tag}${escape(describeEffect(e, amount))}${per}</li>`;
       })
       .concat(
@@ -562,13 +570,17 @@ export class GameView {
       const have = buildingCount(state, node.world);
       if (have < node.requiresBuildings) needs.push(`${have}/${node.requiresBuildings} ${WORLDS[node.world].name} buildings`);
     }
+    if (node.horde && level > 0 && !isSpellActive(state, id) && state.population <= DEMONS.survivors) {
+      needs.push(`more than ${DEMONS.survivors} people to feed on`);
+    }
     setHtml(c.needs, needs.length ? `Needs: ${needs.join(', ')}` : '');
 
     const learnedSpell = !!node.spell && level > 0;
     c.card.classList.toggle('spell-on', learnedSpell && isSpellActive(state, id));
     c.card.classList.toggle('spell-off', learnedSpell && !isSpellActive(state, id));
+    c.card.classList.toggle('horde', !!node.horde);
     c.button.disabled = learnedSpell
-      ? false
+      ? !isSpellActive(state, id) && !canCastSpell(state, id)
       : maxed || !!building || !available || !canAfford(state, nodeCost(state, id, mods));
   }
 }
