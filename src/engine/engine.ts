@@ -365,6 +365,35 @@ export function assignJob(state: GameState, job: JobId, delta: number): number {
 }
 
 /** Keeps jobs consistent with population and unlocks, taking people off the last jobs first. */
+let random: () => number = Math.random;
+
+/** Replaces the random source (for tests). Returns the previous one. */
+export function setRandom(source: () => number): () => number {
+  const previous = random;
+  random = source;
+  return previous;
+}
+
+/**
+ * Lowers the population. Each whole person lost is picked at random from everyone,
+ * so a death is idle or from a job in proportion to how many people are there.
+ */
+function losePeople(state: GameState, population: number) {
+  let people = Math.floor(state.population);
+  const left = Math.floor(population);
+  state.population = population;
+  for (; people > left; people--) {
+    let pick = Math.floor(random() * people);
+    for (const id of JOB_ORDER) {
+      if (pick < state.jobs[id]) {
+        state.jobs[id] -= 1;
+        break;
+      }
+      pick -= state.jobs[id];
+    }
+  }
+}
+
 function settleJobs(state: GameState) {
   for (const id of JOB_ORDER) {
     if (!isJobAvailable(state, id)) state.jobs[id] = 0;
@@ -538,10 +567,10 @@ function step(state: GameState, dt: number) {
   const dying = deathRate(mods) * dt;
   if (dying > 0) {
     if (isHordeActive(state) && state.population - dying <= DEMONS.survivors) {
-      state.population = Math.min(state.population, DEMONS.survivors);
+      losePeople(state, Math.min(state.population, DEMONS.survivors));
       endHorde(state);
     } else {
-      state.population = Math.max(0, state.population - dying);
+      losePeople(state, Math.max(0, state.population - dying));
     }
     settleJobs(state);
   }
