@@ -370,15 +370,24 @@ describe('deposits', () => {
     expect(link).toMatchObject({ from: 'arcana', to: 'realm', helpful: true });
   });
 
-  it('comes back full and bigger after a Realm reset, by half of what was gathered', () => {
+  it('comes back full but no bigger after a Realm reset without Rich Earth', () => {
     const state = createInitialState();
+    state.deposits.wood = { left: 3000, max: 8000, cut: 5000 };
+    resetWorld(state, 'realm');
+    expect(state.deposits.wood).toEqual({ left: 8000, max: 8000, cut: 0 });
+  });
+
+  it('grows deposits on a Realm reset by 1% of what was gathered per Rich Earth level', () => {
+    const state = createInitialState();
+    state.meta.richEarth = 10;
     state.deposits.wood = { left: 3000, max: 8000, cut: 5000 };
     state.deposits.stone = { left: 40000, max: 50000, cut: 10000 };
     resetWorld(state, 'realm');
-    expect(state.deposits.wood).toEqual({ left: 10500, max: 10500, cut: 0 });
-    expect(state.deposits.stone).toEqual({ left: 55000, max: 55000, cut: 0 });
+    expect(state.deposits.wood.max).toBeCloseTo(8500);
+    expect(state.deposits.wood.left).toBeCloseTo(8500);
+    expect(state.deposits.stone.max).toBeCloseTo(51000);
     resetWorld(state, 'lab'); // other worlds leave the deposits alone
-    expect(state.deposits.wood.max).toBe(10500);
+    expect(state.deposits.wood.max).toBeCloseTo(8500);
   });
 });
 

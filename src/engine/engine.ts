@@ -2,7 +2,7 @@ import {
   BUILD_TIME_GROWTH,
   DEMONS,
   DEPOSITS,
-  DEPOSIT_GROWTH_PER_RESET,
+  DEPOSIT_GROWTH_PER_LEVEL,
   DEPOSIT_ORDER,
   JOBS,
   JOB_ORDER,
@@ -239,10 +239,15 @@ export function depositRegrowth(mods: Modifiers, deposit: DepositId): number {
   return def.pollutionSlows ? rate * pollutionFactor(mods) : rate;
 }
 
+/** Share of what was gathered that deposits grow by on a Realm reset (Rich Earth in the Echo shop). */
+export function depositGrowthPerReset(state: GameState): number {
+  return DEPOSIT_GROWTH_PER_LEVEL * state.meta.richEarth;
+}
+
 /** How big a deposit will be after the next Realm reset. */
 export function nextDepositMax(state: GameState, deposit: DepositId): number {
   const d = state.deposits[deposit];
-  return d.max + DEPOSIT_GROWTH_PER_RESET * d.cut;
+  return d.max + depositGrowthPerReset(state) * d.cut;
 }
 
 /** Upkeep being paid per second right now, at last tick's efficiency. */

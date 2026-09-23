@@ -264,6 +264,7 @@ export type MetaId =
   | 'attunement'
   | 'swiftHands'
   | 'masterBuilders'
+  | 'richEarth'
   | 'retainedKnowledge';
 
 export interface MetaDef {

@@ -1,7 +1,6 @@
 import {
   DEMONS,
   DEPOSITS,
-  DEPOSIT_GROWTH_PER_RESET,
   DEPOSIT_ORDER,
   JOBS,
   JOB_ORDER,
@@ -22,6 +21,7 @@ import {
   crowdingFactor,
   depositRegrowth,
   nextDepositMax,
+  depositGrowthPerReset,
   pollutionFactor,
   deathRate,
   assignJob,
@@ -526,11 +526,13 @@ export class GameView {
           : '',
         world === 'realm' && isHordeActive(state) ? 'Also ends Summon Demons: only 2 survivors are left.' : '',
         world === 'realm'
-          ? `Deposits come back full and bigger by ${Math.round(DEPOSIT_GROWTH_PER_RESET * 100)}% of what was gathered this run: ` +
-            DEPOSIT_ORDER.filter((d) => isResourceRevealed(state, d))
-              .map((d) => `${DEPOSITS[d].name} ${formatNumber(nextDepositMax(state, d))}`)
-              .join(', ') +
-            '.'
+          ? depositGrowthPerReset(state) > 0
+            ? `Deposits come back full and bigger by ${Math.round(depositGrowthPerReset(state) * 100)}% of what was gathered this run: ` +
+              DEPOSIT_ORDER.filter((d) => isResourceRevealed(state, d))
+                .map((d) => `${DEPOSITS[d].name} ${formatNumber(nextDepositMax(state, d))}`)
+                .join(', ') +
+              '.'
+            : 'Deposits come back full, at the same size (Rich Earth in the Echo shop makes them grow).'
           : '',
         harms && !blocker ? `Clears ${harms} harmful effect${harms === 1 ? '' : 's'} on other worlds.` : '',
         kept.length ? `Keeps: ${kept.map((id) => NODES[id].name).join(', ')}.` : '',

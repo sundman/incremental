@@ -81,8 +81,8 @@ export const DEPOSITS: Record<DepositId, DepositDef> = {
   coal: { name: 'Coal seams', icon: '⚫', start: 20000, baseRegrow: 0 },
 };
 export const DEPOSIT_ORDER = Object.keys(DEPOSITS) as DepositId[];
-/** Share of what was gathered in a run that is added to a deposit's size after a Realm reset. */
-export const DEPOSIT_GROWTH_PER_RESET = 0.5;
+/** Share of what was gathered in a run that each Rich Earth level adds to a deposit's size on a Realm reset. */
+export const DEPOSIT_GROWTH_PER_LEVEL = 0.01;
 
 export const DEMONS = {
   /** Demons that answer the first summoning. */
@@ -1354,6 +1354,14 @@ const metaList: MetaDef[] = [
     baseCost: 3,
     costGrowth: 2,
     maxLevel: 4,
+  },
+  {
+    id: 'richEarth',
+    name: 'Rich Earth',
+    description: 'On a Realm reset, every deposit grows by 1% of what was gathered from it that run, per level.',
+    baseCost: 1,
+    costGrowth: 1.12,
+    maxLevel: 50,
   },
   {
     id: 'retainedKnowledge',
