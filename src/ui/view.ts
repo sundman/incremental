@@ -605,7 +605,7 @@ export class GameView {
         const helpful = isHelpful({ ...e, amount });
         const tag = cross ? `<span class="tag tag-${to}">${WORLDS[to].name}</span> ` : '';
         const per = node.kind === 'building' ? ' each' : node.horde ? ' per demon' : '';
-        return `<li class="${cross ? (helpful ? 'good' : 'bad') : ''}">${tag}${escape(describeEffect(e, amount))}${per}</li>`;
+        return `<li class="${cross ? (helpful ? 'good' : 'bad') : helpful ? '' : 'bad'}">${tag}${escape(describeEffect(e, amount))}${per}</li>`;
       })
       .concat(
         node.upkeep
