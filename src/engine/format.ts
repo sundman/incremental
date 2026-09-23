@@ -30,3 +30,11 @@ function trim(s: string): string {
 export function formatMultiplier(m: number): string {
   return '×' + trim(m.toFixed(m >= 10 ? 1 : 2));
 }
+
+/** 8s, 3m 05s, 1h 20m. */
+export function formatDuration(seconds: number): string {
+  const s = Math.max(0, Math.ceil(seconds));
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`;
+  return `${Math.floor(s / 3600)}h ${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}m`;
+}

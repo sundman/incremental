@@ -10,6 +10,10 @@ An incremental game made of three smaller incremental worlds that run side by si
 
 Grow the Realm to 10 buildings (including a Workshop) and you can build a **Shrine** (opens Arcana) or a **Library** (opens the Lab).
 
+## Build times
+
+Buying something pays the cost up front and starts construction. The card fills like a progress bar and shows the time left. The level (or the world it opens) only counts once it finishes. Build time rises steeply by tier, from 5 seconds for a Hut to 10 minutes for a Cathedral or Thaumic Physics, and each level owned adds 5%. Builders' Guild, Lab Assistants, Golem Works, Logistics (Lab), Haste (Arcana, all worlds) and Swift Hands (Echo shop) make building faster.
+
 ## Cross-world effects
 
 Many buildings and techs change another world. Each card tags the world it affects: green if it helps, red if it hurts. Each world panel lists the effects coming in from the other worlds and the ones it sends out. Examples:

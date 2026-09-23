@@ -30,6 +30,7 @@ export type ResourceId =
  * - `housing`          Realm population cap
  * - `growth`           Realm population growth, in people per second
  * - `deaths`           Realm people killed per hour
+ * - `speed:<world>`    build speed multiplier in a world (higher is faster)
  */
 export type Stat =
   | `rate:${ResourceId}`
@@ -39,7 +40,8 @@ export type Stat =
   | `yield:${ResourceId}`
   | 'housing'
   | 'growth'
-  | 'deaths';
+  | 'deaths'
+  | `speed:${WorldId}`;
 
 export type Cost = Partial<Record<ResourceId, number>>;
 
@@ -99,6 +101,8 @@ export interface NodeDef {
   baseCost: Cost;
   /** Cost multiplier per level owned. Ignored for one-level nodes. */
   costGrowth: number;
+  /** Build-time tier, 1 (seconds) to 6 (many minutes). See `TIER_SECONDS`. */
+  tier: 1 | 2 | 3 | 4 | 5 | 6;
   /** Omit for unlimited levels. Techs are always 1. */
   maxLevel?: number;
   /** Nodes that must be owned (level >= 1) before this one can be bought. */
@@ -127,6 +131,7 @@ export type NodeId =
   | 'coalMine'
   | 'foundry'
   | 'market'
+  | 'buildersGuild'
   | 'well'
   | 'tavern'
   | 'library'
@@ -153,15 +158,18 @@ export type NodeId =
   | 'runeLore'
   | 'animation'
   | 'fertilityRite'
+  | 'haste'
   // Lab
   | 'scholar'
   | 'laboratory'
+  | 'labAssistants'
   | 'scientificMethod'
   | 'engineering'
   | 'geology'
   | 'optics'
   | 'printing'
   | 'medicine'
+  | 'logistics'
   | 'metallurgy'
   | 'rationalism'
   | 'industrialization'
@@ -179,6 +187,7 @@ export type MetaId =
   | 'dampening'
   | 'amplify'
   | 'attunement'
+  | 'swiftHands'
   | 'retainedKnowledge';
 
 export interface MetaDef {
@@ -207,6 +216,8 @@ export interface GameState {
   population: number;
   /** Realm people assigned to each job. */
   jobs: Record<JobId, number>;
+  /** Levels being built right now, in base seconds of work (before build speed). */
+  construction: Partial<Record<NodeId, { done: number; needed: number }>>;
   /** Fraction (0..1) of each upkeep node's effect that ran last tick. */
   efficiency: Partial<Record<NodeId, number>>;
 }

@@ -11,6 +11,9 @@ export function describeEffect(effect: Effect, amount: number): string {
       : `Population growth ${formatMultiplier(amount)}`;
   }
   if (effect.stat === 'deaths') return `Kills ${formatNumber(amount)} people/hour`;
+  if (effect.stat.startsWith('speed:')) {
+    return `${WORLDS[effect.stat.slice('speed:'.length) as WorldId].name} build speed ${formatMultiplier(amount)}`;
+  }
   const [type, target] = effect.stat.split(':') as [string, string];
   const value = effect.kind === 'add' ? `${amount >= 0 ? '+' : ''}${formatNumber(amount)}` : formatMultiplier(amount);
   switch (type) {

@@ -1,6 +1,6 @@
 import { createInitialState, SAVE_VERSION } from './engine';
 import type { GameState } from './types';
-import { WORLD_ORDER } from './content';
+import { NODE_ORDER, WORLD_ORDER } from './content';
 
 export const SAVE_KEY = 'incremental-worlds-save';
 
@@ -15,6 +15,20 @@ function mergeNumbers<T extends Record<string, number>>(defaults: T, raw: unknow
     for (const key of Object.keys(defaults) as (keyof T)[]) {
       const value = (raw as Record<string, unknown>)[key as string];
       if (typeof value === 'number' && Number.isFinite(value)) out[key] = value as T[keyof T];
+    }
+  }
+  return out;
+}
+
+function readConstruction(raw: unknown): GameState['construction'] {
+  const out: GameState['construction'] = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const id of NODE_ORDER) {
+    const c = (raw as Record<string, unknown>)[id] as { done?: unknown; needed?: unknown } | undefined;
+    if (!c || typeof c !== 'object') continue;
+    const { done, needed } = c;
+    if (typeof done === 'number' && typeof needed === 'number' && Number.isFinite(done) && Number.isFinite(needed)) {
+      out[id] = { done, needed };
     }
   }
   return out;
@@ -47,6 +61,7 @@ export function deserialize(text: string): GameState {
     meta: mergeNumbers(fresh.meta, raw.meta),
     population: num(raw.population, fresh.population),
     jobs: mergeNumbers(fresh.jobs, raw.jobs),
+    construction: readConstruction(raw.construction),
     efficiency: {},
   };
 }

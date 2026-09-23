@@ -23,8 +23,10 @@ import {
   jobOutput,
   buildingCount,
   buyMeta,
+  buildSeconds,
   buyNode,
   canAfford,
+  constructionSecondsLeft,
   canBuyMeta,
   click,
   clickValue,
@@ -45,7 +47,7 @@ import {
   type ActiveLink,
   type Modifiers,
 } from '../engine/engine';
-import { formatNumber } from '../engine/format';
+import { formatDuration, formatNumber } from '../engine/format';
 import type { GameState, JobId, MetaId, NodeId, ResourceId, WorldId } from '../engine/types';
 import { describeEffect } from './describe';
 
@@ -102,6 +104,7 @@ interface NodeCard {
   cost: HTMLElement;
   effects: HTMLElement;
   needs: HTMLElement;
+  time: HTMLElement;
 }
 
 interface JobRow {
@@ -340,6 +343,7 @@ export class GameView {
     const cost = h('div', { class: 'cost' });
     const effects = h('ul', { class: 'effects' });
     const needs = h('div', { class: 'needs' });
+    const time = h('div', { class: 'build-time' });
     const button = h(
       'button',
       { class: 'node-button', type: 'button' },
@@ -347,13 +351,14 @@ export class GameView {
       h('div', { class: 'node-desc' }, node.description),
       effects,
       cost,
+      time,
       needs,
     );
     button.addEventListener('click', () => {
       if (buyNode(this.state, id)) this.hooks.onChange();
     });
     const card = h('div', { class: `node node-${node.kind}` }, button);
-    this.nodes[id] = { card, button, level, cost, effects, needs };
+    this.nodes[id] = { card, button, level, cost, effects, needs, time };
     return card;
   }
 
@@ -477,8 +482,18 @@ export class GameView {
 
     const max = maxLevel(id);
     const maxed = level >= max;
-    if (node.kind === 'tech') setText(c.level, level > 0 ? (node.world === 'arcana' ? 'Discovered' : 'Researched') : '');
-    else setText(c.level, String(level));
+    const building = state.construction[id];
+    if (building) {
+      const pct = Math.min(100, (building.done / building.needed) * 100);
+      c.button.style.setProperty('--progress', `${pct.toFixed(1)}%`);
+      const verb = node.kind === 'building' ? 'Building' : node.world === 'arcana' ? 'Discovering' : 'Researching';
+      setText(c.level, `${verb}… ${formatDuration(constructionSecondsLeft(state, id, mods))}`);
+    } else if (node.kind === 'tech') {
+      setText(c.level, level > 0 ? (node.world === 'arcana' ? 'Discovered' : 'Researched') : '');
+    } else {
+      setText(c.level, String(level));
+    }
+    c.card.classList.toggle('constructing', !!building);
     c.card.classList.toggle('owned', node.kind === 'tech' && level > 0);
 
     const effectsHtml = node.effects
@@ -521,6 +536,8 @@ export class GameView {
       );
     }
 
+    setText(c.time, maxed || building ? '' : `⏱ ${formatDuration(buildSeconds(state, id, mods))}`);
+
     const needs: string[] = [];
     for (const req of node.requires ?? []) {
       if (state.nodes[req] > 0) continue;
@@ -534,6 +551,6 @@ export class GameView {
     }
     setHtml(c.needs, needs.length ? `Needs: ${needs.join(', ')}` : '');
 
-    c.button.disabled = maxed || !available || !canAfford(state, nodeCost(state, id, mods));
+    c.button.disabled = maxed || !!building || !available || !canAfford(state, nodeCost(state, id, mods));
   }
 }

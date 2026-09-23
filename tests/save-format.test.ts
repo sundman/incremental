@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialState, tick } from '../src/engine/engine';
-import { formatMultiplier, formatNumber } from '../src/engine/format';
+import { formatDuration, formatMultiplier, formatNumber } from '../src/engine/format';
 import { deserialize, loadGame, saveGame, serialize } from '../src/engine/save';
 
 describe('save', () => {
@@ -11,7 +11,9 @@ describe('save', () => {
     state.meta.amplify = 2;
     state.echoes = 7;
     tick(state, 5);
+    state.construction.quarry = { done: 3, needed: 5 };
     const loaded = deserialize(serialize(state));
+    expect(loaded.construction).toEqual({ quarry: { done: 3, needed: 5 } });
     expect(loaded.resources).toEqual(state.resources);
     expect(loaded.nodes).toEqual(state.nodes);
     expect(loaded.unlockedWorlds).toEqual(['realm', 'lab']);
@@ -69,5 +71,17 @@ describe('formatNumber', () => {
     expect(formatMultiplier(0.95)).toBe('×0.95');
     expect(formatMultiplier(1.25)).toBe('×1.25');
     expect(formatMultiplier(1.5)).toBe('×1.5');
+  });
+});
+
+describe('formatDuration', () => {
+  it.each([
+    [0, '0s'],
+    [4.2, '5s'],
+    [59, '59s'],
+    [185, '3m 05s'],
+    [4800, '1h 20m'],
+  ])('%s -> %s', (n, expected) => {
+    expect(formatDuration(n)).toBe(expected);
   });
 });

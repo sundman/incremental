@@ -1,4 +1,5 @@
 import {
+  BUILD_TIME_GROWTH,
   JOBS,
   JOB_ORDER,
   META,
@@ -8,6 +9,7 @@ import {
   POPULATION,
   RESOURCES,
   RESOURCE_ORDER,
+  TIER_SECONDS,
   WORLDS,
   WORLD_ORDER,
 } from './content';
@@ -35,6 +37,7 @@ export function createInitialState(): GameState {
     meta: zeroes(META_ORDER),
     population: POPULATION.start,
     jobs: zeroes(JOB_ORDER),
+    construction: {},
     efficiency: {},
   };
 }
@@ -48,6 +51,7 @@ export function isWorldUnlocked(state: GameState, world: WorldId): boolean {
 /** The world a stat belongs to, used to tell local effects from cross-world links. */
 export function statWorld(stat: Stat): WorldId {
   if (stat === 'housing' || stat === 'growth' || stat === 'deaths') return 'realm';
+  if (stat.startsWith('speed:')) return stat.slice('speed:'.length) as WorldId;
   const [type, target] = stat.split(':') as [string, string];
   if (type === 'rate' || type === 'click' || type === 'yield') return RESOURCES[target as ResourceId].world;
   return target as WorldId;
@@ -344,27 +348,71 @@ export function canAfford(state: GameState, cost: Cost): boolean {
   return (Object.entries(cost) as [ResourceId, number][]).every(([r, n]) => state.resources[r] >= n);
 }
 
+export function isUnderConstruction(state: GameState, id: NodeId): boolean {
+  return state.construction[id] !== undefined;
+}
+
 export function canBuyNode(state: GameState, id: NodeId): boolean {
   return (
     isNodeAvailable(state, id) &&
+    !isUnderConstruction(state, id) &&
     state.nodes[id] < maxLevel(id) &&
     canAfford(state, nodeCost(state, id))
   );
 }
 
+/** Build speed in a world: 1 is normal, 2 builds twice as fast. */
+export function buildSpeed(mods: Modifiers, world: WorldId): number {
+  return getMul(mods, `speed:${world}`);
+}
+
+/** Work needed for the next level of a node, in base seconds (before build speed). */
+export function baseBuildSeconds(state: GameState, id: NodeId): number {
+  return TIER_SECONDS[NODES[id].tier] * Math.pow(BUILD_TIME_GROWTH, state.nodes[id]);
+}
+
+/** Real seconds the next level would take to build at the current build speed. */
+export function buildSeconds(state: GameState, id: NodeId, mods = computeModifiers(state)): number {
+  return baseBuildSeconds(state, id) / buildSpeed(mods, NODES[id].world);
+}
+
+/** Real seconds left on a level under construction, or 0. */
+export function constructionSecondsLeft(state: GameState, id: NodeId, mods = computeModifiers(state)): number {
+  const c = state.construction[id];
+  if (!c) return 0;
+  return Math.max(0, c.needed - c.done) / buildSpeed(mods, NODES[id].world);
+}
+
+/** Pays for the next level and starts building it. The level counts once construction finishes. */
 export function buyNode(state: GameState, id: NodeId): boolean {
   if (!canBuyNode(state, id)) return false;
   const cost = nodeCost(state, id);
   for (const [r, n] of Object.entries(cost) as [ResourceId, number][]) {
     state.resources[r] -= n;
   }
+  state.construction[id] = { done: 0, needed: baseBuildSeconds(state, id) };
+  return true;
+}
+
+/** Finishes a level under construction immediately. */
+export function completeConstruction(state: GameState, id: NodeId) {
+  if (!state.construction[id]) return;
+  delete state.construction[id];
   state.nodes[id] += 1;
   const opens = NODES[id].unlocksWorld;
   if (opens && !isWorldUnlocked(state, opens)) {
     state.unlockedWorlds.push(opens);
     applyHeadStart(state, opens);
   }
-  return true;
+}
+
+function advanceConstruction(state: GameState, mods: Modifiers, dt: number) {
+  for (const id of NODE_ORDER) {
+    const c = state.construction[id];
+    if (!c) continue;
+    c.done += dt * buildSpeed(mods, NODES[id].world);
+    if (c.done >= c.needed - 1e-9) completeConstruction(state, id);
+  }
 }
 
 // ------------------------------------------------------------------- time
@@ -415,7 +463,10 @@ function step(state: GameState, dt: number) {
     if (state.resources[r] < 0) state.resources[r] = 0;
   }
 
-  // 3. Deaths, then new people move into free housing, eating Food as they arrive.
+  // 3. Construction progresses.
+  advanceConstruction(state, mods, dt);
+
+  // 4. Deaths, then new people move into free housing, eating Food as they arrive.
   const dying = deathRate(mods) * dt;
   if (dying > 0) {
     state.population = Math.max(0, state.population - dying);
@@ -503,6 +554,7 @@ export function resetWorld(state: GameState, world: WorldId): number {
     if (NODES[id].world !== world || keep.has(id)) continue;
     state.nodes[id] = 0;
     delete state.efficiency[id];
+    delete state.construction[id];
   }
   if (world === 'realm') {
     state.population = POPULATION.start;

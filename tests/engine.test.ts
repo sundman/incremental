@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   activeLinks,
   arrivalBlocker,
+  buildSeconds,
+  completeConstruction,
+  constructionSecondsLeft,
   arrivalRate,
   deathRate,
   assignJob,
@@ -66,6 +69,8 @@ describe('costs', () => {
     state.nodes.lumberCamp = 1;
     state.nodes.quarry = 1;
     expect(buyNode(state, 'workshop')).toBe(true);
+    expect(state.nodes.workshop).toBe(0); // still being built
+    completeConstruction(state, 'workshop');
     expect(state.nodes.workshop).toBe(1);
     expect(state.resources.wood).toBeCloseTo(60);
     expect(state.resources.stone).toBeCloseTo(75);
@@ -107,6 +112,8 @@ describe('worlds and techs', () => {
     state.resources.stone = 1000;
     expect(isNodeAvailable(state, 'scholar')).toBe(false);
     expect(buyNode(state, 'library')).toBe(true);
+    expect(isWorldUnlocked(state, 'lab')).toBe(false);
+    completeConstruction(state, 'library');
     expect(isWorldUnlocked(state, 'lab')).toBe(true);
     expect(isNodeAvailable(state, 'scholar')).toBe(true);
   });
@@ -116,7 +123,10 @@ describe('worlds and techs', () => {
     state.resources.research = 10_000;
     expect(buyNode(state, 'metallurgy')).toBe(false);
     expect(buyNode(state, 'scientificMethod')).toBe(true);
-    expect(buyNode(state, 'scientificMethod')).toBe(false);
+    expect(buyNode(state, 'scientificMethod')).toBe(false); // already being researched
+    expect(buyNode(state, 'metallurgy')).toBe(false); // not finished yet
+    completeConstruction(state, 'scientificMethod');
+    expect(buyNode(state, 'scientificMethod')).toBe(false); // one level only
     expect(buyNode(state, 'metallurgy')).toBe(true);
   });
 });
@@ -271,6 +281,7 @@ describe('resets and Echoes', () => {
     state.resources.wood = 1000;
     state.resources.stone = 1000;
     buyNode(state, 'library');
+    completeConstruction(state, 'library');
     expect(state.nodes.scholar).toBe(4);
   });
 
@@ -431,5 +442,60 @@ describe('cross-world requirements', () => {
     const link = activeLinks(state).find((l) => l.source === 'runesmith');
     expect(link).toMatchObject({ from: 'realm', to: 'arcana', helpful: false });
     expect(link?.total).toBeCloseTo(-0.2);
+  });
+});
+
+describe('build times', () => {
+  it('rises steeply by tier and gently by level', () => {
+    const state = unlockAll(createInitialState());
+    expect(buildSeconds(state, 'hut')).toBeCloseTo(5);
+    expect(buildSeconds(state, 'house')).toBeCloseTo(45);
+    expect(buildSeconds(state, 'cathedral')).toBeCloseTo(600);
+    state.nodes.hut = 10;
+    expect(buildSeconds(state, 'hut')).toBeCloseTo(5 * 1.05 ** 10);
+  });
+
+  it('builds over time, and the level only counts when finished', () => {
+    const state = createInitialState();
+    state.resources.wood = 100;
+    expect(buyNode(state, 'hut')).toBe(true);
+    expect(state.resources.wood).toBeCloseTo(85); // paid up front
+    tick(state, 4);
+    expect(state.nodes.hut).toBe(0);
+    expect(constructionSecondsLeft(state, 'hut')).toBeCloseTo(1);
+    tick(state, 1);
+    expect(state.nodes.hut).toBe(1);
+    expect(state.construction.hut).toBeUndefined();
+  });
+
+  it('builds faster with speed bonuses, including ones from other worlds', () => {
+    const state = unlockAll(withNodes({ buildersGuild: 2, haste: 1, logistics: 1 }));
+    state.meta.swiftHands = 1;
+    const speed = 1.15 ** 2 * 1.2 * 1.3 * 1.1;
+    expect(buildSeconds(state, 'house')).toBeCloseTo(45 / speed);
+    expect(buildSeconds(state, 'scholar')).toBeCloseTo(5 / (1.2 * 1.1));
+    const haste = activeLinks(state).filter((l) => l.source === 'haste');
+    expect(haste.map((l) => l.to).sort()).toEqual(['lab', 'realm']);
+  });
+
+  it('opens a world only when its gateway finishes building', () => {
+    const state = withNodes({ lumberCamp: 6, quarry: 3, workshop: 1 });
+    state.resources.wood = 1000;
+    state.resources.stone = 1000;
+    buyNode(state, 'shrine');
+    tick(state, 44);
+    expect(isWorldUnlocked(state, 'arcana')).toBe(false);
+    tick(state, 1);
+    expect(isWorldUnlocked(state, 'arcana')).toBe(true);
+  });
+
+  it('drops unfinished construction when its world is reset', () => {
+    const state = createInitialState();
+    state.resources.wood = 100;
+    buyNode(state, 'hut');
+    resetWorld(state, 'realm');
+    expect(state.construction.hut).toBeUndefined();
+    tick(state, 10);
+    expect(state.nodes.hut).toBe(0);
   });
 });
