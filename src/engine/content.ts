@@ -1159,10 +1159,11 @@ const nodeList: NodeDef[] = [
     world: 'lab',
     kind: 'tech',
     name: 'Rationalism',
-    description: 'Faster research. Widespread disbelief weakens magic.',
+    description: 'Faster research. Widespread disbelief weakens magic. Repeatable.',
     baseCost: { research: 300 },
-    costGrowth: 1,
+    costGrowth: 1.6,
     tier: 3,
+    maxLevel: 10,
     requires: ['scientificMethod'],
     effects: [
       { stat: 'rate:research', kind: 'mul', amount: 1.3 },

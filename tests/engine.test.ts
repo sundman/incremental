@@ -422,6 +422,19 @@ describe('land', () => {
   });
 });
 
+describe('repeatable research', () => {
+  it('lets Rationalism be researched 10 times, stacking both its effects', () => {
+    const state = unlockAll(withNodes({ scientificMethod: 1, library: 1, rationalism: 9 }));
+    state.resources.research = 1e9;
+    expect(buyNode(state, 'rationalism')).toBe(true);
+    tick(state, 3600);
+    expect(state.nodes.rationalism).toBe(10);
+    expect(buyNode(state, 'rationalism')).toBe(false);
+    const mods = computeModifiers(state);
+    expect(mods.get('rate:mana')?.mul).toBeCloseTo(0.8 ** 10);
+  });
+});
+
 describe('build slots', () => {
   it('builds one thing per world at a time, while other worlds build in parallel', () => {
     const state = unlockAll(withNodes({ hut: 1, library: 1, shrine: 1 }));
