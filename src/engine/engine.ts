@@ -2,6 +2,7 @@ import {
   BUILD_TIME_GROWTH,
   DEMONS,
   DEPOSITS,
+  LAND,
   DEPOSIT_GROWTH_PER_LEVEL,
   DEPOSIT_ORDER,
   JOBS,
@@ -61,6 +62,7 @@ export function isWorldUnlocked(state: GameState, world: WorldId): boolean {
 export function statWorld(stat: Stat): WorldId {
   if (
     stat === 'housing' ||
+    stat === 'land' ||
     stat === 'growth' ||
     stat === 'crowding' ||
     stat === 'pollution' ||
@@ -484,7 +486,26 @@ export function nodeCost(state: GameState, id: NodeId, mods = computeModifiers(s
 
 export function maxLevel(id: NodeId): number {
   const node = NODES[id];
-  return node.kind === 'tech' ? 1 : (node.maxLevel ?? Infinity);
+  return node.maxLevel ?? (node.kind === 'tech' ? 1 : Infinity);
+}
+
+/** Squares of land the Realm has to build on. */
+export function land(state: GameState, mods = computeModifiers(state)): number {
+  return LAND.base + getAdd(mods, 'land');
+}
+
+/** Squares taken: one per Realm building level, counting levels under construction. */
+export function landUsed(state: GameState): number {
+  return NODE_ORDER.filter((id) => NODES[id].world === 'realm' && NODES[id].kind === 'building').reduce(
+    (sum, id) => sum + state.nodes[id] + (isUnderConstruction(state, id) ? 1 : 0),
+    0,
+  );
+}
+
+/** Whether a node needs a free square and none is left. */
+export function needsLand(state: GameState, id: NodeId, mods = computeModifiers(state)): boolean {
+  const node = NODES[id];
+  return node.world === 'realm' && node.kind === 'building' && landUsed(state) >= land(state, mods);
 }
 
 /** Total building levels owned in a world. */
@@ -530,6 +551,7 @@ export function canBuyNode(state: GameState, id: NodeId): boolean {
     isNodeAvailable(state, id) &&
     !isUnderConstruction(state, id) &&
     hasFreeBuildSlot(state, NODES[id].world) &&
+    !needsLand(state, id) &&
     state.nodes[id] < maxLevel(id) &&
     canAfford(state, nodeCost(state, id))
   );

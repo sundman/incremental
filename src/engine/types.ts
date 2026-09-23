@@ -32,6 +32,7 @@ export type ResourceId =
  * - `cost:<world>`     multiplier on the cost of every node in a world
  * - `yield:<resource>` extra output per worker assigned to that resource's job
  * - `housing`          Realm population cap
+ * - `land`             Realm squares of land to build on (every building level takes one)
  * - `growth`           Realm population growth, in people per second
  * - `crowding`         Realm crowding, which slows growth; homes add it, sanitation cuts it
  * - `pollution`        Realm pollution, which slows growth; dirty industry adds it, parks and filters cut it
@@ -46,6 +47,7 @@ export type Stat =
   | `cost:${WorldId}`
   | `yield:${ResourceId}`
   | 'housing'
+  | 'land'
   | 'growth'
   | 'crowding'
   | 'pollution'
@@ -243,6 +245,8 @@ export type NodeId =
   | 'earthsong'
   | 'deepTime'
   | 'forestry'
+  | 'cartography'
+  | 'expedition'
   | 'environmentalScience'
   | 'logistics'
   | 'metallurgy'

@@ -3,6 +3,9 @@ import {
   activeLinks,
   runningLevel,
   toggleSpell,
+  maxLevel,
+  land,
+  landUsed,
   buildSlots,
   setRandom,
   canResetWorld,
@@ -388,6 +391,32 @@ describe('deposits', () => {
     expect(state.deposits.stone.max).toBeCloseTo(51000);
     resetWorld(state, 'lab'); // other worlds leave the deposits alone
     expect(state.deposits.wood.max).toBeCloseTo(8500);
+  });
+});
+
+describe('land', () => {
+  it('gives every Realm building level a square, and blocks building once the land is full', () => {
+    const state = withNodes({ hut: 15, farm: 4 }); // 19 of 20 squares
+    Object.assign(state.resources, { wood: 1e6, stone: 1e6 });
+    expect(land(state)).toBe(20);
+    expect(landUsed(state)).toBe(19);
+    expect(buyNode(state, 'lumberCamp')).toBe(true); // the 20th square, taken while it is built
+    expect(landUsed(state)).toBe(20);
+    tick(state, 60);
+    expect(buyNode(state, 'quarry')).toBe(false);
+  });
+
+  it('finds more land with Cartography and each Expedition, and loses it again on a Lab reset', () => {
+    const state = unlockAll(withNodes({ hut: 20, cartography: 1, expedition: 3 }));
+    expect(land(state)).toBe(20 + 10 + 3 * 5);
+    expect(maxLevel('expedition')).toBe(30);
+    state.resources.wood = 1e6;
+    expect(buyNode(state, 'hut')).toBe(true);
+    const link = activeLinks(state).find((l) => l.source === 'expedition');
+    expect(link).toMatchObject({ from: 'lab', to: 'realm', helpful: true, total: 15 });
+    resetWorld(state, 'lab');
+    expect(land(state)).toBe(20);
+    expect(state.nodes.hut).toBe(20); // buildings stay, there is just no room for more
   });
 });
 

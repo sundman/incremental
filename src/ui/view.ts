@@ -44,6 +44,9 @@ import {
   activeBuilds,
   buildSlots,
   hasFreeBuildSlot,
+  land,
+  landUsed,
+  needsLand,
   resetBlocker,
   isHordeActive,
   effectiveAmount,
@@ -162,6 +165,7 @@ export class GameView {
   private nodes = {} as Record<NodeId, NodeCard>;
   private metas = {} as Record<MetaId, MetaCard>;
   private population!: PopulationView;
+  private landEl = h('div', { class: 'land' });
   private deposits = Object.fromEntries(
     DEPOSIT_ORDER.map((d): [DepositId, HTMLElement] => [d, h('div', { class: `deposit deposit-${d}` })]),
   ) as Record<DepositId, HTMLElement>;
@@ -261,7 +265,9 @@ export class GameView {
       { class: 'world-body' },
       resList,
       clickRow,
-      ...(world === 'realm' ? [h('div', { class: 'deposits' }, ...DEPOSIT_ORDER.map((d) => this.deposits[d]))] : []),
+      ...(world === 'realm'
+        ? [h('div', { class: 'deposits' }, this.landEl, ...DEPOSIT_ORDER.map((d) => this.deposits[d]))]
+        : []),
       ...(populationEl ? [populationEl] : []),
       h('details', { class: 'link-box', open: '' }, h('summary', {}, 'Effects from other worlds'), incoming),
       h('h3', {}, 'Buildings'),
@@ -321,6 +327,15 @@ export class GameView {
 
   private renderDeposits(mods: Modifiers) {
     const state = this.state;
+    const total = land(state, mods);
+    const used = landUsed(state);
+    this.landEl.style.setProperty('--used', `${Math.min(100, (used / total) * 100).toFixed(1)}%`);
+    setText(
+      this.landEl,
+      `🗺️ Land: ${used} / ${formatNumber(total)} squares used` +
+        (used >= total ? ' · explore in the Lab (Cartography, Expeditions) to build more' : ''),
+    );
+    this.landEl.classList.toggle('attention', used >= total);
     const smog = 1 - pollutionFactor(mods);
     for (const id of DEPOSIT_ORDER) {
       const el = this.deposits[id];
@@ -572,13 +587,15 @@ export class GameView {
       const on = isSpellActive(state, id);
       const eff = state.efficiency[id] ?? 1;
       setText(c.level, on ? (eff < 0.999 ? `On · ${Math.round(eff * 100)}% power` : 'On') : 'Off');
+    } else if (node.kind === 'tech' && max > 1) {
+      setText(c.level, level > 0 ? `${level} / ${max}` : '');
     } else if (node.kind === 'tech') {
       setText(c.level, level > 0 ? (node.world === 'arcana' ? 'Discovered' : 'Researched') : '');
     } else {
       setText(c.level, String(level));
     }
     c.card.classList.toggle('constructing', !!building);
-    c.card.classList.toggle('owned', node.kind === 'tech' && level > 0);
+    c.card.classList.toggle('owned', node.kind === 'tech' && maxed);
 
     const effectsHtml = node.effects
       .map((e) => {
@@ -634,6 +651,9 @@ export class GameView {
       const have = buildingCount(state, node.world);
       if (have < node.requiresBuildings) needs.push(`${have}/${node.requiresBuildings} ${WORLDS[node.world].name} buildings`);
     }
+    if (available && !building && !maxed && needsLand(state, id, mods)) {
+      needs.push(`free land (${landUsed(state)}/${formatNumber(land(state, mods))} squares used)`);
+    }
     if (available && !building && !maxed && !hasFreeBuildSlot(state, node.world)) {
       needs.push(`a free build slot (${activeBuilds(state, node.world)}/${buildSlots(state)} in use)`);
     }
@@ -648,6 +668,6 @@ export class GameView {
     c.card.classList.toggle('horde', !!node.horde);
     c.button.disabled = learnedSpell
       ? !isSpellActive(state, id) && !canCastSpell(state, id)
-      : maxed || !!building || !available || !hasFreeBuildSlot(state, node.world) || !canAfford(state, nodeCost(state, id, mods));
+      : maxed || !!building || !available || !hasFreeBuildSlot(state, node.world) || needsLand(state, id, mods) || !canAfford(state, nodeCost(state, id, mods));
   }
 }

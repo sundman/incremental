@@ -84,6 +84,11 @@ export const DEPOSIT_ORDER = Object.keys(DEPOSITS) as DepositId[];
 /** Share of what was gathered in a run that each Rich Earth level adds to a deposit's size on a Realm reset. */
 export const DEPOSIT_GROWTH_PER_LEVEL = 0.01;
 
+export const LAND = {
+  /** Squares of land the Realm starts with; every building level takes one. */
+  base: 20,
+};
+
 export const DEMONS = {
   /** Demons that answer the first summoning. */
   start: 1,
@@ -1191,6 +1196,31 @@ const nodeList: NodeDef[] = [
       { stat: 'rate:essence', kind: 'mul', amount: 0.85 },
       { stat: 'pollution', kind: 'add', amount: 8 },
     ],
+  },
+  {
+    id: 'cartography',
+    world: 'lab',
+    kind: 'tech',
+    name: 'Cartography',
+    description: 'Map the lands around the Realm: 10 more squares of land to build on. Lets you send Expeditions.',
+    baseCost: { research: 120 },
+    costGrowth: 1,
+    tier: 2,
+    requires: ['scientificMethod'],
+    effects: [{ stat: 'land', kind: 'add', amount: 10 }],
+  },
+  {
+    id: 'expedition',
+    world: 'lab',
+    kind: 'tech',
+    name: 'Expedition',
+    description: 'Explore beyond the maps. Each expedition finds 5 more squares of land for the Realm. Repeatable.',
+    baseCost: { research: 150, food: 100 },
+    costGrowth: 1.3,
+    tier: 2,
+    maxLevel: 30,
+    requires: ['cartography'],
+    effects: [{ stat: 'land', kind: 'add', amount: 5 }],
   },
   {
     id: 'forestry',
