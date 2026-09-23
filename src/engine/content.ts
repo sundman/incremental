@@ -103,7 +103,8 @@ const jobList: JobDef[] = [
     resource: 'iron',
     baseYield: 0.2,
     requires: ['mine'],
-    effects: [{ stat: 'rate:mana', kind: 'mul', amount: 0.98 }],
+    // 2% per miner with one Mine, 1% more for each Mine after that.
+    effects: [{ stat: 'rate:mana', kind: 'mul', amount: 0.98, scaleBy: { node: 'mine', perLevel: 0.5 } }],
   },
   {
     id: 'collier',
@@ -259,7 +260,8 @@ const nodeList: NodeDef[] = [
     world: 'realm',
     kind: 'building',
     name: 'Mine',
-    description: 'Opens the Miner job, and each Mine makes miners dig faster. Miners disturb the ley lines.',
+    description:
+      'Opens the Miner job, and each Mine makes miners dig faster. Miners disturb the ley lines, and every Mine after the first makes each miner disturb them more.',
     baseCost: { wood: 60, stone: 80 },
     costGrowth: 1.35,
     tier: 2,

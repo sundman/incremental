@@ -60,6 +60,11 @@ export interface Effect {
   amount: number;
   /** For `mul`: grow linearly instead, multiplying by `1 + (amount - 1) * level`. */
   linear?: boolean;
+  /**
+   * Makes the effect stronger with each level of a node beyond the first:
+   * its strength is multiplied by `1 + perLevel * (level - 1)`.
+   */
+  scaleBy?: { node: NodeId; perLevel: number };
 }
 
 export interface WorldDef {

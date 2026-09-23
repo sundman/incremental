@@ -19,7 +19,7 @@ Buying something pays the cost up front and starts construction. The card fills 
 
 Many buildings and techs change another world. Each card tags the world it affects: green if it helps, red if it hurts. Each world panel lists the effects coming in from the other worlds and the ones it sends out. Examples:
 
-- Realm **Miners**: Iron, but each person you put in the mines weakens Mana in Arcana.
+- Realm **Miners**: Iron, but each person you put in the mines weakens Mana in Arcana, and more so with every Mine you build.
 - Arcana **Aether Rift**: makes Aether, but slows Research in the Lab.
 - Lab **Rationalism**: faster Research, but magic suffers from the disbelief.
 - Lab **Industrialization**: cheaper Realm buildings, but the smog chokes Essence.

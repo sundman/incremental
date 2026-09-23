@@ -326,6 +326,17 @@ describe('resets and Echoes', () => {
   });
 });
 
+describe('miners and the ley lines', () => {
+  it('hurts Mana more per miner with every Mine after the first', () => {
+    const one = unlockAll(withJobs({ miner: 5 }, withNodes({ mine: 1, shrine: 1 })));
+    const five = unlockAll(withJobs({ miner: 5 }, withNodes({ mine: 5, shrine: 1 })));
+    expect(computeModifiers(one).get('rate:mana')?.mul).toBeCloseTo(0.98 ** 5);
+    expect(computeModifiers(five).get('rate:mana')?.mul).toBeCloseTo(0.94 ** 5); // 2% + 4 x 1%
+    const link = activeLinks(five).find((l) => l.source === 'miner');
+    expect(link?.total).toBeCloseTo(0.94 ** 5);
+  });
+});
+
 describe('population', () => {
   it('starts with 2 people and room for 3', () => {
     const state = createInitialState();

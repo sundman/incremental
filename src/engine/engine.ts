@@ -75,14 +75,22 @@ export function isHelpful(effect: Effect): boolean {
 
 /**
  * Scales a cross-world effect by the Amplify / Dampening meta upgrades.
- * Local effects are returned unchanged.
+ * Local effects are only scaled by `scaleBy`.
  */
 export function effectiveAmount(state: GameState, effect: Effect, sourceWorld: WorldId): number {
-  if (statWorld(effect.stat) === sourceWorld) return effect.amount;
+  const base = scaledAmount(state, effect);
+  if (statWorld(effect.stat) === sourceWorld) return base;
   const factor = isHelpful(effect)
     ? 1 + 0.1 * state.meta.amplify
     : Math.max(0, 1 - 0.1 * state.meta.dampening);
-  return effect.kind === 'add' ? effect.amount * factor : 1 + (effect.amount - 1) * factor;
+  return effect.kind === 'add' ? base * factor : Math.max(0, 1 + (base - 1) * factor);
+}
+
+/** An effect's amount after `scaleBy`: stronger with each level of its node beyond the first. */
+export function scaledAmount(state: GameState, effect: Effect): number {
+  if (!effect.scaleBy) return effect.amount;
+  const strength = 1 + effect.scaleBy.perLevel * Math.max(0, state.nodes[effect.scaleBy.node] - 1);
+  return effect.kind === 'add' ? effect.amount * strength : Math.max(0, 1 + (effect.amount - 1) * strength);
 }
 
 export interface StatValue {
