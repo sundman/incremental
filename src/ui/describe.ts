@@ -10,6 +10,11 @@ export function describeEffect(effect: Effect, amount: number): string {
       ? `+${formatNumber(amount * 60)} people/min growth`
       : `Population growth ${formatMultiplier(amount)}`;
   }
+  if (effect.stat === 'crowding') {
+    return effect.kind === 'add'
+      ? `+${formatNumber(amount)} crowding (slows growth)`
+      : `Crowding −${formatNumber((1 - amount) * 100)}%`;
+  }
   if (effect.stat === 'deaths') {
     return effect.kind === 'add' ? `Kills ${formatNumber(amount)} people/hour` : `Deaths ${formatMultiplier(amount)}`;
   }

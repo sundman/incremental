@@ -10,6 +10,7 @@ import {
   completeConstruction,
   constructionSecondsLeft,
   arrivalRate,
+  crowdingFactor,
   deathRate,
   assignJob,
   housing,
@@ -332,32 +333,40 @@ describe('population', () => {
   });
 
   it('fills free housing over time, eating Food, and no further', () => {
-    const state = withNodes({ hut: 2 }); // 3 + 4 = 7 housing
+    const state = withNodes({ hut: 2 }); // 3 + 4 = 7 housing, 2 crowding
     state.resources.food = 1000;
     expect(housing(computeModifiers(state))).toBe(7);
-    tick(state, 10); // 1 person every 20s
-    expect(state.population).toBeCloseTo(2 + 0.5);
-    expect(state.resources.food).toBeCloseTo(1000 - 5);
+    tick(state, 10); // 1 person every 20s, slowed a little by crowding
+    expect(state.population).toBeCloseTo(2 + 0.5 / 1.04);
+    expect(state.resources.food).toBeCloseTo(1000 - 5 / 1.04);
     tick(state, 1000);
     expect(state.population).toBe(7);
     expect(state.resources.food).toBeCloseTo(1000 - 50);
     expect(arrivalBlocker(state, computeModifiers(state))).toBe('housing');
   });
 
-  it('grows at the same pace however much housing there is', () => {
-    const small = withNodes({ hut: 1 });
-    const big = withNodes({ hut: 20, house: 20 });
-    small.resources.food = big.resources.food = 1000;
-    tick(small, 20);
-    tick(big, 20);
-    expect(small.population).toBeCloseTo(3);
-    expect(big.population).toBeCloseTo(3);
+  it('slows growth with every Hut and House built', () => {
+    const none = createInitialState();
+    const big = withNodes({ hut: 20, house: 20 }); // 20 + 40 = 60 crowding
+    expect(crowdingFactor(computeModifiers(none))).toBe(1);
+    expect(crowdingFactor(computeModifiers(big))).toBeCloseTo(1 / (1 + 0.02 * 60));
+    expect(arrivalRate(computeModifiers(big))).toBeCloseTo(0.05 / 2.2);
+    const link = activeLinks(big).find((l) => l.source === 'hut');
+    expect(link).toBeUndefined(); // crowding is a Realm effect, not a cross-world link
   });
 
-  it('speeds up growth with Wells, Taverns, Medicine and the Fertility Rite', () => {
-    const state = unlockAll(withNodes({ well: 2, tavern: 1, medicine: 1, fertilityRite: 1 }));
+  it('lets Aqueducts, Medicine and Sanitation cut crowding', () => {
+    const state = unlockAll(withNodes({ hut: 20, house: 20, aqueduct: 2, medicine: 1, sanitation: 1 }));
+    const crowd = 60 * 0.85 ** 2 * 0.7 * 0.6;
+    expect(crowdingFactor(computeModifiers(state))).toBeCloseTo(1 / (1 + 0.02 * crowd));
+    const lab = activeLinks(state).find((l) => l.source === 'sanitation');
+    expect(lab).toMatchObject({ from: 'lab', to: 'realm', helpful: true });
+  });
+
+  it('speeds up growth with Wells, Taverns and the Fertility Rite', () => {
+    const state = unlockAll(withNodes({ well: 2, tavern: 1, fertilityRite: 1 }));
     state.activeSpells = ['fertilityRite'];
-    expect(arrivalRate(computeModifiers(state))).toBeCloseTo((0.05 + 0.02) * 1.1 ** 2 * 1.5 * 1.3);
+    expect(arrivalRate(computeModifiers(state))).toBeCloseTo((0.05 + 0.02) * 1.1 ** 2 * 1.3);
   });
 
   it('casts Summon Demons for good: it cannot be switched off and needs people to feed on', () => {

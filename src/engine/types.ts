@@ -33,6 +33,7 @@ export type ResourceId =
  * - `yield:<resource>` extra output per worker assigned to that resource's job
  * - `housing`          Realm population cap
  * - `growth`           Realm population growth, in people per second
+ * - `crowding`         Realm crowding, which slows growth; homes add it, sanitation cuts it
  * - `deaths`           Realm people killed per hour
  * - `speed:<world>`    build speed multiplier in a world (higher is faster)
  */
@@ -44,6 +45,7 @@ export type Stat =
   | `yield:${ResourceId}`
   | 'housing'
   | 'growth'
+  | 'crowding'
   | 'deaths'
   | `speed:${WorldId}`;
 
@@ -154,6 +156,7 @@ export type NodeId =
   | 'library'
   | 'shrine'
   | 'irrigation'
+  | 'aqueduct'
   | 'blastFurnace'
   | 'glassworks'
   | 'goldMine'
@@ -200,6 +203,7 @@ export type NodeId =
   | 'optics'
   | 'printing'
   | 'medicine'
+  | 'sanitation'
   | 'logistics'
   | 'metallurgy'
   | 'rationalism'
