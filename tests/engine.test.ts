@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   activeLinks,
+  arrivalBlocker,
   assignJob,
   housing,
   idleWorkers,
@@ -313,13 +314,26 @@ describe('population', () => {
     expect(idleWorkers(state)).toBe(2);
   });
 
-  it('fills free housing over time, and no further', () => {
+  it('fills free housing over time, eating Food, and no further', () => {
     const state = withNodes({ hut: 2 }); // 3 + 4 = 7 housing
+    state.resources.food = 1000;
     expect(housing(computeModifiers(state))).toBe(7);
     tick(state, 10); // 0.14 people/s
     expect(state.population).toBeCloseTo(2 + 1.4);
+    expect(state.resources.food).toBeCloseTo(1000 - 14);
     tick(state, 1000);
     expect(state.population).toBe(7);
+    expect(state.resources.food).toBeCloseTo(1000 - 50);
+    expect(arrivalBlocker(state, computeModifiers(state))).toBe('housing');
+  });
+
+  it('stops people arriving when Food runs out', () => {
+    const state = withNodes({ hut: 5 });
+    state.resources.food = 15;
+    tick(state, 100);
+    expect(state.population).toBeCloseTo(3.5);
+    expect(state.resources.food).toBeCloseTo(0);
+    expect(arrivalBlocker(state, computeModifiers(state))).toBe('food');
   });
 
   it('only assigns idle people, and only to open jobs', () => {
@@ -345,5 +359,47 @@ describe('population', () => {
     tick(state, 1);
     expect(state.jobs.miner).toBe(0);
     expect(state.jobs.woodcutter).toBe(1);
+  });
+});
+
+describe('cross-world requirements', () => {
+  const grown = () => withNodes({ lumberCamp: 1, quarry: 1, workshop: 1, mine: 1, sawmill: 1, coalMine: 1, farm: 5 });
+
+  it('needs a Lab tech before the Realm can build a Blast Furnace', () => {
+    const state = grown();
+    state.resources.bricks = 1000;
+    state.resources.iron = 1000;
+    expect(buyNode(state, 'blastFurnace')).toBe(false);
+    state.unlockedWorlds.push('lab');
+    state.nodes.metallurgy = 1;
+    expect(buyNode(state, 'blastFurnace')).toBe(true);
+  });
+
+  it('keeps built buildings working after the Lab is reset, but stops new ones', () => {
+    const state = unlockAll(grown());
+    Object.assign(state.nodes, { scientificMethod: 1, metallurgy: 1, blastFurnace: 1 });
+    resetWorld(state, 'lab');
+    expect(state.nodes.metallurgy).toBe(0);
+    expect(state.nodes.blastFurnace).toBe(1);
+    expect(isNodeAvailable(state, 'blastFurnace')).toBe(false);
+  });
+
+  it('needs both magic and science for Golem Works', () => {
+    const state = unlockAll(withNodes({ blastFurnace: 1, runesmith: 1, animation: 1 }));
+    expect(isNodeAvailable(state, 'golemWorks')).toBe(false);
+    state.nodes.automation = 1;
+    expect(isNodeAvailable(state, 'golemWorks')).toBe(true);
+  });
+
+  it('reports a Realm building that burns Arcana Essence as a harmful link', () => {
+    const state = unlockAll(withNodes({ runesmith: 2, manaWell: 1 }));
+    state.resources.stone = 100;
+    state.resources.essence = 100;
+    tick(state, 1);
+    expect(state.resources.essence).toBeCloseTo(100 - 0.2);
+    expect(state.resources.runestone).toBeCloseTo(0.1);
+    const link = activeLinks(state).find((l) => l.source === 'runesmith');
+    expect(link).toMatchObject({ from: 'realm', to: 'arcana', helpful: false });
+    expect(link?.total).toBeCloseTo(-0.2);
   });
 });

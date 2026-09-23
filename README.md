@@ -4,9 +4,9 @@ An incremental game made of three smaller incremental worlds that run side by si
 
 ## The worlds
 
-- **Realm** (physical): gather Wood and Stone, build buildings, dig for Iron. It is the only world open at the start. Its scarce resource is **people**. They move in while there is free housing (build Huts for more), and you assign each one to a job (Woodcutters, Stonecutters, Miners). That choice decides what the Realm focuses on. Buildings such as the Lumber Camp make each worker in a job more productive.
-- **Arcana** (magic): make Mana, condense it into Essence, then tear open a Rift for Aether.
-- **Lab** (science): Scholars produce Research, which you spend on a tech tree.
+- **Realm** (physical): the only world open at the start. Its scarce resource is **people**. They move in while there is free housing and each newcomer eats 10 Food. You assign each person to a job: Woodcutters, Stonecutters, Farmers, Diggers, Miners, Colliers or Prospectors. That choice decides what the Realm focuses on. It has 12 resources: raw materials (Wood, Stone, Food, Clay, Iron, Coal, Gold), crafted goods (Planks, Bricks, Steel, Glass) and Runestone. It has 26 buildings, and some of them can only be built after the Lab researches a technology or Arcana makes a discovery. For example, the Blast Furnace needs Metallurgy, the Runesmith needs Rune Lore, and Golem Works needs both Animation and Automation.
+- **Arcana** (magic): make Mana, condense it into Essence, then tear open a Rift for Aether. Discoveries (Rune Lore, Animation) unlock magic buildings in the Realm.
+- **Lab** (science): Scholars produce Research, which you spend on a tech tree. Techs unlock science buildings in the Realm.
 
 Grow the Realm to 10 buildings (including a Workshop) and you can build a **Shrine** (opens Arcana) or a **Library** (opens the Lab).
 
@@ -21,7 +21,7 @@ Many buildings and techs change another world. Each card tags the world it affec
 
 ## Resets and Echoes
 
-Each world has its own reset button. A reset wipes that world's resources and buildings (plus people and jobs for the Realm, and techs for the Lab), which also removes every effect it had on the other worlds. The other worlds are untouched, and opened worlds stay open. A reset pays **Echoes** based on how far that world got (`floor(sqrt(value earned this run / 500))`). You spend them in the Echo shop on permanent upgrades: head starts, production boosts, weaker penalties, stronger bonuses, more Echoes, and keeping techs through a Lab reset.
+Each world has its own reset button. A reset wipes that world's resources and buildings (plus people and jobs for the Realm, discoveries for Arcana, and techs for the Lab). Realm buildings you already built keep working if the tech or discovery they needed is reset, but you can't build more until you unlock it again. A reset also removes every effect that world had on the other worlds. The other worlds are untouched, and opened worlds stay open. A reset pays **Echoes** based on how far that world got (`floor(sqrt(value earned this run / 500))`). You spend them in the Echo shop on permanent upgrades: head starts, production boosts, weaker penalties, stronger bonuses, more Echoes, and keeping techs through a Lab reset.
 
 ## Running it
 

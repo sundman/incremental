@@ -206,6 +206,29 @@ export function activeLinks(state: GameState): ActiveLink[] {
       });
     }
   }
+  // A building that burns another world's resource is a harmful link too.
+  for (const id of NODE_ORDER) {
+    const level = state.nodes[id];
+    const node = NODES[id];
+    if (level <= 0 || !node.upkeep) continue;
+    const efficiency = state.efficiency[id] ?? 1;
+    for (const [r, per] of Object.entries(node.upkeep) as [ResourceId, number][]) {
+      const to = RESOURCES[r].world;
+      if (to === node.world) continue;
+      const effect: Effect = { stat: `rate:${r}`, kind: 'add', amount: -per };
+      links.push({
+        source: id,
+        sourceName: node.name,
+        count: level,
+        from: node.world,
+        to,
+        effect,
+        total: -per * level * efficiency,
+        helpful: false,
+        efficiency,
+      });
+    }
+  }
   for (const id of JOB_ORDER) {
     const workers = state.jobs[id];
     if (workers <= 0) continue;
@@ -387,9 +410,21 @@ function step(state: GameState, dt: number) {
     if (state.resources[r] < 0) state.resources[r] = 0;
   }
 
-  // 3. New people move into free housing.
+  // 3. New people move into free housing, eating Food as they arrive.
   const cap = housing(mods);
-  if (state.population < cap) state.population = Math.min(cap, state.population + arrivalRate(mods) * dt);
+  if (state.population < cap) {
+    let arriving = Math.min(cap - state.population, arrivalRate(mods) * dt);
+    arriving = Math.min(arriving, state.resources.food / POPULATION.foodPerPerson);
+    state.population += arriving;
+    state.resources.food -= arriving * POPULATION.foodPerPerson;
+  }
+}
+
+/** Why nobody is moving in right now, if nobody is. */
+export function arrivalBlocker(state: GameState, mods: Modifiers): 'housing' | 'food' | null {
+  if (state.population >= housing(mods)) return 'housing';
+  if (state.resources.food < 1e-9) return 'food';
+  return null;
 }
 
 /** Advances the game by `seconds`, in steps of at most one second. */

@@ -1,9 +1,20 @@
 export type WorldId = 'realm' | 'arcana' | 'lab';
 
 export type ResourceId =
+  // Realm
   | 'wood'
   | 'stone'
+  | 'food'
+  | 'clay'
+  | 'planks'
+  | 'bricks'
   | 'iron'
+  | 'coal'
+  | 'steel'
+  | 'glass'
+  | 'gold'
+  | 'runestone'
+  // Arcana
   | 'mana'
   | 'essence'
   | 'aether'
@@ -58,7 +69,7 @@ export interface ResourceDef {
   revealedBy?: NodeId;
 }
 
-export type JobId = 'woodcutter' | 'stonecutter' | 'miner';
+export type JobId = 'woodcutter' | 'stonecutter' | 'farmer' | 'digger' | 'miner' | 'collier' | 'prospector';
 
 /** A Realm job. Each assigned person produces `baseYield` (plus `yield:` bonuses) of `resource` per second. */
 export interface JobDef {
@@ -72,6 +83,7 @@ export interface JobDef {
   effects?: Effect[];
 }
 
+/** `tech` is a one-time unlock: a Lab technology or an Arcana discovery. */
 export type NodeKind = 'building' | 'tech';
 
 export interface NodeDef {
@@ -99,13 +111,31 @@ export interface NodeDef {
 export type NodeId =
   // Realm
   | 'hut'
+  | 'farm'
   | 'lumberCamp'
   | 'quarry'
+  | 'clayPit'
   | 'workshop'
+  | 'sawmill'
+  | 'kiln'
+  | 'house'
   | 'mine'
+  | 'coalMine'
   | 'foundry'
+  | 'market'
   | 'library'
   | 'shrine'
+  | 'irrigation'
+  | 'blastFurnace'
+  | 'glassworks'
+  | 'goldMine'
+  | 'printingPress'
+  | 'observatory'
+  | 'university'
+  | 'cathedral'
+  | 'runesmith'
+  | 'leyAnchor'
+  | 'golemWorks'
   // Arcana
   | 'manaWell'
   | 'condenser'
@@ -113,10 +143,16 @@ export type NodeId =
   | 'enchantedTools'
   | 'aetherRift'
   | 'aetherLens'
+  | 'runeLore'
+  | 'animation'
   // Lab
   | 'scholar'
   | 'laboratory'
   | 'scientificMethod'
+  | 'engineering'
+  | 'geology'
+  | 'optics'
+  | 'printing'
   | 'metallurgy'
   | 'rationalism'
   | 'industrialization'

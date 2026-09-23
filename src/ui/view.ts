@@ -5,6 +5,7 @@ import {
   META_ORDER,
   NODES,
   NODE_ORDER,
+  POPULATION,
   RESOURCES,
   RESOURCE_ORDER,
   WORLDS,
@@ -12,6 +13,7 @@ import {
 } from '../engine/content';
 import {
   activeLinks,
+  arrivalBlocker,
   arrivalRate,
   assignJob,
   housing,
@@ -75,6 +77,12 @@ function setHtml(el: HTMLElement, html: string) {
   lastHtml.set(el, html);
   el.innerHTML = html;
 }
+
+const RESET_WIPES: Record<WorldId, string> = {
+  realm: 'buildings, people and jobs',
+  arcana: 'buildings and discoveries',
+  lab: 'buildings and techs',
+};
 
 const echoesLabel = (n: number) => `${formatNumber(n)} ${n === 1 ? 'Echo' : 'Echoes'}`;
 
@@ -214,7 +222,7 @@ export class GameView {
     resetButton.addEventListener('click', () => {
       const gain = echoGain(this.state, world);
       const msg =
-        `Reset ${def.name}? Its resources and ${world === 'lab' ? 'buildings and techs' : 'buildings'} go back to zero, ` +
+        `Reset ${def.name}? Its resources and ${RESET_WIPES[world]} go back to zero, ` +
         `along with every effect it has on the other worlds. You gain ${echoesLabel(gain)}.`;
       if (confirm(msg)) {
         resetWorld(this.state, world);
@@ -231,7 +239,7 @@ export class GameView {
       h('details', { class: 'link-box', open: '' }, h('summary', {}, 'Effects from other worlds'), incoming),
       h('h3', {}, 'Buildings'),
       buildings,
-      ...(techs.childElementCount ? [h('h3', {}, 'Research'), techs] : []),
+      ...(techs.childElementCount ? [h('h3', {}, world === 'arcana' ? 'Discoveries' : 'Research'), techs] : []),
       h('details', { class: 'link-box' }, h('summary', {}, 'Effects this world sends out'), outgoing),
       h('div', { class: 'reset-box' }, resetButton, resetNote),
     );
@@ -288,14 +296,17 @@ export class GameView {
     const people = Math.floor(state.population);
     const idle = idleWorkers(state);
     let text = `${people} / ${formatNumber(cap)} people · ${idle} idle`;
-    if (state.population < cap) {
+    const blocker = arrivalBlocker(state, mods);
+    if (blocker === 'housing') {
+      text += ' · build housing for more';
+    } else if (blocker === 'food') {
+      text += ` · newcomers need ${POPULATION.foodPerPerson} Food each`;
+    } else {
       const secs = Math.ceil((Math.floor(state.population) + 1 - state.population) / arrivalRate(mods));
       text += ` · next arrives in ${secs}s`;
-    } else {
-      text += ' · build Huts for more';
     }
     setText(summary, text);
-    summary.classList.toggle('attention', idle > 0);
+    summary.classList.toggle('attention', idle > 0 || blocker === 'food');
 
     for (const id of JOB_ORDER) {
       const row = jobs[id];
@@ -452,14 +463,17 @@ export class GameView {
     const level = state.nodes[id];
     const available = isNodeAvailable(state, id);
     // Show what is buyable plus the next step (one whose own prerequisites are met), so goals are visible.
-    const frontier = (node.requires ?? []).every((req) => isNodeAvailable(state, req));
+    // Requirements in other worlds never hide a card, so the whole tree is visible as a goal.
+    const frontier = (node.requires ?? []).every(
+      (req) => NODES[req].world !== node.world || state.nodes[req] > 0 || isNodeAvailable(state, req),
+    );
     const shown = isWorldUnlocked(state, node.world) && (available || level > 0 || frontier);
     setHidden(c.card, !shown);
     if (!shown) return;
 
     const max = maxLevel(id);
     const maxed = level >= max;
-    if (node.kind === 'tech') setText(c.level, level > 0 ? 'Researched' : '');
+    if (node.kind === 'tech') setText(c.level, level > 0 ? (node.world === 'arcana' ? 'Discovered' : 'Researched') : '');
     else setText(c.level, String(level));
     c.card.classList.toggle('owned', node.kind === 'tech' && level > 0);
 
@@ -476,7 +490,11 @@ export class GameView {
       .concat(
         node.upkeep
           ? Object.entries(node.upkeep).map(
-              ([r, n]) => `<li class="muted">Uses ${formatNumber(n)} ${RESOURCES[r as ResourceId].name}/s each</li>`,
+              ([r, n]) => {
+                const from = RESOURCES[r as ResourceId].world;
+                const tag = from !== node.world ? `<span class="tag tag-${from}">${WORLDS[from].name}</span> ` : '';
+                return `<li class="${tag ? 'bad' : 'muted'}">${tag}Uses ${formatNumber(n)} ${RESOURCES[r as ResourceId].name}/s each</li>`;
+              },
             )
           : [],
       )
@@ -500,12 +518,17 @@ export class GameView {
     }
 
     const needs: string[] = [];
-    for (const req of node.requires ?? []) if (state.nodes[req] <= 0) needs.push(NODES[req].name);
+    for (const req of node.requires ?? []) {
+      if (state.nodes[req] > 0) continue;
+      const w = NODES[req].world;
+      const tag = w !== node.world ? `<span class="tag tag-${w}">${WORLDS[w].name}</span> ` : '';
+      needs.push(tag + escape(NODES[req].name));
+    }
     if (node.requiresBuildings) {
       const have = buildingCount(state, node.world);
       if (have < node.requiresBuildings) needs.push(`${have}/${node.requiresBuildings} ${WORLDS[node.world].name} buildings`);
     }
-    setText(c.needs, needs.length ? `Needs: ${needs.join(', ')}` : '');
+    setHtml(c.needs, needs.length ? `Needs: ${needs.join(', ')}` : '');
 
     c.button.disabled = maxed || !available || !canAfford(state, nodeCost(state, id, mods));
   }

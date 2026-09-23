@@ -367,3 +367,12 @@ button {
   opacity: 0.35;
   cursor: default;
 }
+
+.world-realm .resources {
+  grid-template-columns: 1fr 1fr;
+  column-gap: 16px;
+}
+
+.world-realm .resource {
+  grid-template-columns: 1fr auto 64px;
+}
