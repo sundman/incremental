@@ -53,7 +53,9 @@ export function isWorldUnlocked(state: GameState, world: WorldId): boolean {
 
 /** The world a stat belongs to, used to tell local effects from cross-world links. */
 export function statWorld(stat: Stat): WorldId {
-  if (stat === 'housing' || stat === 'growth' || stat === 'crowding' || stat === 'deaths') return 'realm';
+  if (stat === 'housing' || stat === 'growth' || stat === 'crowding' || stat === 'pollution' || stat === 'deaths') {
+    return 'realm';
+  }
   if (stat.startsWith('speed:')) return stat.slice('speed:'.length) as WorldId;
   const [type, target] = stat.split(':') as [string, string];
   if (type === 'rate' || type === 'click' || type === 'yield') return RESOURCES[target as ResourceId].world;
@@ -62,7 +64,11 @@ export function statWorld(stat: Stat): WorldId {
 
 /** Whether an effect makes things better for the world it targets. */
 export function isHelpful(effect: Effect): boolean {
-  const lowerIsBetter = effect.stat.startsWith('cost:') || effect.stat === 'deaths' || effect.stat === 'crowding';
+  const lowerIsBetter =
+    effect.stat.startsWith('cost:') ||
+    effect.stat === 'deaths' ||
+    effect.stat === 'crowding' ||
+    effect.stat === 'pollution';
   const increases = effect.kind === 'add' ? effect.amount > 0 : effect.amount > 1;
   return lowerIsBetter ? !increases : increases;
 }
@@ -328,10 +334,20 @@ export function crowdingFactor(mods: Modifiers): number {
   return 1 / (1 + POPULATION.crowdingPenalty * crowding(mods));
 }
 
+/** How polluted the Realm is, after parks and filters. */
+export function pollution(mods: Modifiers): number {
+  return Math.max(0, getAdd(mods, 'pollution')) * getMul(mods, 'pollution');
+}
+
+/** The share of growth left after pollution (1 = no slowdown). */
+export function pollutionFactor(mods: Modifiers): number {
+  return 1 / (1 + POPULATION.pollutionPenalty * pollution(mods));
+}
+
 /** People arriving per second while there is free housing. */
 export function arrivalRate(mods: Modifiers): number {
   const growth = (POPULATION.baseGrowth + getAdd(mods, 'growth')) * getMul(mods, 'growth');
-  return Math.max(0, growth * crowdingFactor(mods));
+  return Math.max(0, growth * crowdingFactor(mods) * pollutionFactor(mods));
 }
 
 /** People killed per second (e.g. by summoned demons). */

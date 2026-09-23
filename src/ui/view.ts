@@ -17,6 +17,7 @@ import {
   arrivalBlocker,
   arrivalRate,
   crowdingFactor,
+  pollutionFactor,
   deathRate,
   assignJob,
   housing,
@@ -325,6 +326,8 @@ export class GameView {
     }
     const slowed = 1 - crowdingFactor(mods);
     if (slowed >= 0.005) text += ` · crowding slows growth by ${Math.round(slowed * 100)}%`;
+    const smog = 1 - pollutionFactor(mods);
+    if (smog >= 0.005) text += ` · pollution slows growth by ${Math.round(smog * 100)}%`;
     const deaths = deathRate(mods) * 3600;
     if (deaths > 0) {
       const horde = state.demons > 0 ? `${formatNumber(Math.floor(state.demons))} demons` : 'demons';

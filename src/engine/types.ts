@@ -34,6 +34,7 @@ export type ResourceId =
  * - `housing`          Realm population cap
  * - `growth`           Realm population growth, in people per second
  * - `crowding`         Realm crowding, which slows growth; homes add it, sanitation cuts it
+ * - `pollution`        Realm pollution, which slows growth; dirty industry adds it, parks and filters cut it
  * - `deaths`           Realm people killed per hour
  * - `speed:<world>`    build speed multiplier in a world (higher is faster)
  */
@@ -46,6 +47,7 @@ export type Stat =
   | 'housing'
   | 'growth'
   | 'crowding'
+  | 'pollution'
   | 'deaths'
   | `speed:${WorldId}`;
 
@@ -157,6 +159,7 @@ export type NodeId =
   | 'shrine'
   | 'irrigation'
   | 'aqueduct'
+  | 'park'
   | 'blastFurnace'
   | 'glassworks'
   | 'goldMine'
@@ -204,6 +207,7 @@ export type NodeId =
   | 'printing'
   | 'medicine'
   | 'sanitation'
+  | 'filtration'
   | 'logistics'
   | 'metallurgy'
   | 'rationalism'

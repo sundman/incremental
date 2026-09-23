@@ -12,6 +12,7 @@ import {
   constructionSecondsLeft,
   arrivalRate,
   crowdingFactor,
+  pollutionFactor,
   deathRate,
   assignJob,
   housing,
@@ -362,6 +363,21 @@ describe('population', () => {
     expect(crowdingFactor(computeModifiers(state))).toBeCloseTo(1 / (1 + 0.02 * crowd));
     const lab = activeLinks(state).find((l) => l.source === 'sanitation');
     expect(lab).toMatchObject({ from: 'lab', to: 'realm', helpful: true });
+  });
+
+  it('slows growth with pollution from dirty industry, on top of crowding', () => {
+    const state = unlockAll(withNodes({ hut: 5, coalMine: 3, kiln: 2, industrialization: 1 }));
+    const smog = 3 * 2 + 2 * 1 + 8; // 16
+    const mods = computeModifiers(state);
+    expect(pollutionFactor(mods)).toBeCloseTo(1 / (1 + 0.03 * smog));
+    expect(arrivalRate(mods)).toBeCloseTo(0.05 / (1 + 0.02 * 5) / (1 + 0.03 * smog));
+    const link = activeLinks(state).find((l) => l.source === 'industrialization' && l.effect.stat === 'pollution');
+    expect(link).toMatchObject({ from: 'lab', to: 'realm', helpful: false, total: 8 });
+  });
+
+  it('lets Parks and Filtration cut pollution', () => {
+    const state = unlockAll(withNodes({ coalMine: 5, park: 3, filtration: 1 }));
+    expect(pollutionFactor(computeModifiers(state))).toBeCloseTo(1 / (1 + 0.03 * 10 * 0.9 ** 3 * 0.5));
   });
 
   it('speeds up growth with Wells, Taverns and the Fertility Rite', () => {
