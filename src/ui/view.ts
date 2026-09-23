@@ -34,6 +34,8 @@ import {
   echoGain,
   effectiveAmount,
   isHelpful,
+  isSpellActive,
+  toggleSpell,
   isNodeAvailable,
   isResourceRevealed,
   isWorldUnlocked,
@@ -213,10 +215,11 @@ export class GameView {
 
     const buildings = h('div', { class: 'nodes' });
     const techs = h('div', { class: 'nodes' });
+    const spells = h('div', { class: 'nodes' });
     for (const id of NODE_ORDER) {
       const node = NODES[id];
       if (node.world !== world) continue;
-      (node.kind === 'tech' ? techs : buildings).append(this.buildNode(id));
+      (node.spell ? spells : node.kind === 'tech' ? techs : buildings).append(this.buildNode(id));
     }
 
     const incoming = h('ul', { class: 'links' });
@@ -244,6 +247,9 @@ export class GameView {
       h('h3', {}, 'Buildings'),
       buildings,
       ...(techs.childElementCount ? [h('h3', {}, world === 'arcana' ? 'Discoveries' : 'Research'), techs] : []),
+      ...(spells.childElementCount
+        ? [h('h3', {}, 'Spells'), h('p', { class: 'muted small' }, 'Learn a spell once, then click it to switch it on or off. It only costs upkeep while on.'), spells]
+        : []),
       h('details', { class: 'link-box' }, h('summary', {}, 'Effects this world sends out'), outgoing),
       h('div', { class: 'reset-box' }, resetButton, resetNote),
     );
@@ -355,7 +361,9 @@ export class GameView {
       needs,
     );
     button.addEventListener('click', () => {
-      if (buyNode(this.state, id)) this.hooks.onChange();
+      if (NODES[id].spell && this.state.nodes[id] > 0) toggleSpell(this.state, id);
+      else if (!buyNode(this.state, id)) return;
+      this.hooks.onChange();
     });
     const card = h('div', { class: `node node-${node.kind}` }, button);
     this.nodes[id] = { card, button, level, cost, effects, needs, time };
@@ -488,6 +496,10 @@ export class GameView {
       c.button.style.setProperty('--progress', `${pct.toFixed(1)}%`);
       const verb = node.kind === 'building' ? 'Building' : node.world === 'arcana' ? 'Discovering' : 'Researching';
       setText(c.level, `${verb}… ${formatDuration(constructionSecondsLeft(state, id, mods))}`);
+    } else if (node.spell && level > 0) {
+      const on = isSpellActive(state, id);
+      const eff = state.efficiency[id] ?? 1;
+      setText(c.level, on ? (eff < 0.999 ? `On · ${Math.round(eff * 100)}% power` : 'On') : 'Off');
     } else if (node.kind === 'tech') {
       setText(c.level, level > 0 ? (node.world === 'arcana' ? 'Discovered' : 'Researched') : '');
     } else {
@@ -512,7 +524,8 @@ export class GameView {
               ([r, n]) => {
                 const from = RESOURCES[r as ResourceId].world;
                 const tag = from !== node.world ? `<span class="tag tag-${from}">${WORLDS[from].name}</span> ` : '';
-                return `<li class="${tag ? 'bad' : 'muted'}">${tag}Uses ${formatNumber(n)} ${RESOURCES[r as ResourceId].name}/s each</li>`;
+                const when = node.spell ? ' while on' : ' each';
+                return `<li class="${tag ? 'bad' : 'muted'}">${tag}Uses ${formatNumber(n)} ${RESOURCES[r as ResourceId].name}/s${when}</li>`;
               },
             )
           : [],
@@ -551,6 +564,11 @@ export class GameView {
     }
     setHtml(c.needs, needs.length ? `Needs: ${needs.join(', ')}` : '');
 
-    c.button.disabled = maxed || !!building || !available || !canAfford(state, nodeCost(state, id, mods));
+    const learnedSpell = !!node.spell && level > 0;
+    c.card.classList.toggle('spell-on', learnedSpell && isSpellActive(state, id));
+    c.card.classList.toggle('spell-off', learnedSpell && !isSpellActive(state, id));
+    c.button.disabled = learnedSpell
+      ? false
+      : maxed || !!building || !available || !canAfford(state, nodeCost(state, id, mods));
   }
 }

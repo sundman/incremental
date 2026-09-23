@@ -37,6 +37,7 @@ export function createInitialState(): GameState {
     meta: zeroes(META_ORDER),
     population: POPULATION.start,
     jobs: zeroes(JOB_ORDER),
+    activeSpells: [],
     construction: {},
     efficiency: {},
   };
@@ -90,10 +91,32 @@ function bump(mods: Modifiers, stat: Stat, kind: Effect['kind'], amount: number,
   mods.set(stat, v);
 }
 
+export function isSpellActive(state: GameState, id: NodeId): boolean {
+  return state.activeSpells.includes(id);
+}
+
+/** Levels whose effects and upkeep apply right now: a switched-off spell counts as 0. */
+export function runningLevel(state: GameState, id: NodeId): number {
+  if (NODES[id].spell && !isSpellActive(state, id)) return 0;
+  return state.nodes[id];
+}
+
+/** Switches a learned spell on or off. Returns whether it is now on. */
+export function toggleSpell(state: GameState, id: NodeId): boolean {
+  if (!NODES[id].spell || state.nodes[id] <= 0) return false;
+  if (isSpellActive(state, id)) {
+    state.activeSpells = state.activeSpells.filter((s) => s !== id);
+    delete state.efficiency[id];
+    return false;
+  }
+  state.activeSpells.push(id);
+  return true;
+}
+
 export function computeModifiers(state: GameState): Modifiers {
   const mods: Modifiers = new Map();
   for (const id of NODE_ORDER) {
-    const level = state.nodes[id];
+    const level = runningLevel(state, id);
     if (level <= 0) continue;
     const node = NODES[id];
     const times = level * (node.upkeep ? (state.efficiency[id] ?? 1) : 1);
@@ -150,8 +173,9 @@ export function upkeepRate(state: GameState, resource: ResourceId): number {
   for (const id of NODE_ORDER) {
     const node = NODES[id];
     const per = node.upkeep?.[resource];
-    if (!per || state.nodes[id] <= 0) continue;
-    total += per * state.nodes[id] * (state.efficiency[id] ?? 1);
+    const level = runningLevel(state, id);
+    if (!per || level <= 0) continue;
+    total += per * level * (state.efficiency[id] ?? 1);
   }
   return total;
 }
@@ -188,7 +212,7 @@ export interface ActiveLink {
 export function activeLinks(state: GameState): ActiveLink[] {
   const links: ActiveLink[] = [];
   for (const id of NODE_ORDER) {
-    const level = state.nodes[id];
+    const level = runningLevel(state, id);
     if (level <= 0) continue;
     const node = NODES[id];
     const efficiency = node.upkeep ? (state.efficiency[id] ?? 1) : 1;
@@ -212,7 +236,7 @@ export function activeLinks(state: GameState): ActiveLink[] {
   }
   // A building that burns another world's resource is a harmful link too.
   for (const id of NODE_ORDER) {
-    const level = state.nodes[id];
+    const level = runningLevel(state, id);
     const node = NODES[id];
     if (level <= 0 || !node.upkeep) continue;
     const efficiency = state.efficiency[id] ?? 1;
@@ -269,7 +293,7 @@ export function arrivalRate(mods: Modifiers): number {
 
 /** People killed per second (e.g. by summoned demons). */
 export function deathRate(mods: Modifiers): number {
-  return Math.max(0, getAdd(mods, 'deaths')) / 3600;
+  return (Math.max(0, getAdd(mods, 'deaths')) * getMul(mods, 'deaths')) / 3600;
 }
 
 export function assignedWorkers(state: GameState): number {
@@ -441,7 +465,7 @@ function step(state: GameState, dt: number) {
   const before = computeModifiers(state);
   for (const id of NODE_ORDER) {
     const node = NODES[id];
-    const level = state.nodes[id];
+    const level = runningLevel(state, id);
     if (!node.upkeep || level <= 0) continue;
     let fraction = 1;
     for (const [r, per] of Object.entries(node.upkeep) as [ResourceId, number][]) {
@@ -555,6 +579,7 @@ export function resetWorld(state: GameState, world: WorldId): number {
     state.nodes[id] = 0;
     delete state.efficiency[id];
     delete state.construction[id];
+    state.activeSpells = state.activeSpells.filter((s) => s !== id);
   }
   if (world === 'realm') {
     state.population = POPULATION.start;

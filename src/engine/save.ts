@@ -1,6 +1,6 @@
 import { createInitialState, SAVE_VERSION } from './engine';
 import type { GameState } from './types';
-import { NODE_ORDER, WORLD_ORDER } from './content';
+import { NODES, NODE_ORDER, WORLD_ORDER } from './content';
 
 export const SAVE_KEY = 'incremental-worlds-save';
 
@@ -61,6 +61,9 @@ export function deserialize(text: string): GameState {
     meta: mergeNumbers(fresh.meta, raw.meta),
     population: num(raw.population, fresh.population),
     jobs: mergeNumbers(fresh.jobs, raw.jobs),
+    activeSpells: Array.isArray(raw.activeSpells)
+      ? NODE_ORDER.filter((id) => NODES[id].spell && (raw.activeSpells as unknown[]).includes(id))
+      : [],
     construction: readConstruction(raw.construction),
     efficiency: {},
   };

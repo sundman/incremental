@@ -402,3 +402,25 @@ button {
 .build-time:empty {
   display: none;
 }
+
+.world-arcana .resources {
+  grid-template-columns: 1fr 1fr;
+  column-gap: 16px;
+}
+
+.world-arcana .resource {
+  grid-template-columns: 1fr auto 64px;
+}
+
+/* Learned spells: the card is an on/off switch. */
+.node.spell-off .node-button {
+  opacity: 0.8;
+  border-style: dashed;
+  border-color: var(--accent);
+}
+
+.node.spell-on .node-button {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--card));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent);
+}

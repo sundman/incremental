@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   activeLinks,
+  runningLevel,
+  toggleSpell,
+  upkeepRate,
   arrivalBlocker,
   buildSeconds,
   completeConstruction,
@@ -352,6 +355,7 @@ describe('population', () => {
 
   it('speeds up growth with Wells, Taverns, Medicine and the Fertility Rite', () => {
     const state = unlockAll(withNodes({ well: 2, tavern: 1, medicine: 1, fertilityRite: 1 }));
+    state.activeSpells = ['fertilityRite'];
     expect(arrivalRate(computeModifiers(state))).toBeCloseTo((0.05 + 0.02) * 1.1 ** 2 * 1.5 * 1.3);
   });
 
@@ -470,6 +474,7 @@ describe('build times', () => {
 
   it('builds faster with speed bonuses, including ones from other worlds', () => {
     const state = unlockAll(withNodes({ buildersGuild: 2, haste: 1, logistics: 1 }));
+    state.activeSpells = ['haste'];
     state.meta.swiftHands = 1;
     const speed = 1.15 ** 2 * 1.2 * 1.3 * 1.1;
     expect(buildSeconds(state, 'house')).toBeCloseTo(45 / speed);
@@ -497,5 +502,54 @@ describe('build times', () => {
     expect(state.construction.hut).toBeUndefined();
     tick(state, 10);
     expect(state.nodes.hut).toBe(0);
+  });
+});
+
+describe('spells', () => {
+  it('do nothing and cost nothing until switched on', () => {
+    const state = unlockAll(withNodes({ fertilityRite: 1 }));
+    state.resources.mana = 100;
+    expect(arrivalRate(computeModifiers(state))).toBeCloseTo(0.05);
+    tick(state, 10);
+    expect(state.resources.mana).toBeCloseTo(100);
+    expect(activeLinks(state).some((l) => l.source === 'fertilityRite')).toBe(false);
+  });
+
+  it('apply their effects and drain upkeep while on', () => {
+    const state = unlockAll(withNodes({ fertilityRite: 1 }));
+    state.resources.mana = 100;
+    expect(toggleSpell(state, 'fertilityRite')).toBe(true);
+    expect(arrivalRate(computeModifiers(state))).toBeCloseTo(0.05 * 1.3);
+    tick(state, 10);
+    expect(state.resources.mana).toBeCloseTo(90);
+    expect(upkeepRate(state, 'mana')).toBeCloseTo(1);
+    expect(activeLinks(state).find((l) => l.source === 'fertilityRite')).toMatchObject({ to: 'realm', helpful: true });
+    expect(toggleSpell(state, 'fertilityRite')).toBe(false);
+    tick(state, 10);
+    expect(state.resources.mana).toBeCloseTo(90);
+  });
+
+  it('fade when their upkeep cannot be paid', () => {
+    const state = unlockAll(withNodes({ haste: 1 }));
+    state.activeSpells = ['haste'];
+    tick(state, 1); // no Mana or Essence at all
+    expect(state.efficiency.haste).toBe(0);
+    expect(buildSeconds(state, 'hut')).toBeCloseTo(5);
+    expect(runningLevel(state, 'haste')).toBe(1);
+  });
+
+  it('cannot be switched on before they are learned', () => {
+    const state = unlockAll(createInitialState());
+    expect(toggleSpell(state, 'haste')).toBe(false);
+    expect(state.activeSpells).toEqual([]);
+    expect(toggleSpell(state, 'runeLore')).toBe(false); // a discovery, not a spell
+  });
+
+  it('are forgotten and switched off by an Arcana reset', () => {
+    const state = unlockAll(withNodes({ haste: 1, animation: 1 }));
+    state.activeSpells = ['haste', 'animation'];
+    resetWorld(state, 'arcana');
+    expect(state.activeSpells).toEqual([]);
+    expect(state.nodes.haste).toBe(0);
   });
 });

@@ -12,8 +12,10 @@ describe('save', () => {
     state.echoes = 7;
     tick(state, 5);
     state.construction.quarry = { done: 3, needed: 5 };
+    state.activeSpells = ['haste'];
     const loaded = deserialize(serialize(state));
     expect(loaded.construction).toEqual({ quarry: { done: 3, needed: 5 } });
+    expect(loaded.activeSpells).toEqual(['haste']);
     expect(loaded.resources).toEqual(state.resources);
     expect(loaded.nodes).toEqual(state.nodes);
     expect(loaded.unlockedWorlds).toEqual(['realm', 'lab']);

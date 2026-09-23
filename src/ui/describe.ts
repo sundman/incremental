@@ -10,7 +10,9 @@ export function describeEffect(effect: Effect, amount: number): string {
       ? `+${formatNumber(amount * 60)} people/min growth`
       : `Population growth ${formatMultiplier(amount)}`;
   }
-  if (effect.stat === 'deaths') return `Kills ${formatNumber(amount)} people/hour`;
+  if (effect.stat === 'deaths') {
+    return effect.kind === 'add' ? `Kills ${formatNumber(amount)} people/hour` : `Deaths ${formatMultiplier(amount)}`;
+  }
   if (effect.stat.startsWith('speed:')) {
     return `${WORLDS[effect.stat.slice('speed:'.length) as WorldId].name} build speed ${formatMultiplier(amount)}`;
   }
