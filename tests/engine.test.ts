@@ -1,0 +1,349 @@
+import { describe, expect, it } from 'vitest';
+import {
+  activeLinks,
+  assignJob,
+  housing,
+  idleWorkers,
+  buildingCount,
+  buyMeta,
+  buyNode,
+  click,
+  clickValue,
+  computeModifiers,
+  createInitialState,
+  echoGain,
+  grossRate,
+  isNodeAvailable,
+  isWorldUnlocked,
+  jobOutput,
+  netRate,
+  nodeCost,
+  resetWorld,
+  tick,
+} from '../src/engine/engine';
+import type { GameState, JobId, NodeId } from '../src/engine/types';
+
+function withNodes(levels: Partial<Record<NodeId, number>>, state = createInitialState()): GameState {
+  Object.assign(state.nodes, levels);
+  return state;
+}
+
+/** Puts people straight into jobs, growing the population to match. */
+function withJobs(jobs: Partial<Record<JobId, number>>, state = createInitialState()): GameState {
+  Object.assign(state.jobs, jobs);
+  state.population = Math.max(state.population, Object.values(state.jobs).reduce((a, b) => a + b, 0));
+  return state;
+}
+
+function unlockAll(state: GameState): GameState {
+  state.unlockedWorlds = ['realm', 'arcana', 'lab'];
+  return state;
+}
+
+describe('costs', () => {
+  it('scales by costGrowth per level owned', () => {
+    const state = createInitialState();
+    expect(nodeCost(state, 'lumberCamp').wood).toBeCloseTo(25);
+    state.nodes.lumberCamp = 3;
+    expect(nodeCost(state, 'lumberCamp').wood).toBeCloseTo(25 * 1.3 ** 3);
+  });
+
+  it('applies cost modifiers from other worlds', () => {
+    const state = unlockAll(withNodes({ industrialization: 1 }));
+    expect(nodeCost(state, 'quarry').wood).toBeCloseTo(35 * 0.85);
+    // Lab costs are untouched.
+    expect(nodeCost(state, 'scholar').research).toBeCloseTo(10);
+  });
+
+  it('buying deducts every resource and raises the level', () => {
+    const state = createInitialState();
+    state.resources.wood = 100;
+    state.resources.stone = 100;
+    expect(buyNode(state, 'workshop')).toBe(false); // needs Lumber Camp and Quarry first
+    state.nodes.lumberCamp = 1;
+    state.nodes.quarry = 1;
+    expect(buyNode(state, 'workshop')).toBe(true);
+    expect(state.nodes.workshop).toBe(1);
+    expect(state.resources.wood).toBeCloseTo(60);
+    expect(state.resources.stone).toBeCloseTo(75);
+  });
+
+  it('refuses to buy what you cannot afford', () => {
+    const state = createInitialState();
+    state.resources.wood = 9;
+    expect(buyNode(state, 'lumberCamp')).toBe(false);
+    expect(state.resources.wood).toBe(9);
+  });
+});
+
+describe('worlds and techs', () => {
+  it('starts with only the Realm open', () => {
+    const state = createInitialState();
+    expect(isWorldUnlocked(state, 'realm')).toBe(true);
+    expect(isWorldUnlocked(state, 'arcana')).toBe(false);
+    expect(isWorldUnlocked(state, 'lab')).toBe(false);
+  });
+
+  it('keeps the other worlds out of reach until the Realm has grown', () => {
+    const state = createInitialState();
+    state.resources.wood = 10_000;
+    state.resources.stone = 10_000;
+    expect(buyNode(state, 'library')).toBe(false);
+    expect(buyNode(state, 'shrine')).toBe(false);
+    withNodes({ lumberCamp: 5, quarry: 3, workshop: 1 }, state);
+    expect(buildingCount(state, 'realm')).toBe(9);
+    expect(isNodeAvailable(state, 'library')).toBe(false);
+    state.nodes.lumberCamp = 6;
+    expect(isNodeAvailable(state, 'library')).toBe(true);
+    expect(isNodeAvailable(state, 'shrine')).toBe(true);
+  });
+
+  it('opens the Lab when the first Library is built', () => {
+    const state = withNodes({ lumberCamp: 6, quarry: 3, workshop: 1 });
+    state.resources.wood = 1000;
+    state.resources.stone = 1000;
+    expect(isNodeAvailable(state, 'scholar')).toBe(false);
+    expect(buyNode(state, 'library')).toBe(true);
+    expect(isWorldUnlocked(state, 'lab')).toBe(true);
+    expect(isNodeAvailable(state, 'scholar')).toBe(true);
+  });
+
+  it('techs need their prerequisites and cap at one level', () => {
+    const state = unlockAll(createInitialState());
+    state.resources.research = 10_000;
+    expect(buyNode(state, 'metallurgy')).toBe(false);
+    expect(buyNode(state, 'scientificMethod')).toBe(true);
+    expect(buyNode(state, 'scientificMethod')).toBe(false);
+    expect(buyNode(state, 'metallurgy')).toBe(true);
+  });
+});
+
+describe('production and links', () => {
+  it('produces from workers, boosted per worker by buildings, then multiplied', () => {
+    const state = withJobs({ woodcutter: 3 }, withNodes({ lumberCamp: 2, workshop: 2 }));
+    const mods = computeModifiers(state);
+    expect(jobOutput(mods, 'woodcutter')).toBeCloseTo((0.5 + 2 * 0.2) * 1.15 ** 2);
+    expect(grossRate(state, mods, 'wood')).toBeCloseTo(3 * (0.5 + 2 * 0.2) * 1.15 ** 2);
+  });
+
+  it('produces nothing from buildings alone without workers', () => {
+    const state = withNodes({ lumberCamp: 10, quarry: 10 });
+    const mods = computeModifiers(state);
+    expect(grossRate(state, mods, 'wood')).toBe(0);
+    expect(grossRate(state, mods, 'stone')).toBe(0);
+  });
+
+  it('applies world-wide production multipliers from another world', () => {
+    const state = unlockAll(withJobs({ woodcutter: 2 }, withNodes({ enchantedTools: 1 })));
+    expect(grossRate(state, computeModifiers(state), 'wood')).toBeCloseTo(2 * 0.5 * 1.25);
+  });
+
+  it('lets Realm miners hurt Arcana, per miner', () => {
+    const state = unlockAll(withJobs({ miner: 3 }, withNodes({ manaWell: 10, mine: 1 })));
+    expect(grossRate(state, computeModifiers(state), 'mana')).toBeCloseTo(10 * 0.4 * 0.98 ** 3);
+  });
+
+  it('reports cross-world links with their sign, and not local effects', () => {
+    const state = unlockAll(
+      withJobs({ miner: 2, woodcutter: 1 }, withNodes({ mine: 1, library: 1, lumberCamp: 5, rationalism: 1 })),
+    );
+    const links = activeLinks(state);
+    const miners = links.find((l) => l.source === 'miner');
+    expect(miners).toMatchObject({ from: 'realm', to: 'arcana', helpful: false, count: 2, sourceName: 'Miners' });
+    expect(miners?.total).toBeCloseTo(0.98 ** 2);
+    expect(links.find((l) => l.source === 'library')).toMatchObject({ to: 'lab', helpful: true, total: 0.5 });
+    expect(links.find((l) => l.source === 'rationalism')).toMatchObject({ to: 'arcana', helpful: false });
+    expect(links.some((l) => l.source === 'lumberCamp' || l.source === 'woodcutter' || l.source === 'mine')).toBe(false);
+  });
+
+  it('counts cheaper costs as helpful', () => {
+    const state = unlockAll(withNodes({ industrialization: 1 }));
+    const links = activeLinks(state);
+    expect(links.find((l) => l.effect.stat === 'cost:realm')?.helpful).toBe(true);
+    expect(links.find((l) => l.effect.stat === 'rate:essence')?.helpful).toBe(false);
+  });
+
+  it('adds click bonuses and world multipliers', () => {
+    const state = unlockAll(withNodes({ workshop: 1, enchantedTools: 1 }));
+    expect(clickValue(computeModifiers(state), 'wood')).toBeCloseTo((1 + 1) * 1.25);
+    expect(click(state, 'wood')).toBeCloseTo(2.5);
+    expect(state.resources.wood).toBeCloseTo(2.5);
+  });
+
+  it('does not let you click in a locked world', () => {
+    const state = createInitialState();
+    expect(click(state, 'mana')).toBe(0);
+    expect(state.resources.mana).toBe(0);
+  });
+});
+
+describe('tick', () => {
+  it('accumulates production over time', () => {
+    const state = withJobs({ woodcutter: 2 });
+    tick(state, 10);
+    expect(state.resources.wood).toBeCloseTo(10);
+    expect(state.runEarned.realm).toBeCloseTo(10);
+  });
+
+  it('runs converters at full speed when upkeep is covered', () => {
+    const state = unlockAll(withNodes({ manaWell: 5, condenser: 1 }));
+    tick(state, 10);
+    expect(state.efficiency.condenser).toBeCloseTo(1);
+    expect(state.resources.essence).toBeCloseTo(1);
+    expect(state.resources.mana).toBeCloseTo(10 * (5 * 0.4 - 1));
+  });
+
+  it('slows converters that cannot pay their upkeep', () => {
+    // 1 Mana Well makes 0.4 Mana/s, 2 Condensers want 2 Mana/s.
+    const state = unlockAll(withNodes({ manaWell: 1, condenser: 2 }));
+    tick(state, 5);
+    expect(state.efficiency.condenser).toBeCloseTo(0.2);
+    expect(state.resources.essence).toBeCloseTo(5 * 2 * 0.1 * 0.2);
+    expect(state.resources.mana).toBeCloseTo(0);
+    expect(netRate(state, computeModifiers(state), 'mana')).toBeCloseTo(0);
+    expect(grossRate(state, computeModifiers(state), 'mana')).toBeCloseTo(0.4);
+  });
+
+  it('does not produce in locked worlds', () => {
+    const state = withNodes({ scholar: 5 });
+    tick(state, 10);
+    expect(state.resources.research).toBe(0);
+  });
+});
+
+describe('resets and Echoes', () => {
+  it('pays Echoes with diminishing returns', () => {
+    const state = createInitialState();
+    state.runEarned.realm = 499;
+    expect(echoGain(state, 'realm')).toBe(0);
+    state.runEarned.realm = 500;
+    expect(echoGain(state, 'realm')).toBe(1);
+    state.runEarned.realm = 50_000;
+    expect(echoGain(state, 'realm')).toBe(10);
+    state.meta.attunement = 5;
+    expect(echoGain(state, 'realm')).toBe(15);
+  });
+
+  it('clears the world and the harm it did to others, but nothing else', () => {
+    const state = unlockAll(
+      withJobs({ miner: 4, woodcutter: 3 }, withNodes({ mine: 4, hut: 3, shrine: 1, library: 1, manaWell: 3, scholar: 2 })),
+    );
+    state.resources.wood = 500;
+    state.resources.mana = 70;
+    state.runEarned.realm = 2000;
+
+    expect(activeLinks(state).some((l) => l.source === 'miner')).toBe(true);
+    const reward = resetWorld(state, 'realm');
+
+    expect(reward).toBe(2);
+    expect(state.echoes).toBe(2);
+    expect(state.resets.realm).toBe(1);
+    expect(state.nodes.mine).toBe(0);
+    expect(state.jobs.miner).toBe(0);
+    expect(state.jobs.woodcutter).toBe(0);
+    expect(state.population).toBe(2);
+    expect(state.resources.wood).toBe(0);
+    expect(state.runEarned.realm).toBe(0);
+    expect(activeLinks(state)).toHaveLength(0);
+    // Other worlds keep their progress and stay open.
+    expect(state.nodes.manaWell).toBe(3);
+    expect(state.resources.mana).toBe(70);
+    expect(isWorldUnlocked(state, 'arcana')).toBe(true);
+    expect(isWorldUnlocked(state, 'lab')).toBe(true);
+  });
+
+  it('applies Head Start after a reset and immediately on purchase', () => {
+    const state = createInitialState();
+    state.echoes = 10;
+    expect(buyMeta(state, 'headStartRealm')).toBe(true);
+    expect(state.nodes.hut).toBe(2);
+    state.nodes.hut = 20;
+    resetWorld(state, 'realm');
+    expect(state.nodes.hut).toBe(2);
+  });
+
+  it('applies Head Start when a world first opens', () => {
+    const state = withNodes({ lumberCamp: 6, quarry: 3, workshop: 1 });
+    state.meta.headStartLab = 2;
+    state.resources.wood = 1000;
+    state.resources.stone = 1000;
+    buyNode(state, 'library');
+    expect(state.nodes.scholar).toBe(4);
+  });
+
+  it('keeps the most valuable techs with Retained Knowledge', () => {
+    const state = unlockAll(withNodes({ scientificMethod: 1, metallurgy: 1, rationalism: 1, scholar: 5 }));
+    state.meta.retainedKnowledge = 1;
+    resetWorld(state, 'lab');
+    expect(state.nodes.rationalism).toBe(1);
+    expect(state.nodes.metallurgy).toBe(0);
+    expect(state.nodes.scientificMethod).toBe(0);
+    expect(state.nodes.scholar).toBe(0);
+  });
+
+  it('Dampening weakens harmful links and Amplify strengthens helpful ones', () => {
+    const state = unlockAll(withJobs({ miner: 1, woodcutter: 2 }, withNodes({ manaWell: 10, mine: 1, enchantedTools: 1 })));
+    state.meta.dampening = 5;
+    state.meta.amplify = 10;
+    const mods = computeModifiers(state);
+    expect(grossRate(state, mods, 'mana')).toBeCloseTo(10 * 0.4 * (1 - 0.02 * 0.5));
+    expect(grossRate(state, mods, 'wood')).toBeCloseTo(2 * 0.5 * (1 + 0.25 * 2));
+  });
+
+  it('meta upgrades cost Echoes and respect their cap', () => {
+    const state = createInitialState();
+    state.echoes = 100;
+    for (let i = 0; i < 5; i++) expect(buyMeta(state, 'dampening')).toBe(true);
+    expect(buyMeta(state, 'dampening')).toBe(false);
+    expect(state.echoes).toBe(100 - (3 + 6 + 12 + 24 + 48));
+  });
+
+  it('Resonance multiplies a whole world', () => {
+    const state = withJobs({ woodcutter: 2 });
+    state.meta.resonanceRealm = 2;
+    expect(grossRate(state, computeModifiers(state), 'wood')).toBeCloseTo(1 * 1.1 ** 2);
+  });
+});
+
+describe('population', () => {
+  it('starts with 2 people and room for 3', () => {
+    const state = createInitialState();
+    expect(state.population).toBe(2);
+    expect(housing(computeModifiers(state))).toBe(3);
+    expect(idleWorkers(state)).toBe(2);
+  });
+
+  it('fills free housing over time, and no further', () => {
+    const state = withNodes({ hut: 2 }); // 3 + 4 = 7 housing
+    expect(housing(computeModifiers(state))).toBe(7);
+    tick(state, 10); // 0.14 people/s
+    expect(state.population).toBeCloseTo(2 + 1.4);
+    tick(state, 1000);
+    expect(state.population).toBe(7);
+  });
+
+  it('only assigns idle people, and only to open jobs', () => {
+    const state = createInitialState();
+    expect(assignJob(state, 'woodcutter', 5)).toBe(2);
+    expect(state.jobs.woodcutter).toBe(2);
+    expect(assignJob(state, 'stonecutter', 1)).toBe(0);
+    expect(assignJob(state, 'woodcutter', -1)).toBe(-1);
+    expect(assignJob(state, 'miner', 1)).toBe(0); // needs a Mine
+    state.nodes.mine = 1;
+    expect(assignJob(state, 'miner', 1)).toBe(1);
+    expect(idleWorkers(state)).toBe(0);
+  });
+
+  it('does not count a person who is still arriving', () => {
+    const state = createInitialState();
+    state.population = 2.9;
+    expect(idleWorkers(state)).toBe(2);
+  });
+
+  it('sends miners home when there is no Mine', () => {
+    const state = withJobs({ miner: 2, woodcutter: 1 });
+    tick(state, 1);
+    expect(state.jobs.miner).toBe(0);
+    expect(state.jobs.woodcutter).toBe(1);
+  });
+});
