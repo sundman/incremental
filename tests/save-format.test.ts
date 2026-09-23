@@ -33,6 +33,15 @@ describe('save', () => {
     expect(deserialize(serialize(state)).demons).toBe(0);
   });
 
+  it('keeps deposits, and reads the forest from saves made before other deposits existed', () => {
+    const state = createInitialState();
+    state.deposits.clay = { left: 100, max: 30000, cut: 29900 };
+    expect(deserialize(serialize(state)).deposits.clay).toEqual({ left: 100, max: 30000, cut: 29900 });
+    const old = deserialize(JSON.stringify({ forest: 500, forestMax: 9000, forestCut: 8500 }));
+    expect(old.deposits.wood).toEqual({ left: 500, max: 9000, cut: 8500 });
+    expect(old.deposits.coal.left).toBe(old.deposits.coal.max);
+  });
+
   it('falls back to defaults for missing, unknown or broken fields', () => {
     const loaded = deserialize(
       JSON.stringify({ resources: { wood: 5, stone: 'lots', unobtainium: 9 }, nodes: null, unlockedWorlds: ['nowhere'] }),

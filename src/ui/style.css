@@ -432,20 +432,38 @@ button {
   box-shadow: 0 0 12px color-mix(in srgb, var(--bad) 55%, transparent);
 }
 
-/* The Realm's forest: a bar that empties as Wood is cut. */
-.forest {
+/* The Realm's deposits: bars that empty as they are worked. */
+.deposits {
+  display: grid;
+  gap: 4px;
   margin: 6px 0 10px;
-  padding: 6px 10px;
+}
+
+.deposit {
+  --fill: #3fa55b;
+  padding: 4px 10px;
   border-radius: 6px;
   font-size: 0.9em;
   background: linear-gradient(
     to right,
-    color-mix(in srgb, #3fa55b 30%, var(--card)) var(--forest, 100%),
-    var(--card) var(--forest, 100%)
+    color-mix(in srgb, var(--fill) 30%, var(--card)) var(--left, 100%),
+    var(--card) var(--left, 100%)
   );
-  border: 1px solid color-mix(in srgb, #3fa55b 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fill) 50%, transparent);
 }
 
-.forest.attention {
+.deposit-stone {
+  --fill: #9aa3ad;
+}
+
+.deposit-clay {
+  --fill: #c07a4a;
+}
+
+.deposit-coal {
+  --fill: #6b6b6b;
+}
+
+.deposit.attention {
   border-color: var(--bad);
 }

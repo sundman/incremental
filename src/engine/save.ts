@@ -1,6 +1,6 @@
 import { createInitialState, SAVE_VERSION } from './engine';
 import type { GameState } from './types';
-import { DEMONS, NODES, NODE_ORDER, WORLD_ORDER } from './content';
+import { DEMONS, DEPOSIT_ORDER, NODES, NODE_ORDER, WORLD_ORDER } from './content';
 
 export const SAVE_KEY = 'incremental-worlds-save';
 
@@ -30,6 +30,20 @@ function readConstruction(raw: unknown): GameState['construction'] {
     if (typeof done === 'number' && typeof needed === 'number' && Number.isFinite(done) && Number.isFinite(needed)) {
       out[id] = { done, needed };
     }
+  }
+  return out;
+}
+
+function readDeposits(raw: Record<string, unknown>, fresh: GameState['deposits']): GameState['deposits'] {
+  const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
+  const saved = (raw.deposits && typeof raw.deposits === 'object' ? raw.deposits : {}) as Record<string, unknown>;
+  // Saves from before Stone, Clay and Coal ran out kept the forest in its own fields.
+  const legacyWood = { left: raw.forest, max: raw.forestMax, cut: raw.forestCut };
+  const out = {} as GameState['deposits'];
+  for (const id of DEPOSIT_ORDER) {
+    const d = (id === 'wood' && !saved.wood ? legacyWood : (saved[id] ?? {})) as Record<string, unknown>;
+    const max = Math.max(1, num(d.max, fresh[id].max));
+    out[id] = { left: Math.min(max, Math.max(0, num(d.left, max))), max, cut: Math.max(0, num(d.cut, 0)) };
   }
   return out;
 }
@@ -65,9 +79,7 @@ export function deserialize(text: string): GameState {
     population: num(raw.population, fresh.population),
     jobs: mergeNumbers(fresh.jobs, raw.jobs),
     activeSpells,
-    forestMax: Math.max(1, num(raw.forestMax, fresh.forestMax)),
-    forest: Math.max(0, num(raw.forest, num(raw.forestMax, fresh.forest))),
-    forestCut: Math.max(0, num(raw.forestCut, 0)),
+    deposits: readDeposits(raw, fresh.deposits),
     // A horde only exists while its spell is on.
     demons: activeSpells.some((id) => NODES[id].horde) ? Math.max(DEMONS.start, num(raw.demons, 0)) : 0,
     construction: readConstruction(raw.construction),

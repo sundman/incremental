@@ -1,6 +1,6 @@
-import { RESOURCES, WORLDS } from '../engine/content';
+import { DEPOSITS, RESOURCES, WORLDS } from '../engine/content';
 import { formatMultiplier, formatNumber, formatPerHour } from '../engine/format';
-import type { Effect, ResourceId, WorldId } from '../engine/types';
+import type { DepositId, Effect, ResourceId, WorldId } from '../engine/types';
 
 /** Human text for one effect at a given strength, e.g. "+0.5 Wood/s" or "All Realm production ×1.25". */
 export function describeEffect(effect: Effect, amount: number): string {
@@ -20,10 +20,12 @@ export function describeEffect(effect: Effect, amount: number): string {
       ? `+${formatNumber(amount)} pollution (slows growth)`
       : `Pollution −${formatNumber((1 - amount) * 100)}%`;
   }
-  if (effect.stat === 'regrowth') {
+  if (effect.stat.startsWith('regrow:')) {
+    const deposit = effect.stat.slice('regrow:'.length) as DepositId;
+    const verb = deposit === 'wood' ? 'regrows' : 'refill';
     return effect.kind === 'add'
-      ? `Forest regrows +${formatNumber(amount)} Wood/s`
-      : `Forest regrowth ${formatMultiplier(amount)}`;
+      ? `${DEPOSITS[deposit].name} ${verb} +${formatNumber(amount)} ${RESOURCES[deposit].name}/s`
+      : `${DEPOSITS[deposit].name} ${verb} ${formatMultiplier(amount)}`;
   }
   if (effect.stat === 'deaths') {
     return effect.kind === 'add' ? `Kills ${formatPerHour(amount)} people` : `Deaths ${formatMultiplier(amount)}`;

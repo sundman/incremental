@@ -35,7 +35,7 @@ export type ResourceId =
  * - `growth`           Realm population growth, in people per second
  * - `crowding`         Realm crowding, which slows growth; homes add it, sanitation cuts it
  * - `pollution`        Realm pollution, which slows growth; dirty industry adds it, parks and filters cut it
- * - `regrowth`         Wood the Realm's forest regrows per second
+ * - `regrow:<deposit>`  how fast one of the Realm's deposits (forest, quarries...) refills per second
  * - `deaths`           Realm people killed per hour
  * - `speed:<world>`    build speed multiplier in a world (higher is faster)
  */
@@ -49,11 +49,34 @@ export type Stat =
   | 'growth'
   | 'crowding'
   | 'pollution'
-  | 'regrowth'
+  | `regrow:${DepositId}`
   | 'deaths'
   | `speed:${WorldId}`;
 
 export type Cost = Partial<Record<ResourceId, number>>;
+
+/** Realm resources that come from a limited deposit: the forest, quarries, clay beds and coal seams. */
+export type DepositId = 'wood' | 'stone' | 'clay' | 'coal';
+
+export interface DepositDef {
+  name: string;
+  icon: string;
+  /** Size of the very first deposit. */
+  start: number;
+  /** Amount it refills per second on its own, before `regrow` modifiers. */
+  baseRegrow: number;
+  /** Whether pollution slows the refill (true for the forest). */
+  pollutionSlows?: boolean;
+}
+
+export interface Deposit {
+  /** Still there to be gathered. */
+  left: number;
+  /** The most it can hold this Realm run; grows with every Realm reset. */
+  max: number;
+  /** Gathered from it this Realm run; decides how much bigger it is next run. */
+  cut: number;
+}
 
 export interface Effect {
   stat: Stat;
@@ -216,6 +239,9 @@ export type NodeId =
   | 'medicine'
   | 'sanitation'
   | 'filtration'
+  | 'geomancy'
+  | 'earthsong'
+  | 'deepTime'
   | 'forestry'
   | 'environmentalScience'
   | 'logistics'
@@ -268,12 +294,8 @@ export interface GameState {
   jobs: Record<JobId, number>;
   /** Learned spells that are currently switched on. */
   activeSpells: NodeId[];
-  /** Standing forest in the Realm: Wood can only be cut from here. */
-  forest: number;
-  /** The most forest this Realm run can hold; grows with every Realm reset. */
-  forestMax: number;
-  /** Wood cut from the forest this Realm run; decides how much bigger the next forest is. */
-  forestCut: number;
+  /** What is left in each of the Realm's deposits (forest, quarries, clay beds, coal seams). */
+  deposits: Record<DepositId, Deposit>;
   /** Size of the summoned demon horde; 0 unless a horde spell is on. Fractional while growing. */
   demons: number;
   /** Levels being built right now, in base seconds of work (before build speed). */

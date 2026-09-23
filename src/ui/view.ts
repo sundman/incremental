@@ -1,6 +1,8 @@
 import {
   DEMONS,
-  FOREST,
+  DEPOSITS,
+  DEPOSIT_GROWTH_PER_RESET,
+  DEPOSIT_ORDER,
   JOBS,
   JOB_ORDER,
   META,
@@ -18,8 +20,8 @@ import {
   arrivalBlocker,
   arrivalRate,
   crowdingFactor,
-  forestRegrowth,
-  nextForestMax,
+  depositRegrowth,
+  nextDepositMax,
   pollutionFactor,
   deathRate,
   assignJob,
@@ -63,7 +65,7 @@ import {
   type Modifiers,
 } from '../engine/engine';
 import { formatDuration, formatNumber, formatPerHour } from '../engine/format';
-import type { GameState, JobId, MetaId, NodeId, ResourceId, WorldId } from '../engine/types';
+import type { DepositId, GameState, JobId, MetaId, NodeId, ResourceId, WorldId } from '../engine/types';
 import { describeEffect } from './describe';
 
 type Attrs = Record<string, string>;
@@ -160,7 +162,9 @@ export class GameView {
   private nodes = {} as Record<NodeId, NodeCard>;
   private metas = {} as Record<MetaId, MetaCard>;
   private population!: PopulationView;
-  private forest = h('div', { class: 'forest' });
+  private deposits = Object.fromEntries(
+    DEPOSIT_ORDER.map((d): [DepositId, HTMLElement] => [d, h('div', { class: `deposit deposit-${d}` })]),
+  ) as Record<DepositId, HTMLElement>;
   private echoes: HTMLElement;
   private shop: HTMLElement;
   private shopHint: HTMLElement;
@@ -257,7 +261,7 @@ export class GameView {
       { class: 'world-body' },
       resList,
       clickRow,
-      ...(world === 'realm' ? [this.forest] : []),
+      ...(world === 'realm' ? [h('div', { class: 'deposits' }, ...DEPOSIT_ORDER.map((d) => this.deposits[d]))] : []),
       ...(populationEl ? [populationEl] : []),
       h('details', { class: 'link-box', open: '' }, h('summary', {}, 'Effects from other worlds'), incoming),
       h('h3', {}, 'Buildings'),
@@ -315,19 +319,30 @@ export class GameView {
     return h('div', { class: 'population' }, h('h3', {}, 'People'), summary, list);
   }
 
-  private renderForest(mods: Modifiers) {
+  private renderDeposits(mods: Modifiers) {
     const state = this.state;
-    const share = state.forestMax > 0 ? state.forest / state.forestMax : 0;
-    this.forest.style.setProperty('--forest', `${(share * 100).toFixed(1)}%`);
-    const regrow = forestRegrowth(mods);
     const smog = 1 - pollutionFactor(mods);
-    setText(
-      this.forest,
-      `🌲 Forest: ${formatNumber(state.forest)} / ${formatNumber(state.forestMax)} Wood · regrows ${formatNumber(regrow)}/s` +
-        (smog >= 0.005 ? ` (pollution −${Math.round(smog * 100)}%)` : '') +
-        (state.forest < 1 ? ' · cut down: Wood only comes as fast as it regrows' : ''),
-    );
-    this.forest.classList.toggle('attention', state.forest < 1);
+    for (const id of DEPOSIT_ORDER) {
+      const el = this.deposits[id];
+      const shown = isResourceRevealed(state, id);
+      setHidden(el, !shown);
+      if (!shown) continue;
+      const def = DEPOSITS[id];
+      const d = state.deposits[id];
+      el.style.setProperty('--left', `${((d.max > 0 ? d.left / d.max : 0) * 100).toFixed(1)}%`);
+      const refill = depositRegrowth(mods, id);
+      const name = RESOURCES[id].name;
+      let text = `${def.icon} ${def.name}: ${formatNumber(d.left)} / ${formatNumber(d.max)} ${name}`;
+      if (refill > 0) {
+        text += ` · ${id === 'wood' ? 'regrows' : 'refills'} ${formatNumber(refill)}/s`;
+        if (def.pollutionSlows && smog >= 0.005) text += ` (pollution −${Math.round(smog * 100)}%)`;
+      }
+      if (d.left < 1) {
+        text += refill > 0 ? ` · used up: ${name} only comes as fast as it refills` : ` · used up: no more ${name} this run`;
+      }
+      setText(el, text);
+      el.classList.toggle('attention', d.left < 1);
+    }
   }
 
   private renderPopulation(mods: Modifiers) {
@@ -439,7 +454,7 @@ export class GameView {
 
     for (const world of WORLD_ORDER) this.renderWorld(world, mods, links);
     this.renderPopulation(mods);
-    this.renderForest(mods);
+    this.renderDeposits(mods);
     for (const id of NODE_ORDER) this.renderNode(id, mods);
 
     const anyGain = WORLD_ORDER.some((w) => isWorldUnlocked(state, w) && echoGain(state, w) > 0);
@@ -511,7 +526,11 @@ export class GameView {
           : '',
         world === 'realm' && isHordeActive(state) ? 'Also ends Summon Demons: only 2 survivors are left.' : '',
         world === 'realm'
-          ? `The forest regrows to ${formatNumber(nextForestMax(state))} Wood (+${Math.round(FOREST.growthPerReset * 100)}% of the ${formatNumber(state.forestCut)} cut this run).`
+          ? `Deposits come back full and bigger by ${Math.round(DEPOSIT_GROWTH_PER_RESET * 100)}% of what was gathered this run: ` +
+            DEPOSIT_ORDER.filter((d) => isResourceRevealed(state, d))
+              .map((d) => `${DEPOSITS[d].name} ${formatNumber(nextDepositMax(state, d))}`)
+              .join(', ') +
+            '.'
           : '',
         harms && !blocker ? `Clears ${harms} harmful effect${harms === 1 ? '' : 's'} on other worlds.` : '',
         kept.length ? `Keeps: ${kept.map((id) => NODES[id].name).join(', ')}.` : '',

@@ -1,4 +1,6 @@
 import type {
+  DepositDef,
+  DepositId,
   JobDef,
   JobId,
   MetaDef,
@@ -68,14 +70,19 @@ export const TIER_SECONDS = { 1: 5, 2: 15, 3: 45, 4: 120, 5: 300, 6: 600 } as co
 export const BUILD_TIME_GROWTH = 1.05;
 
 /** Realm population rules. */
-export const FOREST = {
-  /** Wood standing in the very first forest. */
-  start: 8000,
-  /** Wood the forest regrows per second before modifiers: really slow. */
-  baseRegrowth: 0.25,
-  /** Share of the Wood cut in a run that is added to the forest's size after a Realm reset. */
-  growthPerReset: 0.5,
+/**
+ * Wood, Stone, Clay and Coal are gathered from limited deposits. Only the forest regrows
+ * on its own (really slowly); the rest can only be refilled by Arcana's earth magic.
+ */
+export const DEPOSITS: Record<DepositId, DepositDef> = {
+  wood: { name: 'Forest', icon: '🌲', start: 8000, baseRegrow: 0.25, pollutionSlows: true },
+  stone: { name: 'Stone quarries', icon: '🪨', start: 50000, baseRegrow: 0 },
+  clay: { name: 'Clay beds', icon: '🟫', start: 30000, baseRegrow: 0 },
+  coal: { name: 'Coal seams', icon: '⚫', start: 20000, baseRegrow: 0 },
 };
+export const DEPOSIT_ORDER = Object.keys(DEPOSITS) as DepositId[];
+/** Share of what was gathered in a run that is added to a deposit's size after a Realm reset. */
+export const DEPOSIT_GROWTH_PER_RESET = 0.5;
 
 export const DEMONS = {
   /** Demons that answer the first summoning. */
@@ -188,7 +195,7 @@ const nodeList: NodeDef[] = [
     tier: 2,
     maxLevel: 10,
     requires: ['lumberCamp'],
-    effects: [{ stat: 'regrowth', kind: 'add', amount: 0.25 }],
+    effects: [{ stat: 'regrow:wood', kind: 'add', amount: 0.25 }],
   },
   {
     id: 'quarry',
@@ -734,6 +741,18 @@ const nodeList: NodeDef[] = [
     effects: [{ stat: 'rate:essence', kind: 'mul', amount: 1.1 }],
   },
   {
+    id: 'geomancy',
+    world: 'arcana',
+    kind: 'tech',
+    name: 'Geomancy',
+    description: 'The magic of stone and soil. Lets you learn Earthsong.',
+    baseCost: { mana: 400, essence: 60 },
+    costGrowth: 1,
+    tier: 3,
+    requires: ['runeLore'],
+    effects: [],
+  },
+  {
     id: 'animation',
     world: 'arcana',
     kind: 'tech',
@@ -774,6 +793,23 @@ const nodeList: NodeDef[] = [
     requires: ['pyromancy'],
     upkeep: { essence: 0.5 },
     effects: [{ stat: 'rate:fireEssence', kind: 'add', amount: 0.1 }],
+  },
+  {
+    id: 'earthsong',
+    world: 'arcana',
+    kind: 'tech',
+    name: 'Earthsong',
+    description: 'Spell: sings stone and clay back into the Realm\'s quarries and clay beds.',
+    baseCost: { essence: 80 },
+    costGrowth: 1,
+    tier: 3,
+    requires: ['geomancy'],
+    spell: true,
+    upkeep: { essence: 0.5 },
+    effects: [
+      { stat: 'regrow:stone', kind: 'add', amount: 3 },
+      { stat: 'regrow:clay', kind: 'add', amount: 2 },
+    ],
   },
   {
     id: 'forgeFire',
@@ -933,6 +969,20 @@ const nodeList: NodeDef[] = [
       { stat: 'speed:arcana', kind: 'mul', amount: 1.5 },
       { stat: 'speed:lab', kind: 'mul', amount: 1.5 },
     ],
+  },
+  {
+    id: 'deepTime',
+    world: 'arcana',
+    kind: 'tech',
+    name: 'Deep Time',
+    description: 'Spell: aeons pass underground in moments, and the Realm\'s coal seams fill again.',
+    baseCost: { timeEssence: 30, essence: 200 },
+    costGrowth: 1,
+    tier: 5,
+    requires: ['timeLoom', 'geomancy'],
+    spell: true,
+    upkeep: { timeEssence: 0.05 },
+    effects: [{ stat: 'regrow:coal', kind: 'add', amount: 2 }],
   },
   {
     id: 'quickenedMinds',
@@ -1152,7 +1202,7 @@ const nodeList: NodeDef[] = [
     costGrowth: 1,
     tier: 2,
     requires: ['scientificMethod'],
-    effects: [{ stat: 'regrowth', kind: 'mul', amount: 2 }],
+    effects: [{ stat: 'regrow:wood', kind: 'mul', amount: 2 }],
   },
   {
     id: 'environmentalScience',
@@ -1165,7 +1215,7 @@ const nodeList: NodeDef[] = [
     tier: 5,
     requires: ['forestry', 'filtration'],
     effects: [
-      { stat: 'regrowth', kind: 'mul', amount: 1.5 },
+      { stat: 'regrow:wood', kind: 'mul', amount: 1.5 },
       { stat: 'pollution', kind: 'mul', amount: 0.8 },
     ],
   },

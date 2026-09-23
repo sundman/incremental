@@ -13,7 +13,7 @@ import {
   constructionSecondsLeft,
   arrivalRate,
   crowdingFactor,
-  forestRegrowth,
+  depositRegrowth,
   pollutionFactor,
   deathRate,
   assignJob,
@@ -36,6 +36,7 @@ import {
   resetWorld,
   tick,
 } from '../src/engine/engine';
+import { DEPOSITS } from '../src/engine/content';
 import type { GameState, JobId, NodeId } from '../src/engine/types';
 
 function withNodes(levels: Partial<Record<NodeId, number>>, state = createInitialState()): GameState {
@@ -328,36 +329,56 @@ describe('resets and Echoes', () => {
   });
 });
 
-describe('forest', () => {
+describe('deposits', () => {
   it('only lets Wood be cut while the forest lasts, then as fast as it regrows', () => {
     const state = withJobs({ woodcutter: 2 }); // 1 Wood/s
-    state.forest = 10;
+    state.deposits.wood.left = 10;
     tick(state, 20);
     expect(state.resources.wood).toBeCloseTo(10 + 20 * 0.25); // the forest plus 0.25/s of regrowth
-    expect(state.forest).toBeCloseTo(0);
+    expect(state.deposits.wood.left).toBeCloseTo(0);
     expect(click(state, 'wood')).toBeCloseTo(0); // nothing left to cut
-    expect(state.forestCut).toBeCloseTo(state.resources.wood);
+    expect(state.deposits.wood.cut).toBeCloseTo(state.resources.wood);
   });
 
-  it('regrows faster with Forester\'s Lodges and Forestry, and slower with pollution', () => {
+  it('runs Stone, Clay and Coal out for good, since they never refill on their own', () => {
+    const state = withJobs({ stonecutter: 4 });
+    state.deposits.stone.left = 5;
+    tick(state, 60);
+    expect(state.resources.stone).toBeCloseTo(5);
+    expect(click(state, 'stone')).toBe(0);
+    expect(DEPOSITS.stone.start).toBeGreaterThan(DEPOSITS.wood.start);
+  });
+
+  it('regrows the forest faster with Forester\'s Lodges and Forestry, and slower with pollution', () => {
     const state = unlockAll(withNodes({ foresterLodge: 3, forestry: 1 }));
-    expect(forestRegrowth(computeModifiers(state))).toBeCloseTo((0.25 + 0.75) * 2);
+    expect(depositRegrowth(computeModifiers(state), 'wood')).toBeCloseTo((0.25 + 0.75) * 2);
     state.nodes.coalMine = 5; // 10 pollution
-    expect(forestRegrowth(computeModifiers(state))).toBeCloseTo(2 / 1.3);
+    expect(depositRegrowth(computeModifiers(state), 'wood')).toBeCloseTo(2 / 1.3);
     state.nodes.environmentalScience = 1;
-    expect(forestRegrowth(computeModifiers(state))).toBeCloseTo(3 / (1 + 0.03 * 8));
+    expect(depositRegrowth(computeModifiers(state), 'wood')).toBeCloseTo(3 / (1 + 0.03 * 8));
   });
 
-  it('comes back bigger after a Realm reset, by half the Wood cut that run', () => {
+  it('refills Stone, Clay and Coal only by magic, whatever the pollution', () => {
+    const state = unlockAll(withNodes({ earthsong: 1, deepTime: 1, coalMine: 5 }));
+    expect(depositRegrowth(computeModifiers(state), 'stone')).toBe(0);
+    state.activeSpells = ['earthsong', 'deepTime'];
+    const mods = computeModifiers(state);
+    expect(depositRegrowth(mods, 'stone')).toBe(3);
+    expect(depositRegrowth(mods, 'clay')).toBe(2);
+    expect(depositRegrowth(mods, 'coal')).toBe(2);
+    const link = activeLinks(state).find((l) => l.source === 'earthsong' && l.effect.stat === 'regrow:stone');
+    expect(link).toMatchObject({ from: 'arcana', to: 'realm', helpful: true });
+  });
+
+  it('comes back full and bigger after a Realm reset, by half of what was gathered', () => {
     const state = createInitialState();
-    state.forest = 3000;
-    state.forestCut = 5000;
+    state.deposits.wood = { left: 3000, max: 8000, cut: 5000 };
+    state.deposits.stone = { left: 40000, max: 50000, cut: 10000 };
     resetWorld(state, 'realm');
-    expect(state.forestMax).toBe(8000 + 2500);
-    expect(state.forest).toBe(10500);
-    expect(state.forestCut).toBe(0);
-    resetWorld(state, 'lab'); // other worlds leave the forest alone
-    expect(state.forestMax).toBe(10500);
+    expect(state.deposits.wood).toEqual({ left: 10500, max: 10500, cut: 0 });
+    expect(state.deposits.stone).toEqual({ left: 55000, max: 55000, cut: 0 });
+    resetWorld(state, 'lab'); // other worlds leave the deposits alone
+    expect(state.deposits.wood.max).toBe(10500);
   });
 });
 

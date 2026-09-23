@@ -1,7 +1,9 @@
 import {
   BUILD_TIME_GROWTH,
   DEMONS,
-  FOREST,
+  DEPOSITS,
+  DEPOSIT_GROWTH_PER_RESET,
+  DEPOSIT_ORDER,
   JOBS,
   JOB_ORDER,
   META,
@@ -15,7 +17,7 @@ import {
   WORLDS,
   WORLD_ORDER,
 } from './content';
-import type { Cost, Effect, GameState, JobId, MetaId, NodeId, ResourceId, Stat, WorldId } from './types';
+import type { Cost, DepositId, Effect, GameState, JobId, MetaId, NodeId, ResourceId, Stat, WorldId } from './types';
 
 export const SAVE_VERSION = 1;
 
@@ -40,9 +42,9 @@ export function createInitialState(): GameState {
     population: POPULATION.start,
     jobs: zeroes(JOB_ORDER),
     activeSpells: [],
-    forest: FOREST.start,
-    forestMax: FOREST.start,
-    forestCut: 0,
+    deposits: Object.fromEntries(
+      DEPOSIT_ORDER.map((d) => [d, { left: DEPOSITS[d].start, max: DEPOSITS[d].start, cut: 0 }]),
+    ) as GameState['deposits'],
     demons: 0,
     construction: {},
     efficiency: {},
@@ -62,7 +64,7 @@ export function statWorld(stat: Stat): WorldId {
     stat === 'growth' ||
     stat === 'crowding' ||
     stat === 'pollution' ||
-    stat === 'regrowth' ||
+    stat.startsWith('regrow:') ||
     stat === 'deaths'
   ) {
     return 'realm';
@@ -222,19 +224,25 @@ export function grossRate(state: GameState, mods: Modifiers, resource: ResourceI
   }
   if (add <= 0) return 0;
   const rate = add * getMul(mods, `rate:${resource}`) * getMul(mods, `prod:${world}`);
-  // Wood can only be cut as fast as the forest holds out (steps are at most one second).
-  return resource === 'wood' ? Math.min(rate, state.forest + forestRegrowth(mods)) : rate;
+  // A deposit can only be worked as fast as it holds out (steps are at most one second).
+  return isDeposit(resource) ? Math.min(rate, state.deposits[resource].left + depositRegrowth(mods, resource)) : rate;
 }
 
-/** Wood the Realm's forest regrows per second, slowed by pollution. */
-export function forestRegrowth(mods: Modifiers): number {
-  const rate = (FOREST.baseRegrowth + getAdd(mods, 'regrowth')) * getMul(mods, 'regrowth');
-  return Math.max(0, rate) * pollutionFactor(mods);
+export function isDeposit(resource: ResourceId): resource is DepositId {
+  return resource in DEPOSITS;
 }
 
-/** How big the forest will be after the next Realm reset. */
-export function nextForestMax(state: GameState): number {
-  return state.forestMax + FOREST.growthPerReset * state.forestCut;
+/** How fast a deposit refills per second. Pollution slows the forest's regrowth. */
+export function depositRegrowth(mods: Modifiers, deposit: DepositId): number {
+  const def = DEPOSITS[deposit];
+  const rate = Math.max(0, (def.baseRegrow + getAdd(mods, `regrow:${deposit}`)) * getMul(mods, `regrow:${deposit}`));
+  return def.pollutionSlows ? rate * pollutionFactor(mods) : rate;
+}
+
+/** How big a deposit will be after the next Realm reset. */
+export function nextDepositMax(state: GameState, deposit: DepositId): number {
+  const d = state.deposits[deposit];
+  return d.max + DEPOSIT_GROWTH_PER_RESET * d.cut;
 }
 
 /** Upkeep being paid per second right now, at last tick's efficiency. */
@@ -578,12 +586,13 @@ function advanceConstruction(state: GameState, mods: Modifiers, dt: number) {
 
 // ------------------------------------------------------------------- time
 
-/** Adds a resource, and returns how much was actually gained (Wood is limited by the forest). */
+/** Adds a resource, and returns how much was actually gained (deposits can run out). */
 function gain(state: GameState, resource: ResourceId, amount: number): number {
-  if (resource === 'wood') {
-    amount = Math.min(amount, state.forest);
-    state.forest -= amount;
-    state.forestCut += amount;
+  if (isDeposit(resource)) {
+    const d = state.deposits[resource];
+    amount = Math.min(amount, d.left);
+    d.left -= amount;
+    d.cut += amount;
   }
   if (amount <= 0) return 0;
   state.resources[resource] += amount;
@@ -621,9 +630,12 @@ function step(state: GameState, dt: number) {
     state.efficiency[id] = fraction;
   }
 
-  // 2. The forest regrows, then everything produces, using this step's efficiencies.
+  // 2. Deposits refill, then everything produces, using this step's efficiencies.
   const mods = computeModifiers(state);
-  state.forest = Math.min(state.forestMax, state.forest + forestRegrowth(mods) * dt);
+  for (const id of DEPOSIT_ORDER) {
+    const d = state.deposits[id];
+    d.left = Math.min(d.max, d.left + depositRegrowth(mods, id) * dt);
+  }
   for (const r of RESOURCE_ORDER) {
     if (!isWorldUnlocked(state, RESOURCES[r].world)) continue;
     gain(state, r, grossRate(state, mods, r) * dt);
@@ -744,10 +756,11 @@ export function resetWorld(state: GameState, world: WorldId): number {
   if (world === 'realm') {
     // Only the survivors are left, so a demon horde has nothing more to eat.
     endHorde(state);
-    // The forest comes back bigger, the more of it was cut this run.
-    state.forestMax = nextForestMax(state);
-    state.forest = state.forestMax;
-    state.forestCut = 0;
+    // Deposits come back full and bigger, the more of them was gathered this run.
+    for (const id of DEPOSIT_ORDER) {
+      const max = nextDepositMax(state, id);
+      state.deposits[id] = { left: max, max, cut: 0 };
+    }
     state.population = POPULATION.start;
     for (const id of JOB_ORDER) state.jobs[id] = 0;
   }
