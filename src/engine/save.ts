@@ -65,6 +65,9 @@ export function deserialize(text: string): GameState {
     population: num(raw.population, fresh.population),
     jobs: mergeNumbers(fresh.jobs, raw.jobs),
     activeSpells,
+    forestMax: Math.max(1, num(raw.forestMax, fresh.forestMax)),
+    forest: Math.max(0, num(raw.forest, num(raw.forestMax, fresh.forest))),
+    forestCut: Math.max(0, num(raw.forestCut, 0)),
     // A horde only exists while its spell is on.
     demons: activeSpells.some((id) => NODES[id].horde) ? Math.max(DEMONS.start, num(raw.demons, 0)) : 0,
     construction: readConstruction(raw.construction),

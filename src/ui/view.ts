@@ -1,5 +1,6 @@
 import {
   DEMONS,
+  FOREST,
   JOBS,
   JOB_ORDER,
   META,
@@ -17,6 +18,8 @@ import {
   arrivalBlocker,
   arrivalRate,
   crowdingFactor,
+  forestRegrowth,
+  nextForestMax,
   pollutionFactor,
   deathRate,
   assignJob,
@@ -157,6 +160,7 @@ export class GameView {
   private nodes = {} as Record<NodeId, NodeCard>;
   private metas = {} as Record<MetaId, MetaCard>;
   private population!: PopulationView;
+  private forest = h('div', { class: 'forest' });
   private echoes: HTMLElement;
   private shop: HTMLElement;
   private shopHint: HTMLElement;
@@ -253,6 +257,7 @@ export class GameView {
       { class: 'world-body' },
       resList,
       clickRow,
+      ...(world === 'realm' ? [this.forest] : []),
       ...(populationEl ? [populationEl] : []),
       h('details', { class: 'link-box', open: '' }, h('summary', {}, 'Effects from other worlds'), incoming),
       h('h3', {}, 'Buildings'),
@@ -308,6 +313,21 @@ export class GameView {
     }
     this.population = { summary, jobs };
     return h('div', { class: 'population' }, h('h3', {}, 'People'), summary, list);
+  }
+
+  private renderForest(mods: Modifiers) {
+    const state = this.state;
+    const share = state.forestMax > 0 ? state.forest / state.forestMax : 0;
+    this.forest.style.setProperty('--forest', `${(share * 100).toFixed(1)}%`);
+    const regrow = forestRegrowth(mods);
+    const smog = 1 - pollutionFactor(mods);
+    setText(
+      this.forest,
+      `🌲 Forest: ${formatNumber(state.forest)} / ${formatNumber(state.forestMax)} Wood · regrows ${formatNumber(regrow)}/s` +
+        (smog >= 0.005 ? ` (pollution −${Math.round(smog * 100)}%)` : '') +
+        (state.forest < 1 ? ' · cut down: Wood only comes as fast as it regrows' : ''),
+    );
+    this.forest.classList.toggle('attention', state.forest < 1);
   }
 
   private renderPopulation(mods: Modifiers) {
@@ -419,6 +439,7 @@ export class GameView {
 
     for (const world of WORLD_ORDER) this.renderWorld(world, mods, links);
     this.renderPopulation(mods);
+    this.renderForest(mods);
     for (const id of NODE_ORDER) this.renderNode(id, mods);
 
     const anyGain = WORLD_ORDER.some((w) => isWorldUnlocked(state, w) && echoGain(state, w) > 0);
@@ -489,6 +510,9 @@ export class GameView {
           ? `Can't reset while ${NODES[blocker].name} is running. It ends when the Realm is down to 2 people, or when you reset the Realm.`
           : '',
         world === 'realm' && isHordeActive(state) ? 'Also ends Summon Demons: only 2 survivors are left.' : '',
+        world === 'realm'
+          ? `The forest regrows to ${formatNumber(nextForestMax(state))} Wood (+${Math.round(FOREST.growthPerReset * 100)}% of the ${formatNumber(state.forestCut)} cut this run).`
+          : '',
         harms && !blocker ? `Clears ${harms} harmful effect${harms === 1 ? '' : 's'} on other worlds.` : '',
         kept.length ? `Keeps: ${kept.map((id) => NODES[id].name).join(', ')}.` : '',
       ]

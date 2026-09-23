@@ -13,6 +13,7 @@ import {
   constructionSecondsLeft,
   arrivalRate,
   crowdingFactor,
+  forestRegrowth,
   pollutionFactor,
   deathRate,
   assignJob,
@@ -324,6 +325,39 @@ describe('resets and Echoes', () => {
     const state = withJobs({ woodcutter: 2 });
     state.meta.resonanceRealm = 2;
     expect(grossRate(state, computeModifiers(state), 'wood')).toBeCloseTo(1 * 1.1 ** 2);
+  });
+});
+
+describe('forest', () => {
+  it('only lets Wood be cut while the forest lasts, then as fast as it regrows', () => {
+    const state = withJobs({ woodcutter: 2 }); // 1 Wood/s
+    state.forest = 10;
+    tick(state, 20);
+    expect(state.resources.wood).toBeCloseTo(10 + 20 * 0.25); // the forest plus 0.25/s of regrowth
+    expect(state.forest).toBeCloseTo(0);
+    expect(click(state, 'wood')).toBeCloseTo(0); // nothing left to cut
+    expect(state.forestCut).toBeCloseTo(state.resources.wood);
+  });
+
+  it('regrows faster with Forester\'s Lodges and Forestry, and slower with pollution', () => {
+    const state = unlockAll(withNodes({ foresterLodge: 3, forestry: 1 }));
+    expect(forestRegrowth(computeModifiers(state))).toBeCloseTo((0.25 + 0.75) * 2);
+    state.nodes.coalMine = 5; // 10 pollution
+    expect(forestRegrowth(computeModifiers(state))).toBeCloseTo(2 / 1.3);
+    state.nodes.environmentalScience = 1;
+    expect(forestRegrowth(computeModifiers(state))).toBeCloseTo(3 / (1 + 0.03 * 8));
+  });
+
+  it('comes back bigger after a Realm reset, by half the Wood cut that run', () => {
+    const state = createInitialState();
+    state.forest = 3000;
+    state.forestCut = 5000;
+    resetWorld(state, 'realm');
+    expect(state.forestMax).toBe(8000 + 2500);
+    expect(state.forest).toBe(10500);
+    expect(state.forestCut).toBe(0);
+    resetWorld(state, 'lab'); // other worlds leave the forest alone
+    expect(state.forestMax).toBe(10500);
   });
 });
 

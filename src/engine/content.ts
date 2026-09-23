@@ -68,6 +68,15 @@ export const TIER_SECONDS = { 1: 5, 2: 15, 3: 45, 4: 120, 5: 300, 6: 600 } as co
 export const BUILD_TIME_GROWTH = 1.05;
 
 /** Realm population rules. */
+export const FOREST = {
+  /** Wood standing in the very first forest. */
+  start: 8000,
+  /** Wood the forest regrows per second before modifiers: really slow. */
+  baseRegrowth: 0.25,
+  /** Share of the Wood cut in a run that is added to the forest's size after a Realm reset. */
+  growthPerReset: 0.5,
+};
+
 export const DEMONS = {
   /** Demons that answer the first summoning. */
   start: 1,
@@ -167,6 +176,19 @@ const nodeList: NodeDef[] = [
     costGrowth: 1.3,
     tier: 1,
     effects: [{ stat: 'yield:wood', kind: 'add', amount: 0.2 }],
+  },
+  {
+    id: 'foresterLodge',
+    world: 'realm',
+    kind: 'building',
+    name: 'Forester\'s Lodge',
+    description: 'Foresters plant new trees, so the forest regrows faster.',
+    baseCost: { wood: 50, stone: 30 },
+    costGrowth: 1.5,
+    tier: 2,
+    maxLevel: 10,
+    requires: ['lumberCamp'],
+    effects: [{ stat: 'regrowth', kind: 'add', amount: 0.25 }],
   },
   {
     id: 'quarry',
@@ -1118,6 +1140,33 @@ const nodeList: NodeDef[] = [
       { stat: 'cost:realm', kind: 'mul', amount: 0.85 },
       { stat: 'rate:essence', kind: 'mul', amount: 0.85 },
       { stat: 'pollution', kind: 'add', amount: 8 },
+    ],
+  },
+  {
+    id: 'forestry',
+    world: 'lab',
+    kind: 'tech',
+    name: 'Forestry',
+    description: 'Managed woodland: the Realm\'s forest regrows twice as fast.',
+    baseCost: { research: 250, wood: 200 },
+    costGrowth: 1,
+    tier: 2,
+    requires: ['scientificMethod'],
+    effects: [{ stat: 'regrowth', kind: 'mul', amount: 2 }],
+  },
+  {
+    id: 'environmentalScience',
+    world: 'lab',
+    kind: 'tech',
+    name: 'Environmental Science',
+    description: 'Understanding how the land heals: faster regrowth and less pollution.',
+    baseCost: { research: 1200, glass: 40 },
+    costGrowth: 1,
+    tier: 5,
+    requires: ['forestry', 'filtration'],
+    effects: [
+      { stat: 'regrowth', kind: 'mul', amount: 1.5 },
+      { stat: 'pollution', kind: 'mul', amount: 0.8 },
     ],
   },
   {

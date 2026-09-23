@@ -431,3 +431,21 @@ button {
   background: color-mix(in srgb, var(--bad) 18%, var(--card));
   box-shadow: 0 0 12px color-mix(in srgb, var(--bad) 55%, transparent);
 }
+
+/* The Realm's forest: a bar that empties as Wood is cut. */
+.forest {
+  margin: 6px 0 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.9em;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, #3fa55b 30%, var(--card)) var(--forest, 100%),
+    var(--card) var(--forest, 100%)
+  );
+  border: 1px solid color-mix(in srgb, #3fa55b 50%, transparent);
+}
+
+.forest.attention {
+  border-color: var(--bad);
+}

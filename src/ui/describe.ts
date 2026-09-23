@@ -20,6 +20,11 @@ export function describeEffect(effect: Effect, amount: number): string {
       ? `+${formatNumber(amount)} pollution (slows growth)`
       : `Pollution −${formatNumber((1 - amount) * 100)}%`;
   }
+  if (effect.stat === 'regrowth') {
+    return effect.kind === 'add'
+      ? `Forest regrows +${formatNumber(amount)} Wood/s`
+      : `Forest regrowth ${formatMultiplier(amount)}`;
+  }
   if (effect.stat === 'deaths') {
     return effect.kind === 'add' ? `Kills ${formatPerHour(amount)} people` : `Deaths ${formatMultiplier(amount)}`;
   }

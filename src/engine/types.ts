@@ -35,6 +35,7 @@ export type ResourceId =
  * - `growth`           Realm population growth, in people per second
  * - `crowding`         Realm crowding, which slows growth; homes add it, sanitation cuts it
  * - `pollution`        Realm pollution, which slows growth; dirty industry adds it, parks and filters cut it
+ * - `regrowth`         Wood the Realm's forest regrows per second
  * - `deaths`           Realm people killed per hour
  * - `speed:<world>`    build speed multiplier in a world (higher is faster)
  */
@@ -48,6 +49,7 @@ export type Stat =
   | 'growth'
   | 'crowding'
   | 'pollution'
+  | 'regrowth'
   | 'deaths'
   | `speed:${WorldId}`;
 
@@ -165,6 +167,7 @@ export type NodeId =
   | 'irrigation'
   | 'aqueduct'
   | 'park'
+  | 'foresterLodge'
   | 'blastFurnace'
   | 'glassworks'
   | 'goldMine'
@@ -213,6 +216,8 @@ export type NodeId =
   | 'medicine'
   | 'sanitation'
   | 'filtration'
+  | 'forestry'
+  | 'environmentalScience'
   | 'logistics'
   | 'metallurgy'
   | 'rationalism'
@@ -263,6 +268,12 @@ export interface GameState {
   jobs: Record<JobId, number>;
   /** Learned spells that are currently switched on. */
   activeSpells: NodeId[];
+  /** Standing forest in the Realm: Wood can only be cut from here. */
+  forest: number;
+  /** The most forest this Realm run can hold; grows with every Realm reset. */
+  forestMax: number;
+  /** Wood cut from the forest this Realm run; decides how much bigger the next forest is. */
+  forestCut: number;
   /** Size of the summoned demon horde; 0 unless a horde spell is on. Fractional while growing. */
   demons: number;
   /** Levels being built right now, in base seconds of work (before build speed). */

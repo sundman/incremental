@@ -1,6 +1,7 @@
 import {
   BUILD_TIME_GROWTH,
   DEMONS,
+  FOREST,
   JOBS,
   JOB_ORDER,
   META,
@@ -39,6 +40,9 @@ export function createInitialState(): GameState {
     population: POPULATION.start,
     jobs: zeroes(JOB_ORDER),
     activeSpells: [],
+    forest: FOREST.start,
+    forestMax: FOREST.start,
+    forestCut: 0,
     demons: 0,
     construction: {},
     efficiency: {},
@@ -53,7 +57,14 @@ export function isWorldUnlocked(state: GameState, world: WorldId): boolean {
 
 /** The world a stat belongs to, used to tell local effects from cross-world links. */
 export function statWorld(stat: Stat): WorldId {
-  if (stat === 'housing' || stat === 'growth' || stat === 'crowding' || stat === 'pollution' || stat === 'deaths') {
+  if (
+    stat === 'housing' ||
+    stat === 'growth' ||
+    stat === 'crowding' ||
+    stat === 'pollution' ||
+    stat === 'regrowth' ||
+    stat === 'deaths'
+  ) {
     return 'realm';
   }
   if (stat.startsWith('speed:')) return stat.slice('speed:'.length) as WorldId;
@@ -210,7 +221,20 @@ export function grossRate(state: GameState, mods: Modifiers, resource: ResourceI
     if (JOBS[job].resource === resource) add += state.jobs[job] * jobYield(mods, job);
   }
   if (add <= 0) return 0;
-  return add * getMul(mods, `rate:${resource}`) * getMul(mods, `prod:${world}`);
+  const rate = add * getMul(mods, `rate:${resource}`) * getMul(mods, `prod:${world}`);
+  // Wood can only be cut as fast as the forest holds out (steps are at most one second).
+  return resource === 'wood' ? Math.min(rate, state.forest + forestRegrowth(mods)) : rate;
+}
+
+/** Wood the Realm's forest regrows per second, slowed by pollution. */
+export function forestRegrowth(mods: Modifiers): number {
+  const rate = (FOREST.baseRegrowth + getAdd(mods, 'regrowth')) * getMul(mods, 'regrowth');
+  return Math.max(0, rate) * pollutionFactor(mods);
+}
+
+/** How big the forest will be after the next Realm reset. */
+export function nextForestMax(state: GameState): number {
+  return state.forestMax + FOREST.growthPerReset * state.forestCut;
 }
 
 /** Upkeep being paid per second right now, at last tick's efficiency. */
@@ -554,19 +578,24 @@ function advanceConstruction(state: GameState, mods: Modifiers, dt: number) {
 
 // ------------------------------------------------------------------- time
 
-function gain(state: GameState, resource: ResourceId, amount: number) {
-  if (amount <= 0) return;
+/** Adds a resource, and returns how much was actually gained (Wood is limited by the forest). */
+function gain(state: GameState, resource: ResourceId, amount: number): number {
+  if (resource === 'wood') {
+    amount = Math.min(amount, state.forest);
+    state.forest -= amount;
+    state.forestCut += amount;
+  }
+  if (amount <= 0) return 0;
   state.resources[resource] += amount;
   const def = RESOURCES[resource];
   state.runEarned[def.world] += amount * def.value;
+  return amount;
 }
 
 export function click(state: GameState, resource: ResourceId): number {
   const def = RESOURCES[resource];
   if (!def.click || !isWorldUnlocked(state, def.world)) return 0;
-  const amount = clickValue(computeModifiers(state), resource);
-  gain(state, resource, amount);
-  return amount;
+  return gain(state, resource, clickValue(computeModifiers(state), resource));
 }
 
 function step(state: GameState, dt: number) {
@@ -592,8 +621,9 @@ function step(state: GameState, dt: number) {
     state.efficiency[id] = fraction;
   }
 
-  // 2. Produce, using this step's efficiencies.
+  // 2. The forest regrows, then everything produces, using this step's efficiencies.
   const mods = computeModifiers(state);
+  state.forest = Math.min(state.forestMax, state.forest + forestRegrowth(mods) * dt);
   for (const r of RESOURCE_ORDER) {
     if (!isWorldUnlocked(state, RESOURCES[r].world)) continue;
     gain(state, r, grossRate(state, mods, r) * dt);
@@ -714,6 +744,10 @@ export function resetWorld(state: GameState, world: WorldId): number {
   if (world === 'realm') {
     // Only the survivors are left, so a demon horde has nothing more to eat.
     endHorde(state);
+    // The forest comes back bigger, the more of it was cut this run.
+    state.forestMax = nextForestMax(state);
+    state.forest = state.forestMax;
+    state.forestCut = 0;
     state.population = POPULATION.start;
     for (const id of JOB_ORDER) state.jobs[id] = 0;
   }
