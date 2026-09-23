@@ -63,6 +63,7 @@ import {
   nodeCost,
   resetWorld,
   retainedTechs,
+  permanentNodes,
   statWorld,
   type ActiveLink,
   type Modifiers,
@@ -532,7 +533,7 @@ export class GameView {
     const blocker = resetBlocker(state, world);
     v.resetButton.disabled = !!blocker;
     const harms = outgoing.filter((l) => !l.helpful).length;
-    const kept = world === 'lab' ? retainedTechs(state) : [];
+    const kept = [...(world === 'lab' ? retainedTechs(state) : []), ...permanentNodes(state, world)];
     setText(
       v.resetNote,
       [

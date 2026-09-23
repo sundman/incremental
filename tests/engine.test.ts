@@ -406,7 +406,7 @@ describe('land', () => {
     expect(buyNode(state, 'quarry')).toBe(false);
   });
 
-  it('finds more land with Cartography and each Expedition, and loses it again on a Lab reset', () => {
+  it('finds more land with Cartography and each Expedition, and keeps it through a Lab reset', () => {
     const state = unlockAll(withNodes({ hut: 20, cartography: 1, expedition: 3 }));
     expect(land(state)).toBe(20 + 10 + 3 * 5);
     expect(maxLevel('expedition')).toBe(30);
@@ -415,8 +415,9 @@ describe('land', () => {
     const link = activeLinks(state).find((l) => l.source === 'expedition');
     expect(link).toMatchObject({ from: 'lab', to: 'realm', helpful: true, total: 15 });
     resetWorld(state, 'lab');
-    expect(land(state)).toBe(20);
-    expect(state.nodes.hut).toBe(20); // buildings stay, there is just no room for more
+    expect(land(state)).toBe(45); // exploring is permanent
+    expect(state.nodes.cartography).toBe(1);
+    expect(state.nodes.expedition).toBe(3);
   });
 });
 

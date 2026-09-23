@@ -729,9 +729,16 @@ function techValue(id: NodeId): number {
 export function retainedTechs(state: GameState): NodeId[] {
   const keep = state.meta.retainedKnowledge;
   if (keep <= 0) return [];
-  return NODE_ORDER.filter((id) => NODES[id].kind === 'tech' && state.nodes[id] > 0)
+  return NODE_ORDER.filter(
+    (id) => NODES[id].world === 'lab' && NODES[id].kind === 'tech' && !NODES[id].permanent && state.nodes[id] > 0,
+  )
     .sort((a, b) => techValue(b) - techValue(a))
     .slice(0, keep);
+}
+
+/** Owned nodes in a world that its reset never takes away. */
+export function permanentNodes(state: GameState, world: WorldId): NodeId[] {
+  return NODE_ORDER.filter((id) => NODES[id].world === world && NODES[id].permanent && state.nodes[id] > 0);
 }
 
 const HEAD_START_META: Record<WorldId, MetaId> = {
@@ -765,7 +772,7 @@ export function canResetWorld(state: GameState, world: WorldId): boolean {
 export function resetWorld(state: GameState, world: WorldId): number {
   if (!canResetWorld(state, world)) return 0;
   const reward = echoGain(state, world);
-  const keep = world === 'lab' ? new Set(retainedTechs(state)) : new Set<NodeId>();
+  const keep = new Set([...(world === 'lab' ? retainedTechs(state) : []), ...permanentNodes(state, world)]);
   state.echoes += reward;
   state.totalEchoes += reward;
   state.resets[world] += 1;

@@ -165,6 +165,8 @@ export interface NodeDef {
    * Realm is down to its last survivors, and the horde vanishes with it.
    */
   horde?: boolean;
+  /** Survives resets of its world (e.g. land found by exploring). */
+  permanent?: boolean;
   /** Owning at least one level opens this world for good. */
   unlocksWorld?: WorldId;
 }
