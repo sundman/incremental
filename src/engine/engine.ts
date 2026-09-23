@@ -599,11 +599,21 @@ export function applyHeadStart(state: GameState, world: WorldId): void {
 
 /**
  * Wipes one world's resources and nodes (so every link it sends out disappears),
+ * unless a horde spell from that world is running (Arcana can't be reset under Summon Demons),
  * pays Echoes for the run, and restarts it with any Head Start. Other worlds are
  * untouched and opened worlds stay open.
  */
+/** The horde spell that stops `world` from being reset right now, if any. */
+export function resetBlocker(state: GameState, world: WorldId): NodeId | null {
+  return state.activeSpells.find((id) => NODES[id].horde && NODES[id].world === world) ?? null;
+}
+
+export function canResetWorld(state: GameState, world: WorldId): boolean {
+  return isWorldUnlocked(state, world) && !resetBlocker(state, world);
+}
+
 export function resetWorld(state: GameState, world: WorldId): number {
-  if (!isWorldUnlocked(state, world)) return 0;
+  if (!canResetWorld(state, world)) return 0;
   const reward = echoGain(state, world);
   const keep = world === 'lab' ? new Set(retainedTechs(state)) : new Set<NodeId>();
   state.echoes += reward;
@@ -620,8 +630,9 @@ export function resetWorld(state: GameState, world: WorldId): number {
     delete state.construction[id];
     state.activeSpells = state.activeSpells.filter((s) => s !== id);
   }
-  if (!isHordeActive(state)) state.demons = 0;
   if (world === 'realm') {
+    // Only the survivors are left, so a demon horde has nothing more to eat.
+    endHorde(state);
     state.population = POPULATION.start;
     for (const id of JOB_ORDER) state.jobs[id] = 0;
   }

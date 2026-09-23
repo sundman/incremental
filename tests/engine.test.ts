@@ -3,6 +3,7 @@ import {
   activeLinks,
   runningLevel,
   toggleSpell,
+  canResetWorld,
   upkeepRate,
   arrivalBlocker,
   buildSeconds,
@@ -398,13 +399,28 @@ describe('population', () => {
     expect(toggleSpell(state, 'summoningCircle')).toBe(true);
   });
 
-  it('banishes the horde when Arcana is reset', () => {
+  it('blocks resetting Arcana while the horde runs', () => {
+    const state = unlockAll(withJobs({ woodcutter: 10 }, withNodes({ summoningCircle: 1, manaWell: 3 })));
+    toggleSpell(state, 'summoningCircle');
+    tick(state, 60);
+    expect(canResetWorld(state, 'arcana')).toBe(false);
+    expect(resetWorld(state, 'arcana')).toBe(0);
+    expect(state.nodes.manaWell).toBe(3);
+    expect(state.resets.arcana).toBe(0);
+    expect(state.activeSpells).toContain('summoningCircle');
+    expect(canResetWorld(state, 'lab')).toBe(true);
+  });
+
+  it('ends the horde when the Realm is reset, since only the survivors are left', () => {
     const state = unlockAll(withJobs({ woodcutter: 10 }, withNodes({ summoningCircle: 1 })));
     toggleSpell(state, 'summoningCircle');
     tick(state, 60);
-    resetWorld(state, 'arcana');
+    resetWorld(state, 'realm');
+    expect(state.population).toBe(2);
     expect(state.demons).toBe(0);
-    expect(state.activeSpells).toEqual([]);
+    expect(state.activeSpells).not.toContain('summoningCircle');
+    expect(state.nodes.summoningCircle).toBe(1); // still learned, so it can be cast again later
+    expect(canResetWorld(state, 'arcana')).toBe(true);
   });
 
   it('stops people arriving when Food runs out', () => {

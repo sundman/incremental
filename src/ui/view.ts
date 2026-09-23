@@ -33,6 +33,9 @@ import {
   clickValue,
   computeModifiers,
   echoGain,
+  canResetWorld,
+  resetBlocker,
+  isHordeActive,
   effectiveAmount,
   isHelpful,
   isSpellActive,
@@ -233,6 +236,7 @@ export class GameView {
       const msg =
         `Reset ${def.name}? Its resources and ${RESET_WIPES[world]} go back to zero, ` +
         `along with every effect it has on the other worlds. You gain ${echoesLabel(gain)}.`;
+      if (!canResetWorld(this.state, world)) return;
       if (confirm(msg)) {
         resetWorld(this.state, world);
         this.hooks.onChange();
@@ -465,12 +469,18 @@ export class GameView {
 
     const gain = echoGain(state, world);
     setText(v.resetButton, `Reset ${WORLDS[world].name} for ${echoesLabel(gain)}`);
+    const blocker = resetBlocker(state, world);
+    v.resetButton.disabled = !!blocker;
     const harms = outgoing.filter((l) => !l.helpful).length;
     const kept = world === 'lab' ? retainedTechs(state) : [];
     setText(
       v.resetNote,
       [
-        harms ? `Clears ${harms} harmful effect${harms === 1 ? '' : 's'} on other worlds.` : '',
+        blocker
+          ? `Can't reset while ${NODES[blocker].name} is running. It ends when the Realm is down to 2 people, or when you reset the Realm.`
+          : '',
+        world === 'realm' && isHordeActive(state) ? 'Also ends Summon Demons: only 2 survivors are left.' : '',
+        harms && !blocker ? `Clears ${harms} harmful effect${harms === 1 ? '' : 's'} on other worlds.` : '',
         kept.length ? `Keeps: ${kept.map((id) => NODES[id].name).join(', ')}.` : '',
       ]
         .filter(Boolean)
