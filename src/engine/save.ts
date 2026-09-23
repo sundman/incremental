@@ -62,9 +62,15 @@ export function deserialize(text: string): GameState {
     ? WORLD_ORDER.filter((w) => (raw.unlockedWorlds as unknown[]).includes(w))
     : fresh.unlockedWorlds;
   const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
-  const activeSpells = Array.isArray(raw.activeSpells)
+  const meta = mergeNumbers(fresh.meta, raw.meta);
+  // Keep only as many spells on as there are slots. A running horde takes no slot.
+  const saved = Array.isArray(raw.activeSpells)
     ? NODE_ORDER.filter((id) => NODES[id].spell && (raw.activeSpells as unknown[]).includes(id))
     : [];
+  const activeSpells = [
+    ...saved.filter((id) => !NODES[id].horde).slice(0, 1 + meta.multicast),
+    ...saved.filter((id) => NODES[id].horde),
+  ];
 
   return {
     version: SAVE_VERSION,
@@ -75,7 +81,7 @@ export function deserialize(text: string): GameState {
     echoes: num(raw.echoes, 0),
     totalEchoes: num(raw.totalEchoes, 0),
     resets: mergeNumbers(fresh.resets, raw.resets),
-    meta: mergeNumbers(fresh.meta, raw.meta),
+    meta,
     population: num(raw.population, fresh.population),
     jobs: mergeNumbers(fresh.jobs, raw.jobs),
     activeSpells,

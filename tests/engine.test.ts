@@ -3,6 +3,7 @@ import {
   activeLinks,
   runningLevel,
   toggleSpell,
+  spellSlots,
   maxLevel,
   land,
   landUsed,
@@ -520,6 +521,29 @@ describe('population', () => {
     const state = unlockAll(withNodes({ well: 2, tavern: 1, fertilityRite: 1 }));
     state.activeSpells = ['fertilityRite'];
     expect(arrivalRate(computeModifiers(state))).toBeCloseTo((0.05 + 0.02) * 1.1 ** 2 * 1.3);
+  });
+
+  it('keeps only one spell on at a time, swapping out the oldest', () => {
+    const state = unlockAll(withNodes({ fertilityRite: 1, haste: 1, animation: 1 }));
+    expect(toggleSpell(state, 'fertilityRite')).toBe(true);
+    expect(toggleSpell(state, 'haste')).toBe(true);
+    expect(state.activeSpells).toEqual(['haste']);
+    state.meta.multicast = 1;
+    expect(spellSlots(state)).toBe(2);
+    expect(toggleSpell(state, 'animation')).toBe(true);
+    expect(state.activeSpells).toEqual(['haste', 'animation']);
+    expect(toggleSpell(state, 'fertilityRite')).toBe(true);
+    expect(state.activeSpells).toEqual(['animation', 'fertilityRite']);
+  });
+
+  it('does not count Summon Demons against the spell slots', () => {
+    const state = unlockAll(withNodes({ summoningCircle: 1, haste: 1, animation: 1 }));
+    state.population = 10;
+    toggleSpell(state, 'haste');
+    toggleSpell(state, 'summoningCircle');
+    expect(state.activeSpells).toEqual(['haste', 'summoningCircle']);
+    expect(toggleSpell(state, 'animation')).toBe(true); // swaps out Haste, never the horde
+    expect(state.activeSpells).toEqual(['summoningCircle', 'animation']);
   });
 
   it('casts Summon Demons for good: it cannot be switched off and needs people to feed on', () => {

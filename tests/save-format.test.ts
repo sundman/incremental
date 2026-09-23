@@ -42,6 +42,13 @@ describe('save', () => {
     expect(old.deposits.coal.left).toBe(old.deposits.coal.max);
   });
 
+  it('keeps only as many spells on as there are slots when loading', () => {
+    const loaded = deserialize(JSON.stringify({ activeSpells: ['haste', 'fertilityRite'], meta: { multicast: 0 } }));
+    expect(loaded.activeSpells).toHaveLength(1);
+    const horde = deserialize(JSON.stringify({ activeSpells: ['haste', 'summoningCircle'], demons: 3 }));
+    expect(horde.activeSpells).toEqual(expect.arrayContaining(['haste', 'summoningCircle']));
+  });
+
   it('falls back to defaults for missing, unknown or broken fields', () => {
     const loaded = deserialize(
       JSON.stringify({ resources: { wood: 5, stone: 'lots', unobtainium: 9 }, nodes: null, unlockedWorlds: ['nowhere'] }),

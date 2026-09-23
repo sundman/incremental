@@ -271,6 +271,7 @@ export type MetaId =
   | 'swiftHands'
   | 'masterBuilders'
   | 'richEarth'
+  | 'multicast'
   | 'retainedKnowledge';
 
 export interface MetaDef {

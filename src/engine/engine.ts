@@ -143,6 +143,26 @@ export function runningLevel(state: GameState, id: NodeId): number {
 }
 
 /** Whether a learned spell can be cast now. A horde needs more people than it leaves alive. */
+/** How many spells can be on at once (Multicast in the Echo shop adds more). */
+export function spellSlots(state: GameState): number {
+  return 1 + state.meta.multicast;
+}
+
+/** Spells taking up a slot. Summon Demons doesn't count. */
+function slottedSpells(state: GameState): NodeId[] {
+  return state.activeSpells.filter((id) => !NODES[id].horde);
+}
+
+/** The spell that casting another would switch off to make room, if the slots are full. */
+export function spellToReplace(state: GameState): NodeId | null {
+  const slotted = slottedSpells(state);
+  return slotted.length >= spellSlots(state) ? (slotted[0] ?? null) : null;
+}
+
+/**
+ * Whether a learned spell can be cast now. When the slots are full, casting swaps out
+ * the oldest spell. A horde takes no slot, but needs people to feed on.
+ */
 export function canCastSpell(state: GameState, id: NodeId): boolean {
   const node = NODES[id];
   if (!node.spell || state.nodes[id] <= 0 || isSpellActive(state, id)) return false;
@@ -159,6 +179,11 @@ export function toggleSpell(state: GameState, id: NodeId): boolean {
     return false;
   }
   if (!canCastSpell(state, id)) return false;
+  const replaced = NODES[id].horde ? null : spellToReplace(state);
+  if (replaced) {
+    state.activeSpells = state.activeSpells.filter((s) => s !== replaced);
+    delete state.efficiency[replaced];
+  }
   state.activeSpells.push(id);
   if (NODES[id].horde) state.demons = DEMONS.start;
   return true;

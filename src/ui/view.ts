@@ -53,6 +53,7 @@ import {
   isHelpful,
   isSpellActive,
   canCastSpell,
+  spellToReplace,
   toggleSpell,
   isNodeAvailable,
   isResourceRevealed,
@@ -275,7 +276,7 @@ export class GameView {
       buildings,
       ...(techs.childElementCount ? [h('h3', {}, world === 'arcana' ? 'Discoveries' : 'Research'), techs] : []),
       ...(spells.childElementCount
-        ? [h('h3', {}, 'Spells'), h('p', { class: 'muted small' }, 'Learn a spell once, then click it to switch it on or off. It only costs upkeep while on. Summon Demons is the exception: once cast, it runs until the Realm is down to 2 survivors.'), spells]
+        ? [h('h3', {}, 'Spells'), h('p', { class: 'muted small' }, 'Learn a spell once, then click it to switch it on or off. It only costs upkeep while on. Only one spell can be on at a time (Multicast in the Echo shop adds more), so switching one on swaps out the oldest. Summon Demons is the exception: it takes no slot, but once cast it runs until the Realm is down to 2 survivors.'), spells]
         : []),
       h('details', { class: 'link-box' }, h('summary', {}, 'Effects this world sends out'), outgoing),
       h('div', { class: 'reset-box' }, resetButton, resetNote),
@@ -430,7 +431,14 @@ export class GameView {
       needs,
     );
     button.addEventListener('click', () => {
-      if (NODES[id].spell && this.state.nodes[id] > 0) toggleSpell(this.state, id);
+      if (NODES[id].horde && this.state.nodes[id] > 0 && canCastSpell(this.state, id)) {
+        const ok = confirm(
+          'Summon Demons? This cannot be undone. The horde doubles every 3 minutes, boosting Arcana while it ' +
+            'kills the Realm\'s people, and only ends when 2 survivors are left (or you reset the Realm). ' +
+            'While it runs, Arcana cannot be reset.',
+        );
+        if (ok) toggleSpell(this.state, id);
+      } else if (NODES[id].spell && this.state.nodes[id] > 0) toggleSpell(this.state, id);
       else if (!buyNode(this.state, id)) return;
       this.hooks.onChange();
     });
@@ -583,11 +591,16 @@ export class GameView {
       setText(c.level, `${verb}… ${formatDuration(constructionSecondsLeft(state, id, mods))}`);
     } else if (node.horde && level > 0) {
       const on = isSpellActive(state, id);
-      setText(c.level, on ? `${formatNumber(Math.floor(state.demons))} demons · no way back` : 'Not summoned');
+      const n = Math.floor(state.demons);
+      setText(c.level, on ? `${formatNumber(n)} demon${n === 1 ? '' : 's'} · no way back` : 'Not summoned');
     } else if (node.spell && level > 0) {
       const on = isSpellActive(state, id);
       const eff = state.efficiency[id] ?? 1;
-      setText(c.level, on ? (eff < 0.999 ? `On · ${Math.round(eff * 100)}% power` : 'On') : 'Off');
+      const swap = on ? null : spellToReplace(state);
+      setText(
+        c.level,
+        on ? (eff < 0.999 ? `On · ${Math.round(eff * 100)}% power` : 'On') : swap ? `Off · swaps out ${NODES[swap].name}` : 'Off',
+      );
     } else if (node.kind === 'tech' && max > 1) {
       setText(c.level, level > 0 ? `${level} / ${max}` : '');
     } else if (node.kind === 'tech') {

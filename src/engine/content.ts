@@ -1396,6 +1396,14 @@ const metaList: MetaDef[] = [
     maxLevel: 50,
   },
   {
+    id: 'multicast',
+    name: 'Multicast',
+    description: 'Keep one more Arcana spell on at the same time.',
+    baseCost: 25,
+    costGrowth: 4,
+    maxLevel: 3,
+  },
+  {
     id: 'retainedKnowledge',
     name: 'Retained Knowledge',
     description: 'Lab resets keep your most expensive tech (one more per level).',
