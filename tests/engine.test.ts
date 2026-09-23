@@ -433,20 +433,20 @@ describe('population', () => {
     expect(canResetWorld(state, 'arcana')).toBe(true);
   });
 
-  it('takes each death from a random person, idle or at work, not the last job first', () => {
+  it('takes deaths from the idle first, then from random workers, not the last job first', () => {
     const state = unlockAll(withJobs({ woodcutter: 4, farmer: 4 }, withNodes({ summoningCircle: 1, farm: 1 })));
     state.population = 10.5; // 8 at work, 2 idle, and half a newcomer
     toggleSpell(state, 'summoningCircle');
     state.demons = 600; // 1 death a second
-    const picks = [0.05, 0.95, 0.45];
+    const picks = [0.05, 0.95];
     const previous = setRandom(() => picks.shift() ?? 0);
     try {
-      tick(state, 3);
+      tick(state, 4);
     } finally {
       setRandom(previous);
     }
-    // 0.05 of 10 -> the 1st person, a woodcutter; 0.95 of 9 -> the 9th, idle; 0.45 of 8 -> the 4th, a farmer
-    expect(Math.floor(state.population)).toBe(7);
+    // The 2 idle go first. Then 0.05 of 8 workers -> the 1st, a woodcutter; 0.95 of 7 -> the 7th, a farmer
+    expect(Math.floor(state.population)).toBe(6);
     expect(state.jobs.woodcutter).toBe(3);
     expect(state.jobs.farmer).toBe(3);
   });

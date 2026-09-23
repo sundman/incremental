@@ -375,15 +375,17 @@ export function setRandom(source: () => number): () => number {
 }
 
 /**
- * Lowers the population. Each whole person lost is picked at random from everyone,
- * so a death is idle or from a job in proportion to how many people are there.
+ * Lowers the population. While anyone is idle, an idle person steps into the dead
+ * one's job, so the idle pool shrinks first. After that each death is a random worker.
  */
 function losePeople(state: GameState, population: number) {
   let people = Math.floor(state.population);
   const left = Math.floor(population);
   state.population = population;
   for (; people > left; people--) {
-    let pick = Math.floor(random() * people);
+    const workers = assignedWorkers(state);
+    if (people > workers) continue;
+    let pick = Math.floor(random() * workers);
     for (const id of JOB_ORDER) {
       if (pick < state.jobs[id]) {
         state.jobs[id] -= 1;
