@@ -65,9 +65,8 @@ export const POPULATION = {
   start: 2,
   /** Housing available before any Huts. */
   baseHousing: 3,
-  /** People arrive at this fraction of the housing cap per second, but never slower than `minArrival`. */
-  arrivalPerHousing: 0.02,
-  minArrival: 0.1,
+  /** People per second born or arriving while there is free housing, before `growth` modifiers (1 every 20s). */
+  baseGrowth: 0.05,
   /** Food eaten to bring in each new person; nobody arrives while the stores are empty. */
   foodPerPerson: 10,
 };
@@ -264,6 +263,31 @@ const nodeList: NodeDef[] = [
     maxLevel: 5,
     requires: ['house'],
     effects: [{ stat: 'cost:realm', kind: 'mul', amount: 0.95 }],
+  },
+
+  // Population growth.
+  {
+    id: 'well',
+    world: 'realm',
+    kind: 'building',
+    name: 'Well',
+    description: 'Clean water keeps families healthy, so the population grows faster.',
+    baseCost: { stone: 30, wood: 10 },
+    costGrowth: 1.8,
+    maxLevel: 5,
+    requires: ['hut'],
+    effects: [{ stat: 'growth', kind: 'mul', amount: 1.1 }],
+  },
+  {
+    id: 'tavern',
+    world: 'realm',
+    kind: 'building',
+    name: 'Tavern',
+    description: 'Word spreads about a good place to live, and settlers come.',
+    baseCost: { planks: 40, food: 100 },
+    costGrowth: 1.5,
+    requires: ['house'],
+    effects: [{ stat: 'growth', kind: 'add', amount: 0.02 }],
   },
 
   // Gateways to the other worlds.
@@ -518,7 +542,33 @@ const nodeList: NodeDef[] = [
     effects: [{ stat: 'prod:arcana', kind: 'mul', amount: 1.5 }],
   },
 
+  {
+    id: 'summoningCircle',
+    world: 'arcana',
+    kind: 'building',
+    name: 'Summon Demons',
+    description: 'Demons pour power into Arcana, and they feed on the Realm\'s people.',
+    baseCost: { mana: 300, essence: 30 },
+    costGrowth: 1.6,
+    requires: ['condenser'],
+    effects: [
+      { stat: 'prod:arcana', kind: 'mul', amount: 1.25 },
+      { stat: 'deaths', kind: 'add', amount: 6 },
+    ],
+  },
+
   // Discoveries: one-time unlocks that Realm buildings can depend on.
+  {
+    id: 'fertilityRite',
+    world: 'arcana',
+    kind: 'tech',
+    name: 'Fertility Rite',
+    description: 'A blessing on the Realm\'s families.',
+    baseCost: { mana: 150 },
+    costGrowth: 1,
+    requires: ['manaWell'],
+    effects: [{ stat: 'growth', kind: 'mul', amount: 1.3 }],
+  },
   {
     id: 'runeLore',
     world: 'arcana',
@@ -623,6 +673,17 @@ const nodeList: NodeDef[] = [
     costGrowth: 1,
     requires: ['optics'],
     effects: [{ stat: 'rate:research', kind: 'mul', amount: 1.2 }],
+  },
+  {
+    id: 'medicine',
+    world: 'lab',
+    kind: 'tech',
+    name: 'Medicine',
+    description: 'Fewer people die young, so the Realm grows faster.',
+    baseCost: { research: 300, food: 200 },
+    costGrowth: 1,
+    requires: ['scientificMethod'],
+    effects: [{ stat: 'growth', kind: 'mul', amount: 1.5 }],
   },
   {
     id: 'metallurgy',

@@ -5,6 +5,12 @@ import type { Effect, ResourceId, WorldId } from '../engine/types';
 /** Human text for one effect at a given strength, e.g. "+0.5 Wood/s" or "All Realm production ×1.25". */
 export function describeEffect(effect: Effect, amount: number): string {
   if (effect.stat === 'housing') return `+${formatNumber(amount)} housing`;
+  if (effect.stat === 'growth') {
+    return effect.kind === 'add'
+      ? `+${formatNumber(amount * 60)} people/min growth`
+      : `Population growth ${formatMultiplier(amount)}`;
+  }
+  if (effect.stat === 'deaths') return `Kills ${formatNumber(amount)} people/hour`;
   const [type, target] = effect.stat.split(':') as [string, string];
   const value = effect.kind === 'add' ? `${amount >= 0 ? '+' : ''}${formatNumber(amount)}` : formatMultiplier(amount);
   switch (type) {

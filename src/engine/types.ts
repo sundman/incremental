@@ -28,6 +28,8 @@ export type ResourceId =
  * - `cost:<world>`     multiplier on the cost of every node in a world
  * - `yield:<resource>` extra output per worker assigned to that resource's job
  * - `housing`          Realm population cap
+ * - `growth`           Realm population growth, in people per second
+ * - `deaths`           Realm people killed per hour
  */
 export type Stat =
   | `rate:${ResourceId}`
@@ -35,7 +37,9 @@ export type Stat =
   | `prod:${WorldId}`
   | `cost:${WorldId}`
   | `yield:${ResourceId}`
-  | 'housing';
+  | 'housing'
+  | 'growth'
+  | 'deaths';
 
 export type Cost = Partial<Record<ResourceId, number>>;
 
@@ -123,6 +127,8 @@ export type NodeId =
   | 'coalMine'
   | 'foundry'
   | 'market'
+  | 'well'
+  | 'tavern'
   | 'library'
   | 'shrine'
   | 'irrigation'
@@ -143,8 +149,10 @@ export type NodeId =
   | 'enchantedTools'
   | 'aetherRift'
   | 'aetherLens'
+  | 'summoningCircle'
   | 'runeLore'
   | 'animation'
+  | 'fertilityRite'
   // Lab
   | 'scholar'
   | 'laboratory'
@@ -153,6 +161,7 @@ export type NodeId =
   | 'geology'
   | 'optics'
   | 'printing'
+  | 'medicine'
   | 'metallurgy'
   | 'rationalism'
   | 'industrialization'

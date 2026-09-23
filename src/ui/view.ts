@@ -15,6 +15,7 @@ import {
   activeLinks,
   arrivalBlocker,
   arrivalRate,
+  deathRate,
   assignJob,
   housing,
   idleWorkers,
@@ -297,14 +298,17 @@ export class GameView {
     const idle = idleWorkers(state);
     let text = `${people} / ${formatNumber(cap)} people · ${idle} idle`;
     const blocker = arrivalBlocker(state, mods);
+    const growth = arrivalRate(mods);
     if (blocker === 'housing') {
       text += ' · build housing for more';
     } else if (blocker === 'food') {
       text += ` · newcomers need ${POPULATION.foodPerPerson} Food each`;
-    } else {
-      const secs = Math.ceil((Math.floor(state.population) + 1 - state.population) / arrivalRate(mods));
-      text += ` · next arrives in ${secs}s`;
+    } else if (growth > 0) {
+      const secs = Math.ceil((Math.floor(state.population) + 1 - state.population) / growth);
+      text += ` · growing ${formatNumber(growth * 60)}/min, next in ${secs}s`;
     }
+    const deaths = deathRate(mods) * 3600;
+    if (deaths > 0) text += ` · demons kill ${formatNumber(deaths)}/hour`;
     setText(summary, text);
     summary.classList.toggle('attention', idle > 0 || blocker === 'food');
 

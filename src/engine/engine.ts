@@ -47,7 +47,7 @@ export function isWorldUnlocked(state: GameState, world: WorldId): boolean {
 
 /** The world a stat belongs to, used to tell local effects from cross-world links. */
 export function statWorld(stat: Stat): WorldId {
-  if (stat === 'housing') return 'realm';
+  if (stat === 'housing' || stat === 'growth' || stat === 'deaths') return 'realm';
   const [type, target] = stat.split(':') as [string, string];
   if (type === 'rate' || type === 'click' || type === 'yield') return RESOURCES[target as ResourceId].world;
   return target as WorldId;
@@ -55,7 +55,7 @@ export function statWorld(stat: Stat): WorldId {
 
 /** Whether an effect makes things better for the world it targets. */
 export function isHelpful(effect: Effect): boolean {
-  const lowerIsBetter = effect.stat.startsWith('cost:');
+  const lowerIsBetter = effect.stat.startsWith('cost:') || effect.stat === 'deaths';
   const increases = effect.kind === 'add' ? effect.amount > 0 : effect.amount > 1;
   return lowerIsBetter ? !increases : increases;
 }
@@ -260,7 +260,12 @@ export function housing(mods: Modifiers): number {
 
 /** People arriving per second while there is free housing. */
 export function arrivalRate(mods: Modifiers): number {
-  return Math.max(POPULATION.minArrival, POPULATION.arrivalPerHousing * housing(mods));
+  return Math.max(0, (POPULATION.baseGrowth + getAdd(mods, 'growth')) * getMul(mods, 'growth'));
+}
+
+/** People killed per second (e.g. by summoned demons). */
+export function deathRate(mods: Modifiers): number {
+  return Math.max(0, getAdd(mods, 'deaths')) / 3600;
 }
 
 export function assignedWorkers(state: GameState): number {
@@ -410,7 +415,12 @@ function step(state: GameState, dt: number) {
     if (state.resources[r] < 0) state.resources[r] = 0;
   }
 
-  // 3. New people move into free housing, eating Food as they arrive.
+  // 3. Deaths, then new people move into free housing, eating Food as they arrive.
+  const dying = deathRate(mods) * dt;
+  if (dying > 0) {
+    state.population = Math.max(0, state.population - dying);
+    settleJobs(state);
+  }
   const cap = housing(mods);
   if (state.population < cap) {
     let arriving = Math.min(cap - state.population, arrivalRate(mods) * dt);

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   activeLinks,
   arrivalBlocker,
+  arrivalRate,
+  deathRate,
   assignJob,
   housing,
   idleWorkers,
@@ -318,13 +320,41 @@ describe('population', () => {
     const state = withNodes({ hut: 2 }); // 3 + 4 = 7 housing
     state.resources.food = 1000;
     expect(housing(computeModifiers(state))).toBe(7);
-    tick(state, 10); // 0.14 people/s
-    expect(state.population).toBeCloseTo(2 + 1.4);
-    expect(state.resources.food).toBeCloseTo(1000 - 14);
+    tick(state, 10); // 1 person every 20s
+    expect(state.population).toBeCloseTo(2 + 0.5);
+    expect(state.resources.food).toBeCloseTo(1000 - 5);
     tick(state, 1000);
     expect(state.population).toBe(7);
     expect(state.resources.food).toBeCloseTo(1000 - 50);
     expect(arrivalBlocker(state, computeModifiers(state))).toBe('housing');
+  });
+
+  it('grows at the same pace however much housing there is', () => {
+    const small = withNodes({ hut: 1 });
+    const big = withNodes({ hut: 20, house: 20 });
+    small.resources.food = big.resources.food = 1000;
+    tick(small, 20);
+    tick(big, 20);
+    expect(small.population).toBeCloseTo(3);
+    expect(big.population).toBeCloseTo(3);
+  });
+
+  it('speeds up growth with Wells, Taverns, Medicine and the Fertility Rite', () => {
+    const state = unlockAll(withNodes({ well: 2, tavern: 1, medicine: 1, fertilityRite: 1 }));
+    expect(arrivalRate(computeModifiers(state))).toBeCloseTo((0.05 + 0.02) * 1.1 ** 2 * 1.5 * 1.3);
+  });
+
+  it('lets summoned demons kill people every hour, even with no room to grow', () => {
+    const state = unlockAll(withJobs({ woodcutter: 10 }, withNodes({ summoningCircle: 2 })));
+    state.population = 10;
+    const mods = computeModifiers(state);
+    expect(deathRate(mods) * 3600).toBeCloseTo(12);
+    expect(grossRate(state, mods, 'mana')).toBe(0);
+    tick(state, 1800); // half an hour, no housing free, so nobody new arrives
+    expect(state.population).toBeCloseTo(4);
+    expect(state.jobs.woodcutter).toBe(4);
+    const link = activeLinks(state).find((l) => l.source === 'summoningCircle' && l.to === 'realm');
+    expect(link).toMatchObject({ helpful: false, total: 12 });
   });
 
   it('stops people arriving when Food runs out', () => {
