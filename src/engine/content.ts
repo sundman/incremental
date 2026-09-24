@@ -388,11 +388,12 @@ const nodeList: NodeDef[] = [
     world: 'realm',
     kind: 'building',
     name: 'Tavern',
-    description: 'Word spreads about a good place to live, and settlers come.',
+    description: 'Word spreads about a good place to live, and settlers come. The regulars are bad at paying, so the Tavern costs Gold to keep open.',
     baseCost: { planks: 40, food: 100 },
     costGrowth: 1.5,
     tier: 3,
     requires: ['house'],
+    upkeep: { gold: 0.02 },
     effects: [{ stat: 'growth', kind: 'add', amount: 0.02 }],
   },
 

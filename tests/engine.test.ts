@@ -554,6 +554,17 @@ describe('population', () => {
     expect(arrivalRate(computeModifiers(state))).toBeCloseTo((0.05 + 0.02) * 1.1 ** 2 * 1.3);
   });
 
+  it('only lets a Tavern speed up growth while it gets its Gold', () => {
+    const state = withNodes({ tavern: 2 });
+    state.resources.gold = 10;
+    tick(state, 10);
+    expect(state.resources.gold).toBeCloseTo(10 - 2 * 0.02 * 10, 5);
+    expect(arrivalRate(computeModifiers(state))).toBeCloseTo(0.05 + 2 * 0.02);
+    state.resources.gold = 0;
+    tick(state, 1);
+    expect(arrivalRate(computeModifiers(state))).toBeCloseTo(0.05);
+  });
+
   it('keeps only one spell on at a time, swapping out the oldest', () => {
     const state = unlockAll(withNodes({ fertilityRite: 1, haste: 1, animation: 1 }));
     expect(toggleSpell(state, 'fertilityRite')).toBe(true);
