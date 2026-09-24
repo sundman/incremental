@@ -409,20 +409,35 @@ describe('land', () => {
 
   it('finds more land with Cartography and each Expedition, and keeps it through a Lab reset', () => {
     const state = unlockAll(withNodes({ hut: 20, cartography: 1, expedition: 3 }));
-    expect(land(state)).toBe(20 + 10 + 3 * 5);
+    expect(land(state)).toBe(20 + 1 + 3 * 5);
     expect(maxLevel('expedition')).toBe(30);
     state.resources.wood = 1e6;
     expect(buyNode(state, 'hut')).toBe(true);
     const link = activeLinks(state).find((l) => l.source === 'expedition');
     expect(link).toMatchObject({ from: 'lab', to: 'realm', helpful: true, total: 15 });
     resetWorld(state, 'lab');
-    expect(land(state)).toBe(45); // exploring is permanent
+    expect(land(state)).toBe(36); // exploring is permanent
     expect(state.nodes.cartography).toBe(1);
     expect(state.nodes.expedition).toBe(3);
   });
 });
 
 describe('repeatable research', () => {
+  it('lets Cartography be researched 10 times, 1 land each, doubling in price', () => {
+    const state = unlockAll(withNodes({ scientificMethod: 1, library: 1 }));
+    state.resources.research = 1e9;
+    expect(maxLevel('cartography')).toBe(10);
+    expect(nodeCost(state, 'cartography').research).toBe(120);
+    for (let i = 0; i < 10; i++) {
+      expect(buyNode(state, 'cartography')).toBe(true);
+      tick(state, 600);
+    }
+    expect(state.nodes.cartography).toBe(10);
+    expect(nodeCost(state, 'cartography').research).toBe(120 * 2 ** 10);
+    expect(buyNode(state, 'cartography')).toBe(false);
+    expect(land(state)).toBe(20 + 10);
+  });
+
   it('lets Rationalism be researched 10 times, stacking both its effects', () => {
     const state = unlockAll(withNodes({ scientificMethod: 1, library: 1, rationalism: 9 }));
     state.resources.research = 1e9;
