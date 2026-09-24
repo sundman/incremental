@@ -586,7 +586,16 @@ export class GameView {
     if (!open) {
       const bridge = NODE_ORDER.find((id) => NODES[id].unlocksWorld === world);
       const need = bridge ? (NODES[bridge].requiresBuildings ?? 0) : 0;
-      setText(v.lockedProgress, need ? `Realm buildings: ${buildingCount(state, 'realm')} / ${need}` : '');
+      const missing = bridge ? (NODES[bridge].requires ?? []).filter((r) => NODES[r].world !== 'realm' && state.nodes[r] <= 0) : [];
+      setText(
+        v.lockedProgress,
+        [
+          need ? `Realm buildings: ${buildingCount(state, 'realm')} / ${need}` : '',
+          ...missing.map((r) => `${NODES[r].name} (${WORLDS[NODES[r].world].name}): not yet`),
+        ]
+          .filter(Boolean)
+          .join(' · '),
+      );
       return;
     }
 

@@ -118,6 +118,8 @@ describe('worlds and techs', () => {
     expect(isNodeAvailable(state, 'library')).toBe(false);
     state.nodes.lumberCamp = 4;
     expect(isNodeAvailable(state, 'library')).toBe(true);
+    expect(isNodeAvailable(state, 'shrine')).toBe(false); // needs Occultism from the Lab
+    state.nodes.occultism = 1;
     expect(isNodeAvailable(state, 'shrine')).toBe(true);
   });
 
@@ -768,10 +770,10 @@ describe('build times', () => {
   });
 
   it('opens a world only when its gateway finishes building', () => {
-    const state = withNodes({ lumberCamp: 6, quarry: 3, workshop: 1 });
+    const state = withNodes({ lumberCamp: 6, quarry: 3, workshop: 1, occultism: 1 });
     state.resources.wood = 1000;
     state.resources.stone = 1000;
-    buyNode(state, 'shrine');
+    expect(buyNode(state, 'shrine')).toBe(true);
     tick(state, 44);
     expect(isWorldUnlocked(state, 'arcana')).toBe(false);
     tick(state, 1);
@@ -901,7 +903,10 @@ describe('research list', () => {
     const state = unlockAll(withNodes({ library: 1 }));
     expect(isResearchListed(state, 'scientificMethod')).toBe(true);
     expect(isResearchListed(state, 'engineering')).toBe(false);
-    expect(isResearchListed(state, 'arcaneTheory')).toBe(true); // needs nothing
+    expect(isResearchListed(state, 'occultism')).toBe(true);
+    expect(isResearchListed(state, 'arcaneTheory')).toBe(false); // needs Occultism
+    state.nodes.occultism = 1;
+    expect(isResearchListed(state, 'arcaneTheory')).toBe(true);
     state.nodes.scientificMethod = 1;
     expect(isResearchListed(state, 'scientificMethod')).toBe(false);
     expect(isResearchListed(state, 'geology')).toBe(true);
@@ -922,7 +927,8 @@ describe('research list', () => {
     const cols = researchTreeColumns();
     const col = (id: NodeId) => cols.findIndex((c) => c.includes(id));
     expect(col('scientificMethod')).toBe(0);
-    expect(col('arcaneTheory')).toBe(0);
+    expect(col('occultism')).toBe(0);
+    expect(col('arcaneTheory')).toBe(1);
     expect(col('geology')).toBe(1);
     expect(col('engineering')).toBe(2); // after Geology and Metallurgy
     expect(col('sailing')).toBe(3);

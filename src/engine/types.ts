@@ -251,6 +251,7 @@ export type NodeId =
   | 'sailing'
   | 'navigation'
   | 'expedition'
+  | 'occultism'
   | 'environmentalScience'
   | 'logistics'
   | 'metallurgy'
