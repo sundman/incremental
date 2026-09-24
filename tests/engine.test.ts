@@ -875,4 +875,16 @@ describe('scholars', () => {
     expect(state.resources.research).toBeCloseTo(stalled, 5);
     expect(activeLinks(state).some((l) => l.source === 'scholar' && l.to === 'realm' && !l.helpful)).toBe(true);
   });
+
+  it('Lab Assistants eat Realm Food too, and stop speeding up the Lab without it', () => {
+    const state = unlockAll(withNodes({ labAssistants: 2 }));
+    state.resources.food = 100;
+    state.population = 3;
+    tick(state, 10);
+    expect(state.resources.food).toBeCloseTo(100 - 2 * 0.2 * 10, 5);
+    expect(computeModifiers(state).get('speed:lab')?.mul).toBeCloseTo(1.21, 5);
+    state.resources.food = 0;
+    tick(state, 1);
+    expect(computeModifiers(state).get('speed:lab')?.mul ?? 1).toBeCloseTo(1, 5);
+  });
 });

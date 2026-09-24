@@ -8,7 +8,7 @@ An incremental game made of three smaller incremental worlds that run side by si
 - **Arcana** (magic): make Mana, condense it into Essence, then tear open a Rift for Aether. Four schools (Pyromancy, Vitalism, Umbramancy, Chronomancy) each unlock a special essence (Fire, Life, Shadow, Time) that a converter building distills from plain Essence. Some discoveries (such as Rune Lore) unlock magic buildings in the Realm.
   - Only one spell can be on at a time (the expensive Multicast upgrade in the Echo shop adds more), and switching one on swaps out the oldest. Summon Demons takes no slot and asks for confirmation before it's cast.
   - **Spells** such as Fertility Rite, Haste, Animation, Forge Fire, Healing Light, Shadow Labor and Time Warp are learned once. After that you click one to switch it on or off. While it's on, it costs Mana or an essence every second. If that upkeep can't be paid in full, it runs at partial power.
-- **Lab** (science): Scholars produce Research, which you spend on a tech tree. Each Scholar eats 0.2 Realm Food per second but takes no Realm housing or job, so a hungry Realm stalls the Lab. Techs unlock science buildings in the Realm.
+- **Lab** (science): Scholars produce Research, which you spend on a tech tree. Scholars and Lab Assistants each eat 0.2 Realm Food per second but take no Realm housing or jobs, so a hungry Realm stalls the Lab. Techs unlock science buildings in the Realm.
 
 Grow the Realm to 10 buildings (including a Workshop) and you can build a **Shrine** (opens Arcana) or a **Library** (opens the Lab; it's built from Planks and Bricks, so it also needs a Sawmill and a Kiln).
 
