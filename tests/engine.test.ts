@@ -941,6 +941,7 @@ describe('research list', () => {
     const col = (id: NodeId) => cols.findIndex((c) => c.includes(id));
     expect(col('scientificMethod')).toBe(0);
     expect(col('occultism')).toBe(0);
+    expect(col('agriculture')).toBe(0);
     expect(col('arcaneTheory')).toBe(1);
     expect(col('geology')).toBe(1);
     expect(col('engineering')).toBe(2); // after Geology and Metallurgy

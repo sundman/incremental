@@ -1197,7 +1197,6 @@ const nodeList: NodeDef[] = [
     baseCost: { research: 100 },
     costGrowth: 1,
     tier: 1,
-    requires: ['scientificMethod'],
     effects: [{ stat: 'rate:food', kind: 'mul', amount: 1.1 }],
   },
   {
