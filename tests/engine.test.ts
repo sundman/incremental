@@ -965,6 +965,18 @@ describe('printing press and church', () => {
   });
 });
 
+describe('markets', () => {
+  it('need Currency from the Lab', () => {
+    const state = unlockAll(withNodes({ house: 1 }));
+    expect(isNodeAvailable(state, 'market')).toBe(false);
+    expect(isResearchListed(state, 'currency')).toBe(false); // needs Scientific Method
+    state.nodes.scientificMethod = 1;
+    expect(isResearchListed(state, 'currency')).toBe(true);
+    state.nodes.currency = 1;
+    expect(isNodeAvailable(state, 'market')).toBe(true);
+  });
+});
+
 describe('huts', () => {
   it('get so expensive that the starting forest pays for 5 at most', () => {
     const state = createInitialState();

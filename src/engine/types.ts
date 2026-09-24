@@ -253,6 +253,7 @@ export type NodeId =
   | 'navigation'
   | 'expedition'
   | 'occultism'
+  | 'currency'
   | 'environmentalScience'
   | 'logistics'
   | 'metallurgy'
