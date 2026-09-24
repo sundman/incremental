@@ -313,8 +313,18 @@ export function upkeepRate(state: GameState, resource: ResourceId): number {
   return total;
 }
 
+/** Net change per second, including the Food that people moving in eat. */
 export function netRate(state: GameState, mods: Modifiers, resource: ResourceId): number {
-  return grossRate(state, mods, resource) - upkeepRate(state, resource);
+  const net = grossRate(state, mods, resource) - upkeepRate(state, resource);
+  return resource === 'food' ? net - arrivalFoodRate(state, mods, net) : net;
+}
+
+/** Food eaten per second by people moving into free housing right now. */
+export function arrivalFoodRate(state: GameState, mods: Modifiers, foodIncome = grossRate(state, mods, 'food') - upkeepRate(state, 'food')): number {
+  if (state.population >= housing(mods)) return 0;
+  const wanted = arrivalRate(mods) * POPULATION.foodPerPerson;
+  // With empty stores, newcomers can only eat what comes in.
+  return state.resources.food > 1e-9 ? wanted : Math.min(wanted, Math.max(0, foodIncome));
 }
 
 // ------------------------------------------------------------ cross links

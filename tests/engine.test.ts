@@ -534,6 +534,18 @@ describe('population', () => {
     expect(pollutionFactor(computeModifiers(state))).toBeCloseTo(1 / (1 + 0.03 * 10 * 0.9 ** 3 * 0.5));
   });
 
+  it('counts the Food that newcomers eat in the Food rate', () => {
+    const state = withJobs({ farmer: 2 }); // 1.2 Food/s, 2 of 3 housing used
+    state.resources.food = 100;
+    const mods = computeModifiers(state);
+    expect(netRate(state, mods, 'food')).toBeCloseTo(1.2 - 0.05 * 10);
+    const before = state.resources.food;
+    tick(state, 1);
+    expect(state.resources.food - before).toBeCloseTo(1.2 - 0.05 * 10, 5);
+    state.population = 3; // housing is full, so nobody eats on arrival
+    expect(netRate(state, computeModifiers(state), 'food')).toBeCloseTo(1.2);
+  });
+
   it('speeds up growth with Wells, Taverns and the Fertility Rite', () => {
     const state = unlockAll(withNodes({ well: 2, tavern: 1, fertilityRite: 1 }));
     state.activeSpells = ['fertilityRite'];
