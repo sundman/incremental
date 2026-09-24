@@ -40,8 +40,8 @@ import {
   resetWorld,
   tick,
 } from '../src/engine/engine';
-import { DEPOSITS, NODES } from '../src/engine/content';
-import type { GameState, JobId, NodeId } from '../src/engine/types';
+import { DEPOSITS, NODES, RESOURCES } from '../src/engine/content';
+import type { GameState, JobId, NodeId, ResourceId } from '../src/engine/types';
 
 function withNodes(levels: Partial<Record<NodeId, number>>, state = createInitialState()): GameState {
   Object.assign(state.nodes, levels);
@@ -271,7 +271,7 @@ describe('resets and Echoes', () => {
     expect(state.population).toBe(2);
     expect(state.resources.wood).toBe(0);
     expect(state.runEarned.realm).toBe(0);
-    expect(activeLinks(state)).toHaveLength(0);
+    expect(activeLinks(state).filter((l) => l.from === 'realm')).toHaveLength(0);
     // Other worlds keep their progress and stay open.
     expect(state.nodes.manaWell).toBe(3);
     expect(state.resources.mana).toBe(70);
@@ -831,10 +831,33 @@ describe('converters', () => {
         .filter((e) => e.stat.startsWith('rate:') && e.kind === 'add' && e.amount > 0)
         .reduce((sum, e) => sum + e.amount, 0);
       if (made === 0) continue;
-      const main = Math.max(...(Object.values(node.upkeep) as number[]));
+      // Only inputs from the node's own world are refined; another world's (Scholars eating Food) is just a cost.
+      const own = (Object.entries(node.upkeep) as [ResourceId, number][]).filter(([r]) => RESOURCES[r].world === node.world);
+      if (own.length === 0) continue;
+      const main = Math.max(...own.map(([, n]) => n));
       expect(main / made, node.id).toBeGreaterThanOrEqual(10 - 1e-9);
       checked++;
     }
     expect(checked).toBeGreaterThanOrEqual(10);
+  });
+});
+
+describe('scholars', () => {
+  it('eat Realm Food without using Realm people, and stall when it runs out', () => {
+    const state = unlockAll(withNodes({ scholar: 5 }));
+    state.resources.food = 100;
+    state.population = 3; // housing is full, so nobody arrives and eats Food
+    const people = state.population;
+    const research = state.resources.research;
+    tick(state, 10);
+    expect(state.resources.food).toBeCloseTo(100 - 5 * 0.2 * 10, 5);
+    expect(state.population).toBe(people);
+    expect(state.resources.research).toBeGreaterThan(research);
+
+    state.resources.food = 0;
+    const stalled = state.resources.research;
+    tick(state, 10);
+    expect(state.resources.research).toBeCloseTo(stalled, 5);
+    expect(activeLinks(state).some((l) => l.source === 'scholar' && l.to === 'realm' && !l.helpful)).toBe(true);
   });
 });

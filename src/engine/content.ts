@@ -1010,10 +1010,11 @@ const nodeList: NodeDef[] = [
     world: 'lab',
     kind: 'building',
     name: 'Scholar',
-    description: 'Produces Research.',
+    description: 'Produces Research. Scholars eat Realm Food, but they live in the Lab and take no Realm housing or jobs.',
     baseCost: { research: 10 },
     costGrowth: 1.15,
     tier: 1,
+    upkeep: { food: 0.2 },
     effects: [{ stat: 'rate:research', kind: 'add', amount: 0.3 }],
   },
   {
