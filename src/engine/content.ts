@@ -1241,9 +1241,9 @@ const nodeList: NodeDef[] = [
     kind: 'tech',
     name: 'Occultism',
     description: 'Candles, old books and whispered rites. Lets the Realm raise a Shrine, which opens Arcana, and leads to Arcane Theory.',
-    baseCost: { research: 80 },
+    baseCost: { research: 10000 },
     costGrowth: 1,
-    tier: 1,
+    tier: 4,
     effects: [{ stat: 'rate:mana', kind: 'mul', amount: 1.1 }],
   },
   {
