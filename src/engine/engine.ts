@@ -549,6 +549,38 @@ export function isNodeAvailable(state: GameState, id: NodeId): boolean {
   return (node.requires ?? []).every((req) => state.nodes[req] > 0);
 }
 
+/**
+ * Whether a Lab tech belongs in the research list: every tech it builds on is researched,
+ * and it can still be researched (again). The full tree is shown separately.
+ */
+export function isResearchListed(state: GameState, id: NodeId): boolean {
+  const node = NODES[id];
+  if (node.kind !== 'tech' || node.world !== 'lab' || !isWorldUnlocked(state, 'lab')) return false;
+  if (state.construction[id]) return true;
+  if (state.nodes[id] >= maxLevel(id)) return false;
+  return (node.requires ?? []).every((req) => NODES[req].kind !== 'tech' || state.nodes[req] > 0);
+}
+
+/** Lab techs by column in the research tree: a tech sits one column right of its deepest Lab prerequisite. */
+export function researchTreeColumns(): NodeId[][] {
+  const depth = new Map<NodeId, number>();
+  const depthOf = (id: NodeId): number => {
+    const known = depth.get(id);
+    if (known !== undefined) return known;
+    const reqs = (NODES[id].requires ?? []).filter((r) => NODES[r].world === 'lab' && NODES[r].kind === 'tech');
+    const d = reqs.length ? 1 + Math.max(...reqs.map(depthOf)) : 0;
+    depth.set(id, d);
+    return d;
+  };
+  const columns: NodeId[][] = [];
+  for (const id of NODE_ORDER) {
+    const node = NODES[id];
+    if (node.world !== 'lab' || node.kind !== 'tech') continue;
+    (columns[depthOf(id)] ??= []).push(id);
+  }
+  return columns;
+}
+
 export function canAfford(state: GameState, cost: Cost): boolean {
   return (Object.entries(cost) as [ResourceId, number][]).every(([r, n]) => state.resources[r] >= n);
 }

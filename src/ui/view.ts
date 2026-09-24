@@ -56,6 +56,8 @@ import {
   spellToReplace,
   toggleSpell,
   isNodeAvailable,
+  isResearchListed,
+  researchTreeColumns,
   isResourceRevealed,
   isWorldUnlocked,
   maxLevel,
@@ -172,6 +174,8 @@ export class GameView {
     DEPOSIT_ORDER.map((d): [DepositId, HTMLElement] => [d, h('div', { class: `deposit deposit-${d}` })]),
   ) as Record<DepositId, HTMLElement>;
   private echoes: HTMLElement;
+  private treeDialog = h('dialog', { class: 'tech-tree' });
+  private treeBody = h('div', { class: 'tree-columns' });
   private shop: HTMLElement;
   private shopHint: HTMLElement;
 
@@ -204,7 +208,19 @@ export class GameView {
     for (const id of META_ORDER) shopGrid.append(this.buildMeta(id));
     this.shop = h('section', { class: 'shop' }, h('h2', {}, 'Echo shop'), this.shopHint, shopGrid);
 
-    root.replaceChildren(header, worldsEl, this.shop);
+    const closeTree = h('button', { class: 'link-button tree-close', type: 'button' }, 'Close');
+    closeTree.addEventListener('click', () => this.treeDialog.close());
+    // A click on the backdrop (outside the box) closes it too.
+    this.treeDialog.addEventListener('click', (e) => {
+      if (e.target === this.treeDialog) this.treeDialog.close();
+    });
+    this.treeDialog.append(
+      h('div', { class: 'tree-head' }, h('h2', {}, 'Research tree'), closeTree),
+      h('p', { class: 'muted small' }, 'Every Lab tech. Each column builds on the ones to its left.'),
+      this.treeBody,
+    );
+
+    root.replaceChildren(header, worldsEl, this.shop, this.treeDialog);
   }
 
   private buildWorld(world: WorldId): HTMLElement {
@@ -274,7 +290,9 @@ export class GameView {
       h('details', { class: 'link-box', open: '' }, h('summary', {}, 'Effects from other worlds'), incoming),
       h('h3', {}, 'Buildings'),
       buildings,
-      ...(techs.childElementCount ? [h('h3', {}, world === 'arcana' ? 'Discoveries' : 'Research'), techs] : []),
+      ...(techs.childElementCount
+        ? [h('h3', {}, world === 'arcana' ? 'Discoveries' : 'Research'), ...(world === 'lab' ? [this.treeButton()] : []), techs]
+        : []),
       ...(spells.childElementCount
         ? [h('h3', {}, 'Spells'), h('p', { class: 'muted small' }, 'Learn a spell once, then click it to switch it on or off. It only costs upkeep while on. Only one spell can be on at a time (Multicast in the Echo shop adds more), so switching one on swaps out the oldest. Summon Demons is the exception: it takes no slot, but once cast it runs until the Realm is down to 2 survivors.'), spells]
         : []),
@@ -292,6 +310,69 @@ export class GameView {
     );
     this.worlds[world] = { panel, locked, lockedProgress, body, resources, clicks, incoming, outgoing, resetButton, resetNote };
     return panel;
+  }
+
+  private treeButton(): HTMLElement {
+    const button = h('button', { class: 'reset tree-button', type: 'button' }, 'Show full research tree');
+    button.addEventListener('click', () => {
+      this.renderTree(computeModifiers(this.state));
+      this.treeDialog.showModal();
+    });
+    return h('p', { class: 'small' }, h('span', { class: 'muted' }, 'Only research you can start now is listed. '), button);
+  }
+
+  private renderTree(mods: Modifiers) {
+    const state = this.state;
+    const cols = researchTreeColumns().map((ids) => {
+      const items = ids.map((id) => {
+        const node = NODES[id];
+        const level = state.nodes[id];
+        const max = maxLevel(id);
+        const busy = !!state.construction[id];
+        const done = level >= max;
+        const open = !done && isNodeAvailable(state, id);
+        const cls = busy ? 'busy' : done ? 'done' : open ? 'open' : level > 0 ? 'open' : 'locked';
+        const status = busy
+          ? 'Researching…'
+          : done
+            ? 'Researched'
+            : max > 1 && level > 0
+              ? `${level} / ${max}`
+              : open
+                ? 'Available'
+                : 'Locked';
+        const cost = done
+          ? ''
+          : Object.entries(nodeCost(state, id, mods))
+              .map(([r, n]) => `${formatNumber(n)} ${RESOURCES[r as ResourceId].name}`)
+              .join(' · ');
+        const effects = node.effects
+          .map((e) => {
+            const to = statWorld(e.stat);
+            const tag = to !== 'lab' ? `<span class="tag tag-${to}">${WORLDS[to].name}</span> ` : '';
+            const amount = effectiveAmount(state, e, 'lab');
+            return `<li class="${isHelpful({ ...e, amount }) ? '' : 'bad'}">${tag}${escape(describeEffect(e, amount))}</li>`;
+          })
+          .join('');
+        const needs = (node.requires ?? [])
+          .map((req) => {
+            const w = NODES[req].world;
+            const tag = w !== 'lab' ? `<span class="tag tag-${w}">${WORLDS[w].name}</span> ` : '';
+            return `<span class="${state.nodes[req] > 0 ? 'met' : 'unmet'}">${tag}${escape(NODES[req].name)}</span>`;
+          })
+          .join(', ');
+        return (
+          `<div class="tree-node tree-${cls}">` +
+          `<div class="tree-title"><span class="tree-name">${escape(node.name)}</span><span class="tree-status">${status}</span></div>` +
+          (effects ? `<ul class="tree-effects">${effects}</ul>` : '') +
+          (cost ? `<div class="tree-cost">${cost}</div>` : '') +
+          (needs ? `<div class="tree-needs">Needs ${needs}</div>` : '') +
+          `</div>`
+        );
+      });
+      return `<div class="tree-column">${items.join('')}</div>`;
+    });
+    setHtml(this.treeBody, cols.join(''));
   }
 
   private buildPopulation(): HTMLElement {
@@ -480,6 +561,7 @@ export class GameView {
     this.renderPopulation(mods);
     this.renderDeposits(mods);
     for (const id of NODE_ORDER) this.renderNode(id, mods);
+    if (this.treeDialog.open) this.renderTree(mods);
 
     const anyGain = WORLD_ORDER.some((w) => isWorldUnlocked(state, w) && echoGain(state, w) > 0);
     setHidden(this.shopHint, state.totalEchoes > 0);
@@ -577,7 +659,11 @@ export class GameView {
     const frontier = (node.requires ?? []).every(
       (req) => NODES[req].world !== node.world || state.nodes[req] > 0 || isNodeAvailable(state, req),
     );
-    const shown = isWorldUnlocked(state, node.world) && (available || level > 0 || frontier);
+    // Lab research only lists what you can start now; the full tree has its own view.
+    const shown =
+      node.kind === 'tech' && node.world === 'lab'
+        ? isResearchListed(state, id)
+        : isWorldUnlocked(state, node.world) && (available || level > 0 || frontier);
     setHidden(c.card, !shown);
     if (!shown) return;
 

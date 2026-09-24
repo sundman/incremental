@@ -39,6 +39,8 @@ import {
   nodeCost,
   resetWorld,
   tick,
+  isResearchListed,
+  researchTreeColumns,
 } from '../src/engine/engine';
 import { DEPOSITS, NODES, RESOURCES } from '../src/engine/content';
 import type { GameState, JobId, NodeId, ResourceId } from '../src/engine/types';
@@ -891,6 +893,34 @@ describe('laboratories', () => {
     expect(computeModifiers(state).get('prod:arcana')?.mul).toBeCloseTo(0.97 ** 5, 5);
     const link = activeLinks(state).find((l) => l.source === 'laboratory');
     expect(link).toMatchObject({ from: 'lab', to: 'arcana', helpful: false });
+  });
+});
+
+describe('research list', () => {
+  it('lists only Lab techs whose tech prerequisites are researched, and drops finished ones', () => {
+    const state = unlockAll(withNodes({ library: 1 }));
+    expect(isResearchListed(state, 'scientificMethod')).toBe(true);
+    expect(isResearchListed(state, 'engineering')).toBe(false);
+    state.nodes.scientificMethod = 1;
+    expect(isResearchListed(state, 'scientificMethod')).toBe(false);
+    expect(isResearchListed(state, 'engineering')).toBe(true);
+    expect(isResearchListed(state, 'sanitation')).toBe(false); // needs Medicine and Engineering
+    state.nodes.cartography = 3;
+    expect(isResearchListed(state, 'cartography')).toBe(true); // 3 of 10
+    state.nodes.cartography = 10;
+    expect(isResearchListed(state, 'cartography')).toBe(false);
+    expect(isResearchListed(state, 'scholar')).toBe(false); // buildings are listed as before
+  });
+
+  it('lays the whole tree out in columns by depth', () => {
+    const cols = researchTreeColumns();
+    const col = (id: NodeId) => cols.findIndex((c) => c.includes(id));
+    expect(col('scientificMethod')).toBe(0);
+    expect(col('engineering')).toBe(1);
+    expect(col('sailing')).toBe(2);
+    expect(col('navigation')).toBe(3); // after Sailing and Optics, both in column 2
+    expect(col('expedition')).toBe(4);
+    expect(cols.flat()).toHaveLength(new Set(cols.flat()).size);
   });
 });
 

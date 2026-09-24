@@ -484,3 +484,126 @@ button {
 .land.attention {
   border-color: var(--bad);
 }
+
+/* Research tree */
+.tree-button {
+  --accent: var(--lab);
+  margin-left: 4px;
+}
+
+.tech-tree {
+  width: min(1200px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 16px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--lab);
+  border-radius: 10px;
+}
+
+.tech-tree::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.tree-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tree-head h2 {
+  margin: 0;
+  color: var(--lab);
+}
+
+.tree-columns {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.tree-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 0 210px;
+}
+
+.tree-node {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.tree-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.tree-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.tree-status {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.tree-effects {
+  margin: 4px 0;
+  padding-left: 16px;
+}
+
+.tree-cost,
+.tree-needs {
+  color: var(--muted);
+}
+
+.tree-needs .met {
+  color: var(--good);
+}
+
+.tree-needs .unmet {
+  color: var(--bad);
+}
+
+.tree-done {
+  border-left-color: var(--good);
+  opacity: 0.75;
+}
+
+.tree-done .tree-status {
+  color: var(--good);
+}
+
+.tree-open,
+.tree-busy {
+  border-left-color: var(--lab);
+}
+
+.tree-open .tree-status,
+.tree-busy .tree-status {
+  color: var(--lab);
+}
+
+.tree-locked {
+  opacity: 0.6;
+}
+
+@media (max-width: 600px) {
+  .tech-tree {
+    width: calc(100vw - 16px);
+    padding: 12px;
+  }
+
+  .tree-column {
+    flex-basis: 180px;
+  }
+}
