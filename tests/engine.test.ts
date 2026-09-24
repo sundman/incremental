@@ -412,7 +412,7 @@ describe('land', () => {
     expect(land(state)).toBe(20 + 1 + 3 * 5);
     expect(maxLevel('expedition')).toBe(30);
     state.resources.wood = 1e6;
-    expect(buyNode(state, 'hut')).toBe(true);
+    expect(buyNode(state, 'farm')).toBe(true);
     const link = activeLinks(state).find((l) => l.source === 'expedition');
     expect(link).toMatchObject({ from: 'lab', to: 'realm', helpful: true, total: 15 });
     resetWorld(state, 'lab');
@@ -854,6 +854,22 @@ describe('converters', () => {
       checked++;
     }
     expect(checked).toBeGreaterThanOrEqual(10);
+  });
+});
+
+describe('huts', () => {
+  it('get so expensive that the starting forest pays for 5 at most', () => {
+    const state = createInitialState();
+    const prices: number[] = [];
+    for (let n = 0; n < 6; n++) {
+      state.nodes.hut = n;
+      prices.push(nodeCost(state, 'hut').wood ?? 0);
+    }
+    const firstFour = prices.slice(0, 4).reduce((a, b) => a + b, 0);
+    const firstFive = firstFour + (prices[4] ?? 0);
+    expect(firstFour).toBeLessThan(DEPOSITS.wood.start / 5);
+    expect(firstFive).toBeLessThan(DEPOSITS.wood.start);
+    expect(firstFive + (prices[5] ?? 0)).toBeGreaterThan(DEPOSITS.wood.start);
   });
 });
 
