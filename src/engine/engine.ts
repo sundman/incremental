@@ -561,6 +561,12 @@ export function isResearchListed(state: GameState, id: NodeId): boolean {
   return (node.requires ?? []).every((req) => NODES[req].kind !== 'tech' || state.nodes[req] > 0);
 }
 
+/** Whether a building card is shown: only once everything it requires is unlocked (or you already have one). */
+export function isBuildingListed(state: GameState, id: NodeId): boolean {
+  if (NODES[id].kind !== 'building') return false;
+  return state.nodes[id] > 0 || !!state.construction[id] || isNodeAvailable(state, id);
+}
+
 /** Lab techs by column in the research tree: a tech sits one column right of its deepest Lab prerequisite. */
 export function researchTreeColumns(): NodeId[][] {
   const depth = new Map<NodeId, number>();

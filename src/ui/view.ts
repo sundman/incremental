@@ -57,6 +57,7 @@ import {
   toggleSpell,
   isNodeAvailable,
   isResearchListed,
+  isBuildingListed,
   researchTreeColumns,
   isResourceRevealed,
   isWorldUnlocked,
@@ -669,10 +670,13 @@ export class GameView {
       (req) => NODES[req].world !== node.world || state.nodes[req] > 0 || isNodeAvailable(state, req),
     );
     // Lab research only lists what you can start now; the full tree has its own view.
+    // Buildings stay hidden until everything they require is unlocked.
     const shown =
       node.kind === 'tech' && node.world === 'lab'
         ? isResearchListed(state, id)
-        : isWorldUnlocked(state, node.world) && (available || level > 0 || frontier);
+        : node.kind === 'building'
+          ? isBuildingListed(state, id)
+          : isWorldUnlocked(state, node.world) && (available || level > 0 || frontier);
     setHidden(c.card, !shown);
     if (!shown) return;
 

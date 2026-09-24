@@ -40,6 +40,7 @@ import {
   resetWorld,
   tick,
   isResearchListed,
+  isBuildingListed,
   researchTreeColumns,
 } from '../src/engine/engine';
 import { DEPOSITS, NODES, RESOURCES } from '../src/engine/content';
@@ -974,6 +975,23 @@ describe('markets', () => {
     expect(isResearchListed(state, 'currency')).toBe(true);
     state.nodes.currency = 1;
     expect(isNodeAvailable(state, 'market')).toBe(true);
+  });
+});
+
+describe('building list', () => {
+  it('hides buildings until everything they require is unlocked', () => {
+    const state = unlockAll(createInitialState());
+    expect(isBuildingListed(state, 'hut')).toBe(true);
+    expect(isBuildingListed(state, 'workshop')).toBe(false); // needs a Quarry
+    state.nodes.quarry = 1;
+    expect(isBuildingListed(state, 'workshop')).toBe(true);
+    expect(isBuildingListed(state, 'lumberCamp')).toBe(false); // needs Forestry from the Lab
+    state.nodes.forestry = 1;
+    expect(isBuildingListed(state, 'lumberCamp')).toBe(true);
+    state.nodes.forestry = 0; // e.g. after a Lab reset, camps already built stay listed
+    state.nodes.lumberCamp = 2;
+    expect(isBuildingListed(state, 'lumberCamp')).toBe(true);
+    expect(isBuildingListed(state, 'scientificMethod')).toBe(false); // techs are listed separately
   });
 });
 
