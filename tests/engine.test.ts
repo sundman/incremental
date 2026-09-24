@@ -901,6 +901,7 @@ describe('research list', () => {
     const state = unlockAll(withNodes({ library: 1 }));
     expect(isResearchListed(state, 'scientificMethod')).toBe(true);
     expect(isResearchListed(state, 'engineering')).toBe(false);
+    expect(isResearchListed(state, 'arcaneTheory')).toBe(true); // needs nothing
     state.nodes.scientificMethod = 1;
     expect(isResearchListed(state, 'scientificMethod')).toBe(false);
     expect(isResearchListed(state, 'geology')).toBe(true);
@@ -921,6 +922,7 @@ describe('research list', () => {
     const cols = researchTreeColumns();
     const col = (id: NodeId) => cols.findIndex((c) => c.includes(id));
     expect(col('scientificMethod')).toBe(0);
+    expect(col('arcaneTheory')).toBe(0);
     expect(col('geology')).toBe(1);
     expect(col('engineering')).toBe(2); // after Geology and Metallurgy
     expect(col('sailing')).toBe(3);
