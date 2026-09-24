@@ -257,8 +257,8 @@ const nodeList: NodeDef[] = [
     costGrowth: 1.35,
     tier: 2,
     requires: ['workshop'],
-    upkeep: { wood: 4 },
-    effects: [{ stat: 'rate:planks', kind: 'add', amount: 0.4 }],
+    upkeep: { wood: 1 },
+    effects: [{ stat: 'rate:planks', kind: 'add', amount: 0.1 }],
   },
   {
     id: 'kiln',

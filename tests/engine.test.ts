@@ -1000,8 +1000,8 @@ describe('switching buildings off', () => {
     expect(state.resources.planks).toBe(0);
     expect(toggleBuilding(state, 'sawmill')).toBe(true);
     tick(state, 10);
-    expect(state.resources.wood).toBeCloseTo(60);
-    expect(state.resources.planks).toBeCloseTo(4);
+    expect(state.resources.wood).toBeCloseTo(90);
+    expect(state.resources.planks).toBeCloseTo(1);
   });
 
   it('forgets the switch when its world is reset', () => {
