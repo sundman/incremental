@@ -107,16 +107,16 @@ describe('worlds and techs', () => {
     expect(isWorldUnlocked(state, 'lab')).toBe(false);
   });
 
-  it('keeps the other worlds out of reach until the Realm has grown', () => {
+  it('keeps the other worlds out of reach until their gateways can be built, however small the Realm', () => {
     const state = createInitialState();
     state.resources.wood = 10_000;
     state.resources.stone = 10_000;
     expect(buyNode(state, 'library')).toBe(false);
     expect(buyNode(state, 'shrine')).toBe(false);
-    withNodes({ lumberCamp: 3, quarry: 3, workshop: 1, sawmill: 1, kiln: 1 }, state);
-    expect(buildingCount(state, 'realm')).toBe(9);
-    expect(isNodeAvailable(state, 'library')).toBe(false);
-    state.nodes.lumberCamp = 4;
+    withNodes({ quarry: 1, workshop: 1, sawmill: 1 }, state);
+    expect(isNodeAvailable(state, 'library')).toBe(false); // needs a Kiln too
+    state.nodes.kiln = 1;
+    expect(buildingCount(state, 'realm')).toBe(4);
     expect(isNodeAvailable(state, 'library')).toBe(true);
     expect(isNodeAvailable(state, 'shrine')).toBe(false); // needs Occultism from the Lab
     state.nodes.occultism = 1;
