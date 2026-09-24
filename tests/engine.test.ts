@@ -395,7 +395,7 @@ describe('land', () => {
   });
 
   it('finds more land with Cartography and each Expedition, and keeps it through a Lab reset', () => {
-    const state = unlockAll(withNodes({ hut: 20, cartography: 1, expedition: 3 }));
+    const state = unlockAll(withNodes({ hut: 20, cartography: 1, expedition: 3, agriculture: 1 }));
     expect(land(state)).toBe(20 + 1 + 3 * 5);
     expect(maxLevel('expedition')).toBe(30);
     state.resources.wood = 1e6;
@@ -965,6 +965,9 @@ describe('building list', () => {
   it('hides buildings until everything they require is unlocked', () => {
     const state = unlockAll(createInitialState());
     expect(isBuildingListed(state, 'hut')).toBe(true);
+    expect(isBuildingListed(state, 'farm')).toBe(false); // needs Agriculture from the Lab
+    state.nodes.agriculture = 1;
+    expect(isBuildingListed(state, 'farm')).toBe(true);
     expect(isBuildingListed(state, 'workshop')).toBe(false); // needs a Quarry
     state.nodes.quarry = 1;
     expect(isBuildingListed(state, 'workshop')).toBe(true);
