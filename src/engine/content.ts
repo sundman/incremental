@@ -270,8 +270,8 @@ const nodeList: NodeDef[] = [
     costGrowth: 1.35,
     tier: 2,
     requires: ['clayPit', 'sawmill'],
-    upkeep: { clay: 3, wood: 0.5 },
-    effects: [{ stat: 'rate:bricks', kind: 'add', amount: 0.3 }, { stat: 'pollution', kind: 'add', amount: 1 }],
+    upkeep: { clay: 1, wood: 0.5 },
+    effects: [{ stat: 'rate:bricks', kind: 'add', amount: 0.1 }, { stat: 'pollution', kind: 'add', amount: 1 }],
   },
   {
     id: 'house',
