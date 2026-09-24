@@ -941,7 +941,10 @@ describe('research list', () => {
     const col = (id: NodeId) => cols.findIndex((c) => c.includes(id));
     expect(col('scientificMethod')).toBe(0);
     expect(col('occultism')).toBe(0);
-    expect(col('agriculture')).toBe(0);
+    expect(col('settlements')).toBe(0);
+    expect(col('agriculture')).toBe(1);
+    expect(col('homebuilding')).toBe(1);
+    expect(col('currency')).toBe(1);
     expect(col('arcaneTheory')).toBe(1);
     expect(col('geology')).toBe(1);
     expect(col('engineering')).toBe(2); // after Geology and Metallurgy
@@ -972,8 +975,8 @@ describe('markets', () => {
   it('need Currency from the Lab', () => {
     const state = unlockAll(withNodes({ house: 1 }));
     expect(isNodeAvailable(state, 'market')).toBe(false);
-    expect(isResearchListed(state, 'currency')).toBe(false); // needs Scientific Method
-    state.nodes.scientificMethod = 1;
+    expect(isResearchListed(state, 'currency')).toBe(false); // needs Settlements
+    state.nodes.settlements = 1;
     expect(isResearchListed(state, 'currency')).toBe(true);
     state.nodes.currency = 1;
     expect(isNodeAvailable(state, 'market')).toBe(true);
@@ -1022,6 +1025,19 @@ describe('switching buildings off', () => {
     toggleBuilding(state, 'sawmill');
     resetWorld(state, 'realm');
     expect(state.switchedOff).toEqual([]);
+  });
+});
+
+describe('settlements', () => {
+  it('is a root research leading to Agriculture, Housing and Currency, and Houses need Housing', () => {
+    const state = unlockAll(withNodes({ sawmill: 1, kiln: 1 }));
+    expect(isResearchListed(state, 'settlements')).toBe(true);
+    for (const id of ['agriculture', 'homebuilding', 'currency'] as NodeId[]) expect(isResearchListed(state, id)).toBe(false);
+    state.nodes.settlements = 1;
+    for (const id of ['agriculture', 'homebuilding', 'currency'] as NodeId[]) expect(isResearchListed(state, id)).toBe(true);
+    expect(isNodeAvailable(state, 'house')).toBe(false);
+    state.nodes.homebuilding = 1;
+    expect(isNodeAvailable(state, 'house')).toBe(true);
   });
 });
 

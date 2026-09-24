@@ -251,6 +251,8 @@ export type NodeId =
   | 'occultism'
   | 'currency'
   | 'agriculture'
+  | 'settlements'
+  | 'homebuilding'
   | 'environmentalScience'
   | 'logistics'
   | 'metallurgy'
