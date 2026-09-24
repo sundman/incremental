@@ -248,6 +248,8 @@ export type NodeId =
   | 'deepTime'
   | 'forestry'
   | 'cartography'
+  | 'sailing'
+  | 'navigation'
   | 'expedition'
   | 'environmentalScience'
   | 'logistics'

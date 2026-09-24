@@ -870,6 +870,21 @@ describe('lumber camps', () => {
   });
 });
 
+describe('exploring', () => {
+  it('needs Sailing and Navigation before any Expedition can set out', () => {
+    const state = unlockAll(withNodes({ library: 1, scientificMethod: 1, cartography: 1, engineering: 1 }));
+    Object.assign(state.resources, { research: 1e6, food: 1e6, planks: 1e6, glass: 1e6 });
+    expect(buyNode(state, 'expedition')).toBe(false);
+    expect(buyNode(state, 'navigation')).toBe(false); // needs Sailing and Optics
+    expect(buyNode(state, 'sailing')).toBe(true);
+    tick(state, 600);
+    state.nodes.optics = 1;
+    expect(buyNode(state, 'navigation')).toBe(true);
+    tick(state, 600);
+    expect(buyNode(state, 'expedition')).toBe(true);
+  });
+});
+
 describe('huts', () => {
   it('get so expensive that the starting forest pays for 5 at most', () => {
     const state = createInitialState();
