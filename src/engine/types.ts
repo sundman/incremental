@@ -304,6 +304,8 @@ export interface GameState {
   jobs: Record<JobId, number>;
   /** Learned spells that are currently switched on. */
   activeSpells: NodeId[];
+  /** Buildings with upkeep that the player switched off: they stop consuming and producing. */
+  switchedOff: NodeId[];
   /** What is left in each of the Realm's deposits (forest, quarries, clay beds, coal seams). */
   deposits: Record<DepositId, Deposit>;
   /** Size of the summoned demon horde; 0 unless a horde spell is on. Fractional while growing. */

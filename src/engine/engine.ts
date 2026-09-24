@@ -43,6 +43,7 @@ export function createInitialState(): GameState {
     population: POPULATION.start,
     jobs: zeroes(JOB_ORDER),
     activeSpells: [],
+    switchedOff: [],
     deposits: Object.fromEntries(
       DEPOSIT_ORDER.map((d) => [d, { left: DEPOSITS[d].start, max: DEPOSITS[d].start, cut: 0 }]),
     ) as GameState['deposits'],
@@ -138,8 +139,30 @@ export function isSpellActive(state: GameState, id: NodeId): boolean {
  */
 export function runningLevel(state: GameState, id: NodeId): number {
   if (NODES[id].spell && !isSpellActive(state, id)) return 0;
+  if (state.switchedOff.includes(id)) return 0;
   if (NODES[id].horde) return state.demons;
   return state.nodes[id];
+}
+
+/** Buildings that consume resources every second can be switched off and on. */
+export function canSwitchOff(id: NodeId): boolean {
+  const node = NODES[id];
+  return node.kind === 'building' && !node.spell && !!node.upkeep;
+}
+
+export function isSwitchedOff(state: GameState, id: NodeId): boolean {
+  return state.switchedOff.includes(id);
+}
+
+/** Switches a consuming building off or back on. Returns whether it is now running. */
+export function toggleBuilding(state: GameState, id: NodeId): boolean {
+  if (!canSwitchOff(id)) return true;
+  if (isSwitchedOff(state, id)) {
+    state.switchedOff = state.switchedOff.filter((s) => s !== id);
+    return true;
+  }
+  state.switchedOff.push(id);
+  return false;
 }
 
 /** Whether a learned spell can be cast now. A horde needs more people than it leaves alive. */
@@ -837,6 +860,7 @@ export function resetWorld(state: GameState, world: WorldId): number {
     delete state.efficiency[id];
     delete state.construction[id];
     state.activeSpells = state.activeSpells.filter((s) => s !== id);
+    state.switchedOff = state.switchedOff.filter((s) => s !== id);
   }
   if (world === 'realm') {
     // Only the survivors are left, so a demon horde has nothing more to eat.

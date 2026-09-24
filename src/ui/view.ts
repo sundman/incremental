@@ -55,6 +55,9 @@ import {
   toggleSpell,
   isNodeAvailable,
   isResearchListed,
+  canSwitchOff,
+  isSwitchedOff,
+  toggleBuilding,
   isBuildingListed,
   researchTreeColumns,
   isResourceRevealed,
@@ -128,6 +131,8 @@ interface NodeCard {
   effects: HTMLElement;
   needs: HTMLElement;
   time: HTMLElement;
+  /** On/off switch for buildings that consume resources. */
+  power: HTMLButtonElement | null;
 }
 
 interface JobRow {
@@ -510,7 +515,16 @@ export class GameView {
       this.hooks.onChange();
     });
     const card = h('div', { class: `node node-${node.kind}` }, button);
-    this.nodes[id] = { card, button, level, cost, effects, needs, time };
+    let power: HTMLButtonElement | null = null;
+    if (canSwitchOff(id)) {
+      power = h('button', { class: 'power', type: 'button' });
+      power.addEventListener('click', () => {
+        toggleBuilding(this.state, id);
+        this.hooks.onChange();
+      });
+      card.append(power);
+    }
+    this.nodes[id] = { card, button, level, cost, effects, needs, time, power };
     return card;
   }
 
@@ -690,6 +704,13 @@ export class GameView {
     } else {
       setText(c.level, String(level));
     }
+    if (c.power) {
+      const off = isSwitchedOff(state, id);
+      setHidden(c.power, level <= 0);
+      setText(c.power, off ? '⏻ Off · switch on' : '⏻ On · switch off');
+      c.power.classList.toggle('is-off', off);
+      c.card.classList.toggle('switched-off', off && level > 0);
+    }
     c.card.classList.toggle('constructing', !!building);
     c.card.classList.toggle('owned', node.kind === 'tech' && maxed);
 
@@ -710,7 +731,7 @@ export class GameView {
                 const from = RESOURCES[r as ResourceId].world;
                 const tag = from !== node.world ? `<span class="tag tag-${from}">${WORLDS[from].name}</span> ` : '';
                 const when = node.spell ? ' while on' : ' each';
-                return `<li class="${tag ? 'bad' : 'muted'}">${tag}Uses ${formatNumber(n)} ${RESOURCES[r as ResourceId].name}/s${when}</li>`;
+                return `<li class="${tag ? 'bad' : 'upkeep'}">${tag}Uses ${formatNumber(n)} ${RESOURCES[r as ResourceId].name}/s${when}</li>`;
               },
             )
           : [],

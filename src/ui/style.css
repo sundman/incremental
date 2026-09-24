@@ -9,6 +9,7 @@
   --good: #5fd08a;
   --bad: #f07178;
   --short: #f0a060;
+  --upkeep: #e8d36a;
   --realm: #d9a55b;
   --arcana: #b48cf2;
   --lab: #5cc8e0;
@@ -219,6 +220,38 @@ button {
 
 .bad {
   color: var(--bad);
+}
+
+/* What a building or spell burns every second. */
+.upkeep {
+  color: var(--upkeep);
+}
+
+.power {
+  display: block;
+  width: 100%;
+  margin-top: 3px;
+  padding: 3px 10px;
+  font-size: 12px;
+  text-align: left;
+  background: var(--card);
+  color: var(--good);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.power:hover {
+  background: var(--card-hover);
+}
+
+.power.is-off {
+  color: var(--bad);
+  border-color: var(--bad);
+}
+
+.node.switched-off .node-button {
+  opacity: 0.55;
 }
 
 .cost {

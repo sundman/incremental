@@ -13,7 +13,11 @@ describe('save', () => {
     tick(state, 5);
     state.construction.quarry = { done: 3, needed: 5 };
     state.activeSpells = ['haste'];
+    state.switchedOff = ['sawmill'];
     const loaded = deserialize(serialize(state));
+    expect(loaded.switchedOff).toEqual(['sawmill']);
+    expect(deserialize(JSON.stringify({ switchedOff: ['hut', 'kiln', 'nope'] })).switchedOff).toEqual(['kiln']);
+    expect(deserialize('{}').switchedOff).toEqual([]);
     expect(loaded.construction).toEqual({ quarry: { done: 3, needed: 5 } });
     expect(loaded.activeSpells).toEqual(['haste']);
     expect(loaded.resources).toEqual(state.resources);

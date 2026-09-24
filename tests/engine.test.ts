@@ -38,6 +38,8 @@ import {
   resetWorld,
   tick,
   isResearchListed,
+  canSwitchOff,
+  toggleBuilding,
   isBuildingListed,
   researchTreeColumns,
 } from '../src/engine/engine';
@@ -982,6 +984,31 @@ describe('building list', () => {
     state.nodes.lumberCamp = 2;
     expect(isBuildingListed(state, 'lumberCamp')).toBe(true);
     expect(isBuildingListed(state, 'scientificMethod')).toBe(false); // techs are listed separately
+  });
+});
+
+describe('switching buildings off', () => {
+  it('stops a consuming building from using or making anything until it is switched back on', () => {
+    const state = withNodes({ sawmill: 1 });
+    state.resources.wood = 100;
+    expect(canSwitchOff('sawmill')).toBe(true);
+    expect(canSwitchOff('hut')).toBe(false); // uses nothing
+    expect(canSwitchOff('fertilityRite')).toBe(false); // spells have their own switch
+    expect(toggleBuilding(state, 'sawmill')).toBe(false);
+    tick(state, 10);
+    expect(state.resources.wood).toBe(100);
+    expect(state.resources.planks).toBe(0);
+    expect(toggleBuilding(state, 'sawmill')).toBe(true);
+    tick(state, 10);
+    expect(state.resources.wood).toBeCloseTo(60);
+    expect(state.resources.planks).toBeCloseTo(4);
+  });
+
+  it('forgets the switch when its world is reset', () => {
+    const state = unlockAll(withNodes({ sawmill: 1 }));
+    toggleBuilding(state, 'sawmill');
+    resetWorld(state, 'realm');
+    expect(state.switchedOff).toEqual([]);
   });
 });
 

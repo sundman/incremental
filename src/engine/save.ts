@@ -1,4 +1,4 @@
-import { createInitialState, SAVE_VERSION } from './engine';
+import { canSwitchOff, createInitialState, SAVE_VERSION } from './engine';
 import type { GameState } from './types';
 import { DEMONS, DEPOSIT_ORDER, NODES, NODE_ORDER, WORLD_ORDER } from './content';
 
@@ -85,6 +85,9 @@ export function deserialize(text: string): GameState {
     population: num(raw.population, fresh.population),
     jobs: mergeNumbers(fresh.jobs, raw.jobs),
     activeSpells,
+    switchedOff: Array.isArray(raw.switchedOff)
+      ? NODE_ORDER.filter((id) => canSwitchOff(id) && (raw.switchedOff as unknown[]).includes(id))
+      : [],
     deposits: readDeposits(raw, fresh.deposits),
     // A horde only exists while its spell is on.
     demons: activeSpells.some((id) => NODES[id].horde) ? Math.max(DEMONS.start, num(raw.demons, 0)) : 0,
