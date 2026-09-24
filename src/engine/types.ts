@@ -199,6 +199,7 @@ export type NodeId =
   | 'glassworks'
   | 'goldMine'
   | 'printingPress'
+  | 'church'
   | 'observatory'
   | 'university'
   | 'cathedral'

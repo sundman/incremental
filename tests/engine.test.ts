@@ -938,6 +938,22 @@ describe('research list', () => {
   });
 });
 
+describe('printing press and church', () => {
+  it('trade Mana and Research against each other in opposite directions', () => {
+    const press = unlockAll(withNodes({ printingPress: 2 }));
+    expect(activeLinks(press).filter((l) => l.source === 'printingPress').map((l) => [l.to, l.total, l.helpful])).toEqual([
+      ['lab', 2, true],
+      ['arcana', -1.8, false],
+    ]);
+    const church = unlockAll(withNodes({ church: 1, shrine: 1 }));
+    expect(nodeCost(createInitialState(), 'church')).toEqual({ bricks: 120, glass: 40 });
+    expect(activeLinks(church).filter((l) => l.source === 'church').map((l) => [l.to, l.total])).toEqual([
+      ['arcana', 1],
+      ['lab', -0.9],
+    ]);
+  });
+});
+
 describe('huts', () => {
   it('get so expensive that the starting forest pays for 5 at most', () => {
     const state = createInitialState();
