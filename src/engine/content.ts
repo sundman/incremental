@@ -115,7 +115,7 @@ export const POPULATION = {
 
 const jobList: JobDef[] = [
   { id: 'woodcutter', name: 'Woodcutters', resource: 'wood', baseYield: 0.5 },
-  { id: 'stonecutter', name: 'Stonecutters', resource: 'stone', baseYield: 0.4 },
+  { id: 'stonecutter', name: 'Stonecutters', resource: 'stone', baseYield: 0.4, requires: ['quarry'] },
   { id: 'farmer', name: 'Farmers', resource: 'food', baseYield: 0.6 },
   { id: 'digger', name: 'Diggers', resource: 'clay', baseYield: 0.3, requires: ['clayPit'] },
   {
@@ -209,7 +209,7 @@ const nodeList: NodeDef[] = [
     world: 'realm',
     kind: 'building',
     name: 'Quarry',
-    description: 'A proper pit for your stonecutters.',
+    description: 'Opens the Stonecutter job. Each Quarry makes stonecutters faster.',
     baseCost: { wood: 35 },
     costGrowth: 1.3,
     tier: 1,

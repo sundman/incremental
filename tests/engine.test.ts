@@ -333,7 +333,7 @@ describe('deposits', () => {
   });
 
   it('runs Stone, Clay and Coal out for good, since they never refill on their own', () => {
-    const state = withJobs({ stonecutter: 4 });
+    const state = withJobs({ stonecutter: 4 }, withNodes({ quarry: 1 }));
     state.deposits.stone.left = 5;
     tick(state, 60);
     expect(state.resources.stone).toBeCloseTo(5);
@@ -666,8 +666,12 @@ describe('population', () => {
     const state = createInitialState();
     expect(assignJob(state, 'woodcutter', 5)).toBe(2);
     expect(state.jobs.woodcutter).toBe(2);
-    expect(assignJob(state, 'stonecutter', 1)).toBe(0);
+    expect(assignJob(state, 'stonecutter', 1)).toBe(0); // no free people
     expect(assignJob(state, 'woodcutter', -1)).toBe(-1);
+    expect(assignJob(state, 'stonecutter', 1)).toBe(0); // needs a Quarry
+    state.nodes.quarry = 1;
+    expect(assignJob(state, 'stonecutter', 1)).toBe(1);
+    expect(assignJob(state, 'stonecutter', -1)).toBe(-1);
     expect(assignJob(state, 'miner', 1)).toBe(0); // needs a Mine
     state.nodes.mine = 1;
     expect(assignJob(state, 'miner', 1)).toBe(1);
