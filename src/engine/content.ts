@@ -258,7 +258,7 @@ const nodeList: NodeDef[] = [
     costGrowth: 1.35,
     tier: 2,
     requires: ['workshop'],
-    upkeep: { wood: 1 },
+    upkeep: { wood: 4 },
     effects: [{ stat: 'rate:planks', kind: 'add', amount: 0.4 }],
   },
   {
@@ -271,7 +271,7 @@ const nodeList: NodeDef[] = [
     costGrowth: 1.35,
     tier: 2,
     requires: ['clayPit', 'sawmill'],
-    upkeep: { clay: 1, wood: 0.5 },
+    upkeep: { clay: 3, wood: 0.5 },
     effects: [{ stat: 'rate:bricks', kind: 'add', amount: 0.3 }, { stat: 'pollution', kind: 'add', amount: 1 }],
   },
   {
@@ -461,7 +461,7 @@ const nodeList: NodeDef[] = [
     costGrowth: 1.4,
     tier: 4,
     requires: ['coalMine', 'metallurgy'],
-    upkeep: { iron: 1, coal: 0.5 },
+    upkeep: { iron: 2.5, coal: 0.5 },
     effects: [{ stat: 'rate:steel', kind: 'add', amount: 0.25 }, { stat: 'pollution', kind: 'add', amount: 3 }],
   },
   {
@@ -474,7 +474,7 @@ const nodeList: NodeDef[] = [
     costGrowth: 1.4,
     tier: 4,
     requires: ['kiln', 'coalMine', 'optics'],
-    upkeep: { stone: 1, coal: 0.3 },
+    upkeep: { stone: 2, coal: 0.3 },
     effects: [{ stat: 'rate:glass', kind: 'add', amount: 0.2 }, { stat: 'pollution', kind: 'add', amount: 2 }],
   },
   {
@@ -796,7 +796,7 @@ const nodeList: NodeDef[] = [
     costGrowth: 1.4,
     tier: 3,
     requires: ['pyromancy'],
-    upkeep: { essence: 0.5 },
+    upkeep: { essence: 1 },
     effects: [{ stat: 'rate:fireEssence', kind: 'add', amount: 0.1 }],
   },
   {
@@ -856,7 +856,7 @@ const nodeList: NodeDef[] = [
     costGrowth: 1.4,
     tier: 3,
     requires: ['vitalism'],
-    upkeep: { essence: 0.5 },
+    upkeep: { essence: 1 },
     effects: [{ stat: 'rate:lifeEssence', kind: 'add', amount: 0.1 }],
   },
   {

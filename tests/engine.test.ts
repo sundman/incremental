@@ -40,7 +40,7 @@ import {
   resetWorld,
   tick,
 } from '../src/engine/engine';
-import { DEPOSITS } from '../src/engine/content';
+import { DEPOSITS, NODES } from '../src/engine/content';
 import type { GameState, JobId, NodeId } from '../src/engine/types';
 
 function withNodes(levels: Partial<Record<NodeId, number>>, state = createInitialState()): GameState {
@@ -819,5 +819,22 @@ describe('spells', () => {
     resetWorld(state, 'arcana');
     expect(state.activeSpells).toEqual([]);
     expect(state.nodes.haste).toBe(0);
+  });
+});
+
+describe('converters', () => {
+  it('use at least 10 of their main input for each unit they make', () => {
+    let checked = 0;
+    for (const node of Object.values(NODES)) {
+      if (!node.upkeep || node.spell) continue;
+      const made = node.effects
+        .filter((e) => e.stat.startsWith('rate:') && e.kind === 'add' && e.amount > 0)
+        .reduce((sum, e) => sum + e.amount, 0);
+      if (made === 0) continue;
+      const main = Math.max(...(Object.values(node.upkeep) as number[]));
+      expect(main / made, node.id).toBeGreaterThanOrEqual(10 - 1e-9);
+      checked++;
+    }
+    expect(checked).toBeGreaterThanOrEqual(10);
   });
 });
