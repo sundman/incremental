@@ -941,6 +941,17 @@ describe('scholars', () => {
     expect(activeLinks(state).some((l) => l.source === 'scholar' && l.to === 'realm' && !l.helpful)).toBe(true);
   });
 
+  it('Lab Assistants are hired with Realm Gold', () => {
+    const state = unlockAll(withNodes({ scholar: 1 }));
+    expect(nodeCost(state, 'labAssistants')).toEqual({ gold: 25 });
+    state.resources.research = 1e6;
+    expect(buyNode(state, 'labAssistants')).toBe(false);
+    state.resources.gold = 25;
+    expect(buyNode(state, 'labAssistants')).toBe(true);
+    expect(state.resources.gold).toBe(0);
+    expect(state.resources.research).toBe(1e6);
+  });
+
   it('Lab Assistants eat Realm Food too, and stop speeding up the Lab without it', () => {
     const state = unlockAll(withNodes({ labAssistants: 2 }));
     state.resources.food = 100;
