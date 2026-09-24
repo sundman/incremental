@@ -112,18 +112,18 @@ describe('worlds and techs', () => {
     state.resources.stone = 10_000;
     expect(buyNode(state, 'library')).toBe(false);
     expect(buyNode(state, 'shrine')).toBe(false);
-    withNodes({ lumberCamp: 5, quarry: 3, workshop: 1 }, state);
+    withNodes({ lumberCamp: 3, quarry: 3, workshop: 1, sawmill: 1, kiln: 1 }, state);
     expect(buildingCount(state, 'realm')).toBe(9);
     expect(isNodeAvailable(state, 'library')).toBe(false);
-    state.nodes.lumberCamp = 6;
+    state.nodes.lumberCamp = 4;
     expect(isNodeAvailable(state, 'library')).toBe(true);
     expect(isNodeAvailable(state, 'shrine')).toBe(true);
   });
 
   it('opens the Lab when the first Library is built', () => {
-    const state = withNodes({ lumberCamp: 6, quarry: 3, workshop: 1 });
-    state.resources.wood = 1000;
-    state.resources.stone = 1000;
+    const state = withNodes({ lumberCamp: 4, quarry: 3, workshop: 1, sawmill: 1, kiln: 1 });
+    state.resources.planks = 1000;
+    state.resources.bricks = 1000;
     expect(isNodeAvailable(state, 'scholar')).toBe(false);
     expect(buyNode(state, 'library')).toBe(true);
     expect(isWorldUnlocked(state, 'lab')).toBe(false);
@@ -290,10 +290,10 @@ describe('resets and Echoes', () => {
   });
 
   it('applies Head Start when a world first opens', () => {
-    const state = withNodes({ lumberCamp: 6, quarry: 3, workshop: 1 });
+    const state = withNodes({ lumberCamp: 4, quarry: 3, workshop: 1, sawmill: 1, kiln: 1 });
     state.meta.headStartLab = 2;
-    state.resources.wood = 1000;
-    state.resources.stone = 1000;
+    state.resources.planks = 1000;
+    state.resources.bricks = 1000;
     buyNode(state, 'library');
     completeConstruction(state, 'library');
     expect(state.nodes.scholar).toBe(4);

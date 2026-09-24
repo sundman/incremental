@@ -10,7 +10,7 @@ An incremental game made of three smaller incremental worlds that run side by si
   - **Spells** such as Fertility Rite, Haste, Animation, Forge Fire, Healing Light, Shadow Labor and Time Warp are learned once. After that you click one to switch it on or off. While it's on, it costs Mana or an essence every second. If that upkeep can't be paid in full, it runs at partial power.
 - **Lab** (science): Scholars produce Research, which you spend on a tech tree. Techs unlock science buildings in the Realm.
 
-Grow the Realm to 10 buildings (including a Workshop) and you can build a **Shrine** (opens Arcana) or a **Library** (opens the Lab).
+Grow the Realm to 10 buildings (including a Workshop) and you can build a **Shrine** (opens Arcana) or a **Library** (opens the Lab; it's built from Planks and Bricks, so it also needs a Sawmill and a Kiln).
 
 ## Build times
 
