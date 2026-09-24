@@ -72,7 +72,7 @@ describe('costs', () => {
     const state = unlockAll(withNodes({ industrialization: 1 }));
     expect(nodeCost(state, 'quarry').wood).toBeCloseTo(35 * 0.85);
     // Lab costs are untouched.
-    expect(nodeCost(state, 'scholar').research).toBeCloseTo(10);
+    expect(nodeCost(state, 'scholar').food).toBeCloseTo(1000);
   });
 
   it('buying deducts every resource and raises the level', () => {
@@ -858,6 +858,18 @@ describe('converters', () => {
 });
 
 describe('scholars', () => {
+  it('are bought with Food: 1,000 for the first, 50% more for each after', () => {
+    const state = unlockAll(createInitialState());
+    expect(nodeCost(state, 'scholar')).toEqual({ food: 1000 });
+    state.resources.food = 999;
+    expect(buyNode(state, 'scholar')).toBe(false);
+    state.resources.food = 1000;
+    expect(buyNode(state, 'scholar')).toBe(true);
+    expect(state.resources.food).toBe(0);
+    state.nodes.scholar = 2;
+    expect(nodeCost(state, 'scholar').food).toBeCloseTo(2250);
+  });
+
   it('eat Realm Food without using Realm people, and stall when it runs out', () => {
     const state = unlockAll(withNodes({ scholar: 5 }));
     state.resources.food = 100;
