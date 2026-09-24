@@ -183,10 +183,11 @@ const nodeList: NodeDef[] = [
     world: 'realm',
     kind: 'building',
     name: 'Lumber Camp',
-    description: 'Saws and sledges for your woodcutters.',
-    baseCost: { wood: 25 },
+    description: 'Iron saws and sledges for your woodcutters. Needs Forestry from the Lab.',
+    baseCost: { wood: 25, iron: 10 },
     costGrowth: 1.3,
     tier: 1,
+    requires: ['forestry'],
     effects: [{ stat: 'yield:wood', kind: 'add', amount: 0.2 }],
   },
   {
@@ -235,7 +236,7 @@ const nodeList: NodeDef[] = [
     costGrowth: 2.5,
     tier: 2,
     maxLevel: 10,
-    requires: ['lumberCamp', 'quarry'],
+    requires: ['quarry'],
     effects: [
       { stat: 'rate:wood', kind: 'mul', amount: 1.15 },
       { stat: 'rate:stone', kind: 'mul', amount: 1.15 },

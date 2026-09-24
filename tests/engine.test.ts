@@ -79,8 +79,7 @@ describe('costs', () => {
     const state = createInitialState();
     state.resources.wood = 100;
     state.resources.stone = 100;
-    expect(buyNode(state, 'workshop')).toBe(false); // needs Lumber Camp and Quarry first
-    state.nodes.lumberCamp = 1;
+    expect(buyNode(state, 'workshop')).toBe(false); // needs a Quarry first
     state.nodes.quarry = 1;
     expect(buyNode(state, 'workshop')).toBe(true);
     expect(state.nodes.workshop).toBe(0); // still being built
@@ -397,8 +396,8 @@ describe('deposits', () => {
 
 describe('land', () => {
   it('gives every Realm building level a square, and blocks building once the land is full', () => {
-    const state = withNodes({ hut: 15, farm: 4 }); // 19 of 20 squares
-    Object.assign(state.resources, { wood: 1e6, stone: 1e6 });
+    const state = withNodes({ hut: 15, farm: 4, forestry: 1 }); // 19 of 20 squares
+    Object.assign(state.resources, { wood: 1e6, stone: 1e6, iron: 1e6 });
     expect(land(state)).toBe(20);
     expect(landUsed(state)).toBe(19);
     expect(buyNode(state, 'lumberCamp')).toBe(true); // the 20th square, taken while it is built
@@ -452,8 +451,8 @@ describe('repeatable research', () => {
 
 describe('build slots', () => {
   it('builds one thing per world at a time, while other worlds build in parallel', () => {
-    const state = unlockAll(withNodes({ hut: 1, library: 1, shrine: 1 }));
-    Object.assign(state.resources, { wood: 1000, stone: 1000, research: 1000, mana: 1000 });
+    const state = unlockAll(withNodes({ hut: 1, library: 1, shrine: 1, forestry: 1 }));
+    Object.assign(state.resources, { wood: 1000, stone: 1000, iron: 1000, research: 1000, mana: 1000 });
     expect(buyNode(state, 'hut')).toBe(true);
     expect(buyNode(state, 'lumberCamp')).toBe(false); // the Realm is busy
     expect(buyNode(state, 'scientificMethod')).toBe(true); // the Lab has its own slot
@@ -463,8 +462,8 @@ describe('build slots', () => {
   });
 
   it('adds a slot per world with each Master Builders level, up to 5', () => {
-    const state = unlockAll(withNodes({ hut: 1 }));
-    Object.assign(state.resources, { wood: 1e6, stone: 1e6, food: 1e6 });
+    const state = unlockAll(withNodes({ hut: 1, forestry: 1 }));
+    Object.assign(state.resources, { wood: 1e6, stone: 1e6, iron: 1e6, food: 1e6 });
     state.meta.masterBuilders = 2;
     expect(buildSlots(state)).toBe(3);
     expect(['hut', 'lumberCamp', 'quarry', 'farm'].map((id) => buyNode(state, id as NodeId))).toEqual([
@@ -854,6 +853,20 @@ describe('converters', () => {
       checked++;
     }
     expect(checked).toBeGreaterThanOrEqual(10);
+  });
+});
+
+describe('lumber camps', () => {
+  it('need Forestry from the Lab and cost Iron', () => {
+    const state = createInitialState();
+    Object.assign(state.resources, { wood: 1000, iron: 5 });
+    expect(nodeCost(state, 'lumberCamp')).toEqual({ wood: 25, iron: 10 });
+    expect(buyNode(state, 'lumberCamp')).toBe(false); // no Forestry yet
+    state.nodes.forestry = 1;
+    expect(buyNode(state, 'lumberCamp')).toBe(false); // not enough Iron
+    state.resources.iron = 10;
+    expect(buyNode(state, 'lumberCamp')).toBe(true);
+    expect(state.resources.iron).toBe(0);
   });
 });
 
