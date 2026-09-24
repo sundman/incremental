@@ -36,8 +36,6 @@ import {
   canAfford,
   constructionSecondsLeft,
   canBuyMeta,
-  click,
-  clickValue,
   computeModifiers,
   echoGain,
   canResetWorld,
@@ -151,7 +149,6 @@ interface WorldView {
   lockedProgress: HTMLElement;
   body: HTMLElement;
   resources: Partial<Record<ResourceId, ResourceRow>>;
-  clicks: Partial<Record<ResourceId, HTMLButtonElement>>;
   incoming: HTMLElement;
   outgoing: HTMLElement;
   resetButton: HTMLButtonElement;
@@ -230,9 +227,7 @@ export class GameView {
     const locked = h('div', { class: 'locked' }, h('p', {}, '🔒 ' + def.unlockHint), lockedProgress);
 
     const resources: WorldView['resources'] = {};
-    const clicks: WorldView['clicks'] = {};
     const resList = h('div', { class: 'resources' });
-    const clickRow = h('div', { class: 'clicks' });
     for (const r of RESOURCE_ORDER) {
       const rd = RESOURCES[r];
       if (rd.world !== world) continue;
@@ -241,15 +236,6 @@ export class GameView {
       const row = h('div', { class: 'resource' }, h('span', { class: 'name' }, rd.name), amount, rate);
       resList.append(row);
       resources[r] = { row, amount, rate };
-      if (rd.click) {
-        const btn = h('button', { class: 'gather', type: 'button' });
-        btn.addEventListener('click', () => {
-          click(this.state, r);
-          this.hooks.onChange();
-        });
-        clickRow.append(btn);
-        clicks[r] = btn;
-      }
     }
 
     const populationEl = world === 'realm' ? this.buildPopulation() : null;
@@ -283,7 +269,6 @@ export class GameView {
       'div',
       { class: 'world-body' },
       resList,
-      clickRow,
       ...(world === 'realm'
         ? [h('div', { class: 'deposits' }, this.landEl, ...DEPOSIT_ORDER.map((d) => this.deposits[d]))]
         : []),
@@ -309,7 +294,7 @@ export class GameView {
       locked,
       body,
     );
-    this.worlds[world] = { panel, locked, lockedProgress, body, resources, clicks, incoming, outgoing, resetButton, resetNote };
+    this.worlds[world] = { panel, locked, lockedProgress, body, resources, incoming, outgoing, resetButton, resetNote };
     return panel;
   }
 
@@ -610,8 +595,6 @@ export class GameView {
       const rate = netRate(state, mods, r);
       setText(row.rate, rate === 0 ? '' : `${rate > 0 ? '+' : ''}${formatNumber(rate)}/s`);
       row.rate.classList.toggle('negative', rate < 0);
-      const btn = v.clicks[r];
-      if (btn) setText(btn, `Gather ${RESOURCES[r].name} (+${formatNumber(clickValue(mods, r))})`);
     }
 
     const linkHtml = (l: ActiveLink, other: WorldId) => {

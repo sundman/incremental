@@ -43,9 +43,9 @@ export const WORLDS: Record<WorldId, WorldDef> = {
 export const WORLD_ORDER: WorldId[] = ['realm', 'arcana', 'lab'];
 
 export const RESOURCES: Record<ResourceId, ResourceDef> = {
-  wood: { id: 'wood', name: 'Wood', world: 'realm', click: 1, value: 1 },
-  stone: { id: 'stone', name: 'Stone', world: 'realm', click: 1, value: 1.5 },
-  food: { id: 'food', name: 'Food', world: 'realm', click: 1, value: 1 },
+  wood: { id: 'wood', name: 'Wood', world: 'realm', value: 1 },
+  stone: { id: 'stone', name: 'Stone', world: 'realm', value: 1.5 },
+  food: { id: 'food', name: 'Food', world: 'realm', value: 1 },
   clay: { id: 'clay', name: 'Clay', world: 'realm', value: 2, revealedBy: 'clayPit' },
   planks: { id: 'planks', name: 'Planks', world: 'realm', value: 4, revealedBy: 'sawmill' },
   bricks: { id: 'bricks', name: 'Bricks', world: 'realm', value: 5, revealedBy: 'kiln' },
@@ -55,14 +55,14 @@ export const RESOURCES: Record<ResourceId, ResourceDef> = {
   glass: { id: 'glass', name: 'Glass', world: 'realm', value: 20, revealedBy: 'glassworks' },
   gold: { id: 'gold', name: 'Gold', world: 'realm', value: 60, revealedBy: 'goldMine' },
   runestone: { id: 'runestone', name: 'Runestone', world: 'realm', value: 80, revealedBy: 'runesmith' },
-  mana: { id: 'mana', name: 'Mana', world: 'arcana', click: 1, value: 1.5 },
+  mana: { id: 'mana', name: 'Mana', world: 'arcana', value: 1.5 },
   essence: { id: 'essence', name: 'Essence', world: 'arcana', value: 15, revealedBy: 'condenser' },
   fireEssence: { id: 'fireEssence', name: 'Fire Essence', world: 'arcana', value: 40, revealedBy: 'fireAltar' },
   lifeEssence: { id: 'lifeEssence', name: 'Life Essence', world: 'arcana', value: 40, revealedBy: 'lifeSpring' },
   shadowEssence: { id: 'shadowEssence', name: 'Shadow Essence', world: 'arcana', value: 60, revealedBy: 'shadowWell' },
   timeEssence: { id: 'timeEssence', name: 'Time Essence', world: 'arcana', value: 150, revealedBy: 'timeLoom' },
   aether: { id: 'aether', name: 'Aether', world: 'arcana', value: 120, revealedBy: 'aetherRift' },
-  research: { id: 'research', name: 'Research', world: 'lab', click: 1, value: 2 },
+  research: { id: 'research', name: 'Research', world: 'lab', value: 2 },
 };
 
 /** Base build time in seconds for each tier; each level already owned adds `BUILD_TIME_GROWTH`. */
@@ -242,9 +242,6 @@ const nodeList: NodeDef[] = [
       { stat: 'rate:stone', kind: 'mul', amount: 1.15 },
       { stat: 'rate:clay', kind: 'mul', amount: 1.15 },
       { stat: 'rate:iron', kind: 'mul', amount: 1.15 },
-      { stat: 'click:wood', kind: 'add', amount: 1 },
-      { stat: 'click:stone', kind: 'add', amount: 1 },
-      { stat: 'click:food', kind: 'add', amount: 1 },
     ],
   },
 
@@ -650,10 +647,7 @@ const nodeList: NodeDef[] = [
     tier: 3,
     maxLevel: 10,
     requires: ['condenser'],
-    effects: [
-      { stat: 'rate:mana', kind: 'mul', amount: 1.25 },
-      { stat: 'click:mana', kind: 'mul', amount: 1.5 },
-    ],
+    effects: [{ stat: 'rate:mana', kind: 'mul', amount: 1.25 }],
   },
   {
     id: 'enchantedTools',

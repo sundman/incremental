@@ -26,8 +26,6 @@ import {
   buildingCount,
   buyMeta,
   buyNode,
-  click,
-  clickValue,
   computeModifiers,
   createInitialState,
   echoGain,
@@ -193,19 +191,6 @@ describe('production and links', () => {
     expect(links.find((l) => l.effect.stat === 'cost:realm')?.helpful).toBe(true);
     expect(links.find((l) => l.effect.stat === 'rate:essence')?.helpful).toBe(false);
   });
-
-  it('adds click bonuses and world multipliers', () => {
-    const state = unlockAll(withNodes({ workshop: 1, enchantedTools: 1 }));
-    expect(clickValue(computeModifiers(state), 'wood')).toBeCloseTo((1 + 1) * 1.25);
-    expect(click(state, 'wood')).toBeCloseTo(2.5);
-    expect(state.resources.wood).toBeCloseTo(2.5);
-  });
-
-  it('does not let you click in a locked world', () => {
-    const state = createInitialState();
-    expect(click(state, 'mana')).toBe(0);
-    expect(state.resources.mana).toBe(0);
-  });
 });
 
 describe('tick', () => {
@@ -344,7 +329,6 @@ describe('deposits', () => {
     tick(state, 20);
     expect(state.resources.wood).toBeCloseTo(10 + 20 * 0.25); // the forest plus 0.25/s of regrowth
     expect(state.deposits.wood.left).toBeCloseTo(0);
-    expect(click(state, 'wood')).toBeCloseTo(0); // nothing left to cut
     expect(state.deposits.wood.cut).toBeCloseTo(state.resources.wood);
   });
 
@@ -353,7 +337,6 @@ describe('deposits', () => {
     state.deposits.stone.left = 5;
     tick(state, 60);
     expect(state.resources.stone).toBeCloseTo(5);
-    expect(click(state, 'stone')).toBe(0);
     expect(DEPOSITS.stone.start).toBeGreaterThan(DEPOSITS.wood.start);
   });
 

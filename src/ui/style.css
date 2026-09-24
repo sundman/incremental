@@ -147,13 +147,6 @@ button {
   color: var(--bad);
 }
 
-.clicks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.gather,
 .reset {
   background: var(--card);
   border: 1px solid var(--accent);
@@ -162,13 +155,8 @@ button {
   cursor: pointer;
 }
 
-.gather:hover,
 .reset:hover {
   background: var(--card-hover);
-}
-
-.gather:active {
-  transform: translateY(1px);
 }
 
 .nodes {

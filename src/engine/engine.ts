@@ -73,7 +73,7 @@ export function statWorld(stat: Stat): WorldId {
   }
   if (stat.startsWith('speed:')) return stat.slice('speed:'.length) as WorldId;
   const [type, target] = stat.split(':') as [string, string];
-  if (type === 'rate' || type === 'click' || type === 'yield') return RESOURCES[target as ResourceId].world;
+  if (type === 'rate' || type === 'yield') return RESOURCES[target as ResourceId].world;
   return target as WorldId;
 }
 
@@ -292,13 +292,6 @@ export function upkeepRate(state: GameState, resource: ResourceId): number {
 
 export function netRate(state: GameState, mods: Modifiers, resource: ResourceId): number {
   return grossRate(state, mods, resource) - upkeepRate(state, resource);
-}
-
-export function clickValue(mods: Modifiers, resource: ResourceId): number {
-  const def = RESOURCES[resource];
-  if (!def.click) return 0;
-  const base = def.click + getAdd(mods, `click:${resource}`);
-  return base * getMul(mods, `click:${resource}`) * getMul(mods, `prod:${def.world}`);
 }
 
 // ------------------------------------------------------------ cross links
@@ -691,11 +684,6 @@ function gain(state: GameState, resource: ResourceId, amount: number): number {
   return amount;
 }
 
-export function click(state: GameState, resource: ResourceId): number {
-  const def = RESOURCES[resource];
-  if (!def.click || !isWorldUnlocked(state, def.world)) return 0;
-  return gain(state, resource, clickValue(computeModifiers(state), resource));
-}
 
 function step(state: GameState, dt: number) {
   settleJobs(state);

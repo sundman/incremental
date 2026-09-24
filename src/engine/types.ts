@@ -27,7 +27,6 @@ export type ResourceId =
 /**
  * A stat is anything a node effect can modify.
  * - `rate:<resource>`  production per second of one resource
- * - `click:<resource>` amount gained per click on one resource
  * - `prod:<world>`     multiplier on all production in a world
  * - `cost:<world>`     multiplier on the cost of every node in a world
  * - `yield:<resource>` extra output per worker assigned to that resource's job
@@ -42,7 +41,6 @@ export type ResourceId =
  */
 export type Stat =
   | `rate:${ResourceId}`
-  | `click:${ResourceId}`
   | `prod:${WorldId}`
   | `cost:${WorldId}`
   | `yield:${ResourceId}`
@@ -109,8 +107,6 @@ export interface ResourceDef {
   id: ResourceId;
   name: string;
   world: WorldId;
-  /** Base amount gained per click; resources without it cannot be clicked. */
-  click?: number;
   /** Weight of one unit when scoring a run for Echoes. */
   value: number;
   /** Hidden until this node is owned (e.g. Aether appears once the Rift opens). */
