@@ -1067,7 +1067,7 @@ const nodeList: NodeDef[] = [
     baseCost: { research: 200, planks: 50 },
     costGrowth: 1,
     tier: 2,
-    requires: ['scientificMethod'],
+    requires: ['geology', 'metallurgy'],
     effects: [
       { stat: 'rate:planks', kind: 'mul', amount: 1.25 },
       { stat: 'rate:bricks', kind: 'mul', amount: 1.25 },

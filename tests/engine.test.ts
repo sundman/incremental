@@ -903,6 +903,11 @@ describe('research list', () => {
     expect(isResearchListed(state, 'engineering')).toBe(false);
     state.nodes.scientificMethod = 1;
     expect(isResearchListed(state, 'scientificMethod')).toBe(false);
+    expect(isResearchListed(state, 'geology')).toBe(true);
+    expect(isResearchListed(state, 'engineering')).toBe(false); // needs Geology and Metallurgy
+    state.nodes.geology = 1;
+    expect(isResearchListed(state, 'engineering')).toBe(false);
+    state.nodes.metallurgy = 1;
     expect(isResearchListed(state, 'engineering')).toBe(true);
     expect(isResearchListed(state, 'sanitation')).toBe(false); // needs Medicine and Engineering
     state.nodes.cartography = 3;
@@ -916,10 +921,11 @@ describe('research list', () => {
     const cols = researchTreeColumns();
     const col = (id: NodeId) => cols.findIndex((c) => c.includes(id));
     expect(col('scientificMethod')).toBe(0);
-    expect(col('engineering')).toBe(1);
-    expect(col('sailing')).toBe(2);
-    expect(col('navigation')).toBe(3); // after Sailing and Optics, both in column 2
-    expect(col('expedition')).toBe(4);
+    expect(col('geology')).toBe(1);
+    expect(col('engineering')).toBe(2); // after Geology and Metallurgy
+    expect(col('sailing')).toBe(3);
+    expect(col('navigation')).toBe(4); // after Sailing and Optics, both in column 3
+    expect(col('expedition')).toBe(5);
     expect(cols.flat()).toHaveLength(new Set(cols.flat()).size);
   });
 });
