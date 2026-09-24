@@ -885,6 +885,15 @@ describe('exploring', () => {
   });
 });
 
+describe('laboratories', () => {
+  it('each weaken all Arcana production by 3%', () => {
+    const state = unlockAll(withNodes({ laboratory: 5 }));
+    expect(computeModifiers(state).get('prod:arcana')?.mul).toBeCloseTo(0.97 ** 5, 5);
+    const link = activeLinks(state).find((l) => l.source === 'laboratory');
+    expect(link).toMatchObject({ from: 'lab', to: 'arcana', helpful: false });
+  });
+});
+
 describe('huts', () => {
   it('get so expensive that the starting forest pays for 5 at most', () => {
     const state = createInitialState();

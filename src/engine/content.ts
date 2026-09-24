@@ -1023,12 +1023,15 @@ const nodeList: NodeDef[] = [
     world: 'lab',
     kind: 'building',
     name: 'Laboratory',
-    description: 'Iron equipment for serious experiments.',
+    description: 'Iron equipment for serious experiments. Too much science is bad for magic: each Laboratory weakens all of Arcana a little.',
     baseCost: { research: 60, iron: 20 },
     costGrowth: 1.25,
     tier: 2,
     requires: ['scholar'],
-    effects: [{ stat: 'rate:research', kind: 'add', amount: 1.5 }],
+    effects: [
+      { stat: 'rate:research', kind: 'add', amount: 1.5 },
+      { stat: 'prod:arcana', kind: 'mul', amount: 0.97 },
+    ],
   },
   {
     id: 'labAssistants',
