@@ -492,14 +492,29 @@ export function setRandom(source: () => number): () => number {
  * Lowers the population. While anyone is idle, an idle person steps into the dead
  * one's job, so the idle pool shrinks first. After that each death is a random worker.
  */
-function losePeople(state: GameState, population: number) {
+/**
+ * Kills people until the Realm is down to `population`. Idle people die first, then a
+ * random worker or, when `scholarsToo`, a Scholar. A Scholar lives in the Lab, so killing
+ * one spares a Realm person.
+ */
+function losePeople(state: GameState, population: number, scholarsToo = true) {
   let people = Math.floor(state.population);
-  const left = Math.floor(population);
+  const deaths = people - Math.floor(population);
   state.population = population;
-  for (; people > left; people--) {
+  for (let i = 0; i < deaths; i++) {
     const workers = assignedWorkers(state);
-    if (people > workers) continue;
-    let pick = Math.floor(random() * workers);
+    if (people > workers) {
+      people--;
+      continue;
+    }
+    const scholars = scholarsToo ? state.nodes.scholar : 0;
+    let pick = Math.floor(random() * (workers + scholars));
+    if (pick >= workers) {
+      state.nodes.scholar -= 1;
+      state.population += 1;
+      continue;
+    }
+    people--;
     for (const id of JOB_ORDER) {
       if (pick < state.jobs[id]) {
         state.jobs[id] -= 1;
@@ -635,12 +650,18 @@ export function hasFreeBuildSlot(state: GameState, world: WorldId): boolean {
   return activeBuilds(state, world) < buildSlots(state);
 }
 
+/** Whether buying a level needs more idle Realm people than there are. */
+export function needsPeople(state: GameState, id: NodeId): boolean {
+  return idleWorkers(state) < (NODES[id].people ?? 0);
+}
+
 export function canBuyNode(state: GameState, id: NodeId): boolean {
   return (
     isNodeAvailable(state, id) &&
     !isUnderConstruction(state, id) &&
     hasFreeBuildSlot(state, NODES[id].world) &&
     !needsLand(state, id) &&
+    !needsPeople(state, id) &&
     state.nodes[id] < maxLevel(id) &&
     canAfford(state, nodeCost(state, id))
   );
@@ -675,6 +696,7 @@ export function buyNode(state: GameState, id: NodeId): boolean {
   for (const [r, n] of Object.entries(cost) as [ResourceId, number][]) {
     state.resources[r] -= n;
   }
+  state.population -= NODES[id].people ?? 0;
   state.construction[id] = { done: 0, needed: baseBuildSeconds(state, id) };
   return true;
 }
@@ -761,7 +783,8 @@ function step(state: GameState, dt: number) {
   const dying = deathRate(mods) * dt;
   if (dying > 0) {
     if (isHordeActive(state) && state.population - dying <= DEMONS.survivors) {
-      losePeople(state, Math.min(state.population, DEMONS.survivors));
+      // The last feast is on the town itself, so exactly the survivors are left.
+      losePeople(state, Math.min(state.population, DEMONS.survivors), false);
       endHorde(state);
     } else {
       losePeople(state, Math.max(0, state.population - dying));

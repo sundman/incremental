@@ -150,6 +150,8 @@ export interface NodeDef {
   effects: Effect[];
   /** Resources consumed per second per level; effects scale down if upkeep cannot be paid. */
   upkeep?: Cost;
+  /** Idle Realm people each level takes away from the Realm (Scholars move into the Lab). */
+  people?: number;
   /**
    * A spell: once learned it can be switched on and off. Its effects and upkeep only
    * apply while it is on.

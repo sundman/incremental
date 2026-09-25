@@ -14,6 +14,7 @@ import {
   arrivalBlocker,
   buildSeconds,
   completeConstruction,
+  needsPeople,
   constructionSecondsLeft,
   arrivalRate,
   crowdingFactor,
@@ -1086,6 +1087,56 @@ describe('scholars', () => {
     tick(state, 10);
     expect(state.resources.research).toBeCloseTo(stalled, 5);
     expect(activeLinks(state).some((l) => l.source === 'scholar' && l.to === 'realm' && !l.helpful)).toBe(true);
+  });
+
+  it('each take an idle Realm person into the Lab, freeing their housing', () => {
+    const state = unlockAll(withJobs({ woodcutter: 3 }, withNodes({ hut: 1 })));
+    state.population = 3; // all at work
+    state.resources.food = 1000;
+    expect(needsPeople(state, 'scholar')).toBe(true);
+    expect(buyNode(state, 'scholar')).toBe(false);
+    state.population = 4.5;
+    expect(buyNode(state, 'scholar')).toBe(true);
+    expect(state.population).toBeCloseTo(3.5);
+    expect(state.jobs.woodcutter).toBe(3);
+    completeConstruction(state, 'scholar');
+    expect(state.nodes.scholar).toBe(1);
+    expect(state.population).toBeCloseTo(3.5); // Scholars never count toward Realm housing
+  });
+
+  it('are hunted by demons once the idle are gone, sparing a Realm person each time', () => {
+    const state = unlockAll(withJobs({ woodcutter: 4 }, withNodes({ summoningCircle: 1, scholar: 4 })));
+    state.population = 4;
+    toggleSpell(state, 'summoningCircle');
+    state.demons = 600; // 1 death a second
+    const picks = [0.9, 0.1]; // 0.9 of 4 workers + 4 Scholars -> a Scholar; 0.1 of 4 + 3 -> a woodcutter
+    const previous = setRandom(() => picks.shift() ?? 0);
+    try {
+      tick(state, 1);
+      state.demons = 600; // keep it at exactly 1 death a second
+      tick(state, 1);
+    } finally {
+      setRandom(previous);
+    }
+    expect(state.nodes.scholar).toBe(3);
+    expect(state.jobs.woodcutter).toBe(3);
+    expect(Math.floor(state.population)).toBe(3);
+  });
+
+  it('are left alone by the last demon feast, which leaves exactly the survivors in the Realm', () => {
+    const state = unlockAll(withJobs({ woodcutter: 3 }, withNodes({ summoningCircle: 1, scholar: 5 })));
+    state.population = 3;
+    toggleSpell(state, 'summoningCircle');
+    state.demons = 600;
+    const previous = setRandom(() => 0.99); // every pick lands on a Scholar
+    try {
+      tick(state, 1);
+    } finally {
+      setRandom(previous);
+    }
+    expect(state.population).toBe(2);
+    expect(state.nodes.scholar).toBe(5);
+    expect(state.demons).toBe(0);
   });
 
   it('Lab Assistants are hired with Realm Gold', () => {

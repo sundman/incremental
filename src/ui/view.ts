@@ -45,6 +45,7 @@ import {
   land,
   landUsed,
   needsLand,
+  needsPeople,
   resetBlocker,
   isHordeActive,
   effectiveAmount,
@@ -771,6 +772,10 @@ export class GameView {
     if (available && !building && !maxed && needsLand(state, id, mods)) {
       needs.push(`free land (${landUsed(state)}/${formatNumber(land(state, mods))} squares used)`);
     }
+    if (available && !building && !maxed && needsPeople(state, id)) {
+      const n = node.people ?? 0;
+      needs.push(`${n} idle Realm ${n === 1 ? 'person' : 'people'} (${idleWorkers(state)} idle)`);
+    }
     if (available && !building && !maxed && !hasFreeBuildSlot(state, node.world)) {
       needs.push(`a free build slot (${activeBuilds(state, node.world)}/${buildSlots(state)} in use)`);
     }
@@ -785,6 +790,6 @@ export class GameView {
     c.card.classList.toggle('horde', !!node.horde);
     c.button.disabled = learnedSpell
       ? !isSpellActive(state, id) && !canCastSpell(state, id)
-      : maxed || !!building || !available || !hasFreeBuildSlot(state, node.world) || needsLand(state, id, mods) || !canAfford(state, nodeCost(state, id, mods));
+      : maxed || !!building || !available || !hasFreeBuildSlot(state, node.world) || needsLand(state, id, mods) || needsPeople(state, id) || !canAfford(state, nodeCost(state, id, mods));
   }
 }
