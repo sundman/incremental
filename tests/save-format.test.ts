@@ -27,6 +27,23 @@ describe('save', () => {
     expect(loaded.echoes).toBe(7);
   });
 
+  it('keeps the research target and progress, and turns Lab techs still being built into started research', () => {
+    const state = createInitialState();
+    state.researching = 'geology';
+    state.researchProgress = { geology: 40, medicine: 12 };
+    const loaded = deserialize(serialize(state));
+    expect(loaded.researching).toBe('geology');
+    expect(loaded.researchProgress).toEqual({ geology: 40, medicine: 12 });
+    expect(deserialize(JSON.stringify({ researching: 'hut', researchProgress: { hut: 3, optics: -2 } }))).toMatchObject({
+      researching: null,
+      researchProgress: { optics: 0 },
+    });
+    const old = deserialize(JSON.stringify({ construction: { optics: { done: 10, needed: 60 }, hut: { done: 1, needed: 5 } } }));
+    expect(old.construction).toEqual({ hut: { done: 1, needed: 5 } });
+    expect(old.researching).toBe('optics');
+    expect(old.researchProgress).toEqual({ optics: 0 });
+  });
+
   it('keeps a summoned horde only while its spell is on', () => {
     const state = createInitialState();
     state.nodes.summoningCircle = 1;

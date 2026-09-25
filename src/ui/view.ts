@@ -74,6 +74,13 @@ import {
   statWorld,
   type ActiveLink,
   type Modifiers,
+  isResearch,
+  startResearch,
+  stopResearch,
+  canStartResearch,
+  researchNeeded,
+  researchUpfrontCost,
+  researchSecondsLeft,
 } from '../engine/engine';
 import { formatDuration, formatNumber, formatPerHour } from '../engine/format';
 import type { DepositId, GameState, JobId, MetaId, NodeId, ResourceId, WorldId } from '../engine/types';
@@ -180,6 +187,7 @@ export class GameView {
   ) as Record<DepositId, HTMLElement>;
   private echoes: HTMLElement;
   private treeDialog = h('dialog', { class: 'tech-tree' });
+  private researchStatus = h('p', { class: 'research-status' });
   private treeBody = h('div', { class: 'tree-columns' });
   private shop: HTMLElement;
   private shopHint: HTMLElement;
@@ -284,7 +292,7 @@ export class GameView {
       h('h3', {}, 'Buildings'),
       buildings,
       ...(techs.childElementCount
-        ? [h('h3', {}, world === 'arcana' ? 'Discoveries' : 'Research'), ...(world === 'lab' ? [this.treeButton()] : []), techs]
+        ? [h('h3', {}, world === 'arcana' ? 'Discoveries' : 'Research'), ...(world === 'lab' ? [this.researchStatus, this.treeButton()] : []), techs]
         : []),
       ...(spells.childElementCount
         ? [h('h3', {}, 'Spells'), h('p', { class: 'muted small' }, 'Learn a spell once, then click it to switch it on or off. It only costs upkeep while on. Only one spell can be on at a time (Multicast in the Echo shop adds more), so switching one on swaps out the oldest. Summon Demons is the exception: it takes no slot, but once cast it runs until the Realm is down to 2 survivors.'), spells]
@@ -321,13 +329,17 @@ export class GameView {
         const node = NODES[id];
         const level = state.nodes[id];
         const max = maxLevel(id);
-        const busy = !!state.construction[id];
+        const busy = state.researching === id;
         const done = level >= max;
         const open = !done && isNodeAvailable(state, id);
         const cls = busy ? 'busy' : done ? 'done' : open ? 'open' : level > 0 ? 'open' : 'locked';
+        const progress = state.researchProgress[id];
+        const pct = progress === undefined ? 0 : Math.floor((progress / Math.max(1e-9, researchNeeded(state, id, mods))) * 100);
         const status = busy
-          ? 'Researching…'
-          : done
+          ? `Researching ${pct}%`
+          : progress !== undefined
+            ? `Paused at ${pct}%`
+            : done
             ? 'Researched'
             : max > 1 && level > 0
               ? `${level} / ${max}`
@@ -514,7 +526,10 @@ export class GameView {
         );
         if (ok) toggleSpell(this.state, id);
       } else if (NODES[id].spell && this.state.nodes[id] > 0) toggleSpell(this.state, id);
-      else if (!buyNode(this.state, id)) return;
+      else if (isResearch(id)) {
+        if (this.state.researching === id) stopResearch(this.state);
+        else if (!startResearch(this.state, id)) return;
+      } else if (!buyNode(this.state, id)) return;
       this.hooks.onChange();
     });
     const card = h('div', { class: `node node-${node.kind}` }, button);
@@ -608,11 +623,14 @@ export class GameView {
       const shown = isResourceRevealed(state, r);
       setHidden(row.row, !shown);
       if (!shown) continue;
-      setText(row.amount, formatNumber(state.resources[r]));
+      // Research never piles up: it streams straight into the research target.
+      setText(row.amount, r === 'research' ? '' : formatNumber(state.resources[r]));
       const rate = netRate(state, mods, r);
       setText(row.rate, rate === 0 ? '' : `${rate > 0 ? '+' : ''}${formatNumber(rate)}/s`);
       row.rate.classList.toggle('negative', rate < 0);
     }
+
+    if (world === 'lab') this.renderResearchStatus(mods);
 
     const linkHtml = (l: ActiveLink, other: WorldId) => {
       const cls = l.helpful ? 'good' : 'bad';
@@ -658,6 +676,29 @@ export class GameView {
     );
   }
 
+  private renderResearchStatus(mods: Modifiers) {
+    const state = this.state;
+    const id = state.researching;
+    const rate = netRate(state, mods, 'research');
+    if (id) {
+      const need = researchNeeded(state, id, mods);
+      const secs = researchSecondsLeft(state, mods);
+      setText(
+        this.researchStatus,
+        `Researching ${NODES[id].name}: ${formatNumber(state.researchProgress[id] ?? 0)} / ${formatNumber(need)} Research` +
+          (Number.isFinite(secs) ? ` · ${formatDuration(secs)} left` : ' · no Research coming in'),
+      );
+    } else {
+      setText(
+        this.researchStatus,
+        rate > 0
+          ? `Nothing is being researched: pick a tech below. ${formatNumber(rate)} Research/s is going to waste.`
+          : 'Pick a tech below to research. Research streams into it as it is made; it never piles up.',
+      );
+    }
+    this.researchStatus.classList.toggle('attention', !id && rate > 0);
+  }
+
   private renderNode(id: NodeId, mods: Modifiers) {
     const state = this.state;
     const node = NODES[id];
@@ -683,7 +724,17 @@ export class GameView {
     const max = maxLevel(id);
     const maxed = level >= max;
     const building = state.construction[id];
-    if (building) {
+    const research = isResearch(id);
+    const target = research && state.researching === id;
+    const progress = research ? state.researchProgress[id] : undefined;
+    const researchPct = progress === undefined ? 0 : Math.min(100, (progress / Math.max(1e-9, researchNeeded(state, id, mods))) * 100);
+    if (target) {
+      c.button.style.setProperty('--progress', `${researchPct.toFixed(1)}%`);
+      const secs = researchSecondsLeft(state, mods);
+      setText(c.level, `Researching ${Math.floor(researchPct)}%${Number.isFinite(secs) ? ' · ' + formatDuration(secs) : ''} · click to pause`);
+    } else if (progress !== undefined) {
+      setText(c.level, `Paused at ${Math.floor(researchPct)}%`);
+    } else if (building) {
       const pct = Math.min(100, (building.done / building.needed) * 100);
       c.button.style.setProperty('--progress', `${pct.toFixed(1)}%`);
       const verb = node.kind === 'building' ? 'Building' : node.world === 'arcana' ? 'Discovering' : 'Researching';
@@ -714,7 +765,7 @@ export class GameView {
       c.power.classList.toggle('is-off', off);
       c.card.classList.toggle('switched-off', off && level > 0);
     }
-    c.card.classList.toggle('constructing', !!building);
+    c.card.classList.toggle('constructing', !!building || target);
     c.card.classList.toggle('owned', node.kind === 'tech' && maxed);
 
     const effectsHtml = node.effects
@@ -745,6 +796,13 @@ export class GameView {
 
     if (maxed) {
       setHtml(c.cost, '');
+    } else if (research) {
+      const upfront = progress === undefined ? researchUpfrontCost(state, id, mods) : {};
+      const parts = [`${formatNumber(researchNeeded(state, id, mods))} Research`];
+      for (const [r, n] of Object.entries(upfront) as [ResourceId, number][]) {
+        parts.push(`<span class="${state.resources[r] < n ? 'short' : ''}">${formatNumber(n)} ${RESOURCES[r].name}</span>`);
+      }
+      setHtml(c.cost, parts.join(' · ') + (Object.keys(upfront).length ? ' <span class="muted">(paid when started)</span>' : ''));
     } else {
       const cost = nodeCost(state, id, mods);
       setHtml(
@@ -758,7 +816,13 @@ export class GameView {
       );
     }
 
-    setText(c.time, maxed || building ? '' : `⏱ ${formatDuration(buildSeconds(state, id, mods))}`);
+    if (research) {
+      const rate = netRate(state, mods, 'research');
+      const left = researchNeeded(state, id, mods) - (progress ?? 0);
+      setText(c.time, maxed || target || rate <= 0 ? '' : `⏱ ${formatDuration(left / rate)} at the current rate`);
+    } else {
+      setText(c.time, maxed || building ? '' : `⏱ ${formatDuration(buildSeconds(state, id, mods))}`);
+    }
 
     const needs: string[] = [];
     for (const req of node.requires ?? []) {
@@ -778,7 +842,7 @@ export class GameView {
       const n = node.people ?? 0;
       needs.push(`${n} idle Realm ${n === 1 ? 'person' : 'people'} (${idleWorkers(state)} idle)`);
     }
-    if (available && !building && !maxed && !hasFreeBuildSlot(state, node.world)) {
+    if (available && !building && !maxed && !research && !hasFreeBuildSlot(state, node.world)) {
       needs.push(`a free build slot (${activeBuilds(state, node.world)}/${buildSlots(state)} in use)`);
     }
     if (node.horde && level > 0 && !isSpellActive(state, id) && state.population <= DEMONS.survivors) {
@@ -792,6 +856,8 @@ export class GameView {
     c.card.classList.toggle('horde', !!node.horde);
     c.button.disabled = learnedSpell
       ? !isSpellActive(state, id) && !canCastSpell(state, id)
-      : maxed || !!building || !available || !hasFreeBuildSlot(state, node.world) || needsLand(state, id, mods) || needsPeople(state, id) || !canAfford(state, nodeCost(state, id, mods));
+      : research
+        ? !target && !canStartResearch(state, id)
+        : maxed || !!building || !available || !hasFreeBuildSlot(state, node.world) || needsLand(state, id, mods) || needsPeople(state, id) || !canAfford(state, nodeCost(state, id, mods));
   }
 }

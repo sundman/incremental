@@ -44,9 +44,21 @@ import {
   toggleBuilding,
   isBuildingListed,
   researchTreeColumns,
+  startResearch,
+  stopResearch,
+  canStartResearch,
+  researchNeeded,
+  researchUpfrontCost,
+  researchSecondsLeft,
 } from '../src/engine/engine';
 import { DEPOSITS, NODES, RESOURCES } from '../src/engine/content';
 import type { GameState, JobId, NodeId, ResourceId } from '../src/engine/types';
+
+/** Streams `amount` Research into the current target, as if the Lab had just made it. */
+function pour(state: GameState, amount: number) {
+  state.resources.research += amount;
+  tick(state, 1e-6);
+}
 
 function withNodes(levels: Partial<Record<NodeId, number>>, state = createInitialState()): GameState {
   Object.assign(state.nodes, levels);
@@ -140,14 +152,16 @@ describe('worlds and techs', () => {
 
   it('techs need their prerequisites and cap at one level', () => {
     const state = unlockAll(createInitialState());
-    state.resources.research = 10_000;
-    expect(buyNode(state, 'metallurgy')).toBe(false);
-    expect(buyNode(state, 'scientificMethod')).toBe(true);
-    expect(buyNode(state, 'scientificMethod')).toBe(false); // already being researched
-    expect(buyNode(state, 'metallurgy')).toBe(false); // not finished yet
-    completeConstruction(state, 'scientificMethod');
-    expect(buyNode(state, 'scientificMethod')).toBe(false); // one level only
-    expect(buyNode(state, 'metallurgy')).toBe(true);
+    expect(startResearch(state, 'metallurgy')).toBe(false);
+    expect(buyNode(state, 'scientificMethod')).toBe(false); // techs are researched, not built
+    expect(startResearch(state, 'scientificMethod')).toBe(true);
+    expect(startResearch(state, 'scientificMethod')).toBe(false); // already being researched
+    expect(startResearch(state, 'metallurgy')).toBe(false); // not finished yet
+    pour(state, 10_000);
+    expect(state.nodes.scientificMethod).toBe(1);
+    expect(state.researching).toBe(null);
+    expect(startResearch(state, 'scientificMethod')).toBe(false); // one level only
+    expect(startResearch(state, 'metallurgy')).toBe(true);
   });
 });
 
@@ -435,23 +449,21 @@ describe('repeatable research', () => {
     state.resources.research = 1e9;
     expect(maxLevel('cartography')).toBe(10);
     expect(nodeCost(state, 'cartography').research).toBe(120);
-    for (let i = 0; i < 10; i++) {
-      expect(buyNode(state, 'cartography')).toBe(true);
-      tick(state, 600);
-    }
+    expect(startResearch(state, 'cartography')).toBe(true);
+    pour(state, 120 * (2 ** 10 - 1)); // it costs only Research, so it stays the target level after level
     expect(state.nodes.cartography).toBe(10);
+    expect(state.researching).toBe(null);
     expect(nodeCost(state, 'cartography').research).toBe(120 * 2 ** 10);
-    expect(buyNode(state, 'cartography')).toBe(false);
+    expect(startResearch(state, 'cartography')).toBe(false);
     expect(land(state)).toBe(20 + 10);
   });
 
   it('lets Rationalism be researched 10 times, stacking both its effects', () => {
     const state = unlockAll(withNodes({ scientificMethod: 1, library: 1, rationalism: 9 }));
-    state.resources.research = 1e9;
-    expect(buyNode(state, 'rationalism')).toBe(true);
-    tick(state, 3600);
+    expect(startResearch(state, 'rationalism')).toBe(true);
+    pour(state, 1e9);
     expect(state.nodes.rationalism).toBe(10);
-    expect(buyNode(state, 'rationalism')).toBe(false);
+    expect(startResearch(state, 'rationalism')).toBe(false);
     const mods = computeModifiers(state);
     expect(mods.get('rate:mana')?.mul).toBeCloseTo(0.8 ** 10);
   });
@@ -463,7 +475,7 @@ describe('build slots', () => {
     Object.assign(state.resources, { wood: 1000, stone: 1000, iron: 1000, research: 1000, mana: 1000 });
     expect(buyNode(state, 'hut')).toBe(true);
     expect(buyNode(state, 'lumberCamp')).toBe(false); // the Realm is busy
-    expect(buyNode(state, 'scientificMethod')).toBe(true); // the Lab has its own slot
+    expect(startResearch(state, 'scientificMethod')).toBe(true); // research takes no build slot
     expect(buyNode(state, 'manaWell')).toBe(true);
     tick(state, 60);
     expect(buyNode(state, 'lumberCamp')).toBe(true); // the Hut is done
@@ -908,15 +920,20 @@ describe('lumber camps', () => {
 describe('exploring', () => {
   it('needs Sailing and Navigation before any Expedition can set out', () => {
     const state = unlockAll(withNodes({ library: 1, scientificMethod: 1, cartography: 1, engineering: 1 }));
-    Object.assign(state.resources, { research: 1e6, food: 1e6, planks: 1e6, glass: 1e6 });
-    expect(buyNode(state, 'expedition')).toBe(false);
-    expect(buyNode(state, 'navigation')).toBe(false); // needs Sailing and Optics
-    expect(buyNode(state, 'sailing')).toBe(true);
-    tick(state, 600);
+    Object.assign(state.resources, { food: 1e6, planks: 1e6, glass: 1e6 });
+    expect(startResearch(state, 'expedition')).toBe(false);
+    expect(startResearch(state, 'navigation')).toBe(false); // needs Sailing and Optics
+    expect(startResearch(state, 'sailing')).toBe(true);
+    pour(state, 1e6);
     state.nodes.optics = 1;
-    expect(buyNode(state, 'navigation')).toBe(true);
-    tick(state, 600);
-    expect(buyNode(state, 'expedition')).toBe(true);
+    expect(startResearch(state, 'navigation')).toBe(true);
+    pour(state, 1e6);
+    expect(startResearch(state, 'expedition')).toBe(true);
+    expect(state.resources.food).toBeCloseTo(1e6 - 500, 2);
+    pour(state, 1e6);
+    // An Expedition also costs Food, so the next one waits for you to send it
+    expect(state.nodes.expedition).toBe(1);
+    expect(state.researching).toBe(null);
   });
 });
 
@@ -1093,16 +1110,16 @@ describe('scholars', () => {
     state.resources.food = 100;
     state.population = 3; // housing is full, so nobody arrives and eats Food
     const people = state.population;
-    const research = state.resources.research;
+    startResearch(state, 'scientificMethod');
     tick(state, 10);
     expect(state.resources.food).toBeCloseTo(100 - 5 * 0.2 * 10, 5);
     expect(state.population).toBe(people);
-    expect(state.resources.research).toBeGreaterThan(research);
+    expect(state.researchProgress.scientificMethod).toBeGreaterThan(0);
 
     state.resources.food = 0;
-    const stalled = state.resources.research;
+    const stalled = state.researchProgress.scientificMethod ?? 0;
     tick(state, 10);
-    expect(state.resources.research).toBeCloseTo(stalled, 5);
+    expect(state.researchProgress.scientificMethod).toBeCloseTo(stalled, 5);
     expect(activeLinks(state).some((l) => l.source === 'scholar' && l.to === 'realm' && !l.helpful)).toBe(true);
   });
 
@@ -1167,15 +1184,75 @@ describe('scholars', () => {
     expect(state.resources.research).toBe(1e6);
   });
 
-  it('Lab Assistants eat Realm Food too, and stop speeding up the Lab without it', () => {
+  it('Lab Assistants eat Realm Food too, and stop speeding up research without it', () => {
     const state = unlockAll(withNodes({ labAssistants: 2 }));
     state.resources.food = 100;
     state.population = 3;
     tick(state, 10);
     expect(state.resources.food).toBeCloseTo(100 - 2 * 0.2 * 10, 5);
-    expect(computeModifiers(state).get('speed:lab')?.mul).toBeCloseTo(1.21, 5);
+    expect(computeModifiers(state).get('rate:research')?.mul).toBeCloseTo(1.21, 5);
     state.resources.food = 0;
     tick(state, 1);
-    expect(computeModifiers(state).get('speed:lab')?.mul ?? 1).toBeCloseTo(1, 5);
+    expect(computeModifiers(state).get('rate:research')?.mul ?? 1).toBeCloseTo(1, 5);
+  });
+});
+
+describe('research', () => {
+  it('streams Research into the target instead of piling it up, and wastes it with no target', () => {
+    const state = unlockAll(withNodes({ scholar: 10 }));
+    state.resources.food = 1e6;
+    tick(state, 10);
+    expect(state.resources.research).toBe(0); // nothing picked: it is lost
+    expect(startResearch(state, 'scientificMethod')).toBe(true);
+    const rate = netRate(state, computeModifiers(state), 'research');
+    tick(state, 10);
+    expect(state.resources.research).toBe(0);
+    expect(state.researchProgress.scientificMethod).toBeCloseTo(rate * 10, 5);
+    expect(researchSecondsLeft(state)).toBeCloseTo((researchNeeded(state, 'scientificMethod') - rate * 10) / rate, 3);
+  });
+
+  it('finishes the moment enough Research is in, with no build time', () => {
+    const state = unlockAll(createInitialState());
+    startResearch(state, 'settlements');
+    pour(state, researchNeeded(state, 'settlements') - 1);
+    expect(state.nodes.settlements).toBe(0);
+    pour(state, 1);
+    expect(state.nodes.settlements).toBe(1);
+    expect(state.construction.settlements).toBeUndefined();
+    expect(state.researchProgress.settlements).toBeUndefined();
+  });
+
+  it('pays other costs once when a tech is first picked, and keeps progress when you switch away', () => {
+    const state = unlockAll(withNodes({ scientificMethod: 1 }));
+    Object.assign(state.resources, { food: 200, stone: 100 });
+    expect(researchUpfrontCost(state, 'medicine')).toEqual({ food: 200 });
+    expect(startResearch(state, 'medicine')).toBe(true);
+    expect(state.resources.food).toBe(0);
+    pour(state, 100);
+    expect(startResearch(state, 'geology')).toBe(true);
+    expect(state.resources.stone).toBe(0);
+    pour(state, 30);
+    expect(startResearch(state, 'medicine')).toBe(true); // already paid for
+    expect(state.researchProgress).toEqual({ medicine: 100, geology: 30 });
+    stopResearch(state);
+    pour(state, 1000);
+    expect(state.researchProgress).toEqual({ medicine: 100, geology: 30 });
+  });
+
+  it('cannot start a tech whose other costs you cannot pay', () => {
+    const state = unlockAll(withNodes({ scientificMethod: 1 }));
+    expect(canStartResearch(state, 'medicine')).toBe(false); // 200 Food
+    state.resources.food = 200;
+    expect(canStartResearch(state, 'medicine')).toBe(true);
+  });
+
+  it('clears the target and all progress on a Lab reset', () => {
+    const state = unlockAll(withNodes({ scholar: 1 }));
+    state.runEarned.lab = 1e6;
+    startResearch(state, 'scientificMethod');
+    pour(state, 10);
+    resetWorld(state, 'lab');
+    expect(state.researching).toBe(null);
+    expect(state.researchProgress).toEqual({});
   });
 });

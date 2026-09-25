@@ -141,7 +141,7 @@ export interface NodeDef {
   baseCost: Cost;
   /** Cost multiplier per level owned. Ignored for one-level nodes. */
   costGrowth: number;
-  /** Build-time tier, 1 (seconds) to 6 (many minutes). See `TIER_SECONDS`. */
+  /** Build-time tier, 1 (seconds) to 6 (many minutes). See `TIER_SECONDS`. Lab techs ignore it: Research streams into them. */
   tier: 1 | 2 | 3 | 4 | 5 | 6;
   /** Omit for unlimited levels. Techs are always 1. */
   maxLevel?: number;
@@ -320,4 +320,11 @@ export interface GameState {
   construction: Partial<Record<NodeId, { done: number; needed: number }>>;
   /** Fraction (0..1) of each upkeep node's effect that ran last tick. */
   efficiency: Partial<Record<NodeId, number>>;
+  /** The Lab tech that Research streams into; Research never piles up. */
+  researching: NodeId | null;
+  /**
+   * Research poured into each started Lab tech's next level. A tech is in here once its
+   * other costs (Planks, Glass...) are paid, so switching away and back costs nothing more.
+   */
+  researchProgress: Partial<Record<NodeId, number>>;
 }

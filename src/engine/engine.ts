@@ -50,6 +50,8 @@ export function createInitialState(): GameState {
     demons: 0,
     construction: {},
     efficiency: {},
+    researching: null,
+    researchProgress: {},
   };
 }
 
@@ -603,7 +605,7 @@ export function isNodeAvailable(state: GameState, id: NodeId): boolean {
 export function isResearchListed(state: GameState, id: NodeId): boolean {
   const node = NODES[id];
   if (node.kind !== 'tech' || node.world !== 'lab' || !isWorldUnlocked(state, 'lab')) return false;
-  if (state.construction[id]) return true;
+  if (state.researching === id) return true;
   if (state.nodes[id] >= maxLevel(id)) return false;
   return (node.requires ?? []).every((req) => NODES[req].kind !== 'tech' || state.nodes[req] > 0);
 }
@@ -663,6 +665,7 @@ export function needsPeople(state: GameState, id: NodeId): boolean {
 
 export function canBuyNode(state: GameState, id: NodeId): boolean {
   return (
+    !isResearch(id) &&
     isNodeAvailable(state, id) &&
     !isUnderConstruction(state, id) &&
     hasFreeBuildSlot(state, NODES[id].world) &&
@@ -707,10 +710,101 @@ export function buyNode(state: GameState, id: NodeId): boolean {
   return true;
 }
 
+// --------------------------------------------------------------- research
+
+/** Lab techs are researched by streaming Research into them, not built. */
+export function isResearch(id: NodeId): boolean {
+  return NODES[id].world === 'lab' && NODES[id].kind === 'tech';
+}
+
+/** Research the next level of a tech needs in total. */
+export function researchNeeded(state: GameState, id: NodeId, mods = computeModifiers(state)): number {
+  return nodeCost(state, id, mods).research ?? 0;
+}
+
+/** What a tech costs besides Research, paid once when it is first picked. */
+export function researchUpfrontCost(state: GameState, id: NodeId, mods = computeModifiers(state)): Cost {
+  const cost = nodeCost(state, id, mods);
+  delete cost.research;
+  return cost;
+}
+
+/** Whether a tech's next level is started, so its upfront cost is already paid. */
+export function isResearchStarted(state: GameState, id: NodeId): boolean {
+  return state.researchProgress[id] !== undefined;
+}
+
+export function canStartResearch(state: GameState, id: NodeId): boolean {
+  return (
+    isResearch(id) &&
+    state.researching !== id &&
+    isNodeAvailable(state, id) &&
+    state.nodes[id] < maxLevel(id) &&
+    (isResearchStarted(state, id) || canAfford(state, researchUpfrontCost(state, id)))
+  );
+}
+
+/**
+ * Makes a tech the research target, paying its upfront cost the first time. Research
+ * already poured into another tech stays there for when you switch back.
+ */
+export function startResearch(state: GameState, id: NodeId): boolean {
+  if (!canStartResearch(state, id)) return false;
+  if (!isResearchStarted(state, id)) {
+    for (const [r, n] of Object.entries(researchUpfrontCost(state, id)) as [ResourceId, number][]) {
+      state.resources[r] -= n;
+    }
+    state.researchProgress[id] = 0;
+  }
+  state.researching = id;
+  return true;
+}
+
+export function stopResearch(state: GameState) {
+  state.researching = null;
+}
+
+/** Real seconds until the research target is done at the current rate, or Infinity. */
+export function researchSecondsLeft(state: GameState, mods = computeModifiers(state)): number {
+  const id = state.researching;
+  if (!id) return Infinity;
+  const rate = netRate(state, mods, 'research');
+  const left = Math.max(0, researchNeeded(state, id, mods) - (state.researchProgress[id] ?? 0));
+  return left <= 0 ? 0 : rate > 0 ? left / rate : Infinity;
+}
+
+/**
+ * Streams the Research made this step into the target. A finished repeatable tech stays
+ * the target while its next level costs only Research; anything else leaves no target,
+ * and Research made with no target is lost.
+ */
+function pourResearch(state: GameState) {
+  let amount = state.resources.research;
+  state.resources.research = 0;
+  while (amount > 0 && state.researching) {
+    const id = state.researching;
+    const need = researchNeeded(state, id);
+    const have = state.researchProgress[id] ?? 0;
+    if (have + amount < need - 1e-9) {
+      state.researchProgress[id] = have + amount;
+      return;
+    }
+    amount -= Math.max(0, need - have);
+    delete state.researchProgress[id];
+    finishLevel(state, id);
+    state.researching = null;
+    if (Object.keys(researchUpfrontCost(state, id)).length === 0) startResearch(state, id);
+  }
+}
+
 /** Finishes a level under construction immediately. */
 export function completeConstruction(state: GameState, id: NodeId) {
   if (!state.construction[id]) return;
   delete state.construction[id];
+  finishLevel(state, id);
+}
+
+function finishLevel(state: GameState, id: NodeId) {
   state.nodes[id] += 1;
   const opens = NODES[id].unlocksWorld;
   if (opens && !isWorldUnlocked(state, opens)) {
@@ -780,6 +874,7 @@ function step(state: GameState, dt: number) {
     gain(state, r, grossRate(state, mods, r) * dt);
     if (state.resources[r] < 0) state.resources[r] = 0;
   }
+  pourResearch(state);
 
   // 3. Construction progresses.
   advanceConstruction(state, mods, dt);
@@ -898,8 +993,13 @@ export function resetWorld(state: GameState, world: WorldId): number {
     state.nodes[id] = 0;
     delete state.efficiency[id];
     delete state.construction[id];
+    delete state.researchProgress[id];
     state.activeSpells = state.activeSpells.filter((s) => s !== id);
     state.switchedOff = state.switchedOff.filter((s) => s !== id);
+  }
+  if (world === 'lab') {
+    state.researching = null;
+    state.researchProgress = {};
   }
   if (world === 'realm') {
     // Only the survivors are left, so a demon horde has nothing more to eat.

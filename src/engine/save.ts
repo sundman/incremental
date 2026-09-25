@@ -1,4 +1,4 @@
-import { canSwitchOff, createInitialState, SAVE_VERSION } from './engine';
+import { canSwitchOff, createInitialState, isResearch, SAVE_VERSION } from './engine';
 import type { GameState } from './types';
 import { DEMONS, DEPOSIT_ORDER, NODES, NODE_ORDER, WORLD_ORDER } from './content';
 
@@ -72,6 +72,9 @@ export function deserialize(text: string): GameState {
     ...saved.filter((id) => NODES[id].horde),
   ];
 
+  const construction = readConstruction(raw.construction);
+  const research = readResearch(raw, construction);
+
   return {
     version: SAVE_VERSION,
     resources: mergeNumbers(fresh.resources, raw.resources),
@@ -91,9 +94,37 @@ export function deserialize(text: string): GameState {
     deposits: readDeposits(raw, fresh.deposits),
     // A horde only exists while its spell is on.
     demons: activeSpells.some((id) => NODES[id].horde) ? Math.max(DEMONS.start, num(raw.demons, 0)) : 0,
-    construction: readConstruction(raw.construction),
+    construction,
     efficiency: {},
+    ...research,
   };
+}
+
+/**
+ * Reads the research target and progress. Older saves built Lab techs like buildings, so a
+ * tech still under construction becomes a started tech (its costs were paid) and the target.
+ */
+function readResearch(
+  raw: Record<string, unknown>,
+  construction: GameState['construction'],
+): Pick<GameState, 'researching' | 'researchProgress'> {
+  const researchProgress: GameState['researchProgress'] = {};
+  const saved = (raw.researchProgress && typeof raw.researchProgress === 'object' ? raw.researchProgress : {}) as Record<
+    string,
+    unknown
+  >;
+  for (const id of NODE_ORDER) {
+    const v = saved[id];
+    if (isResearch(id) && typeof v === 'number' && Number.isFinite(v)) researchProgress[id] = Math.max(0, v);
+  }
+  let researching = NODE_ORDER.find((id) => isResearch(id) && raw.researching === id) ?? null;
+  for (const id of NODE_ORDER) {
+    if (!isResearch(id) || !construction[id]) continue;
+    delete construction[id];
+    researchProgress[id] ??= 0;
+    researching ??= id;
+  }
+  return { researching, researchProgress };
 }
 
 export function loadGame(storage: Pick<Storage, 'getItem'> = localStorage): GameState {
