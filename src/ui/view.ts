@@ -20,6 +20,7 @@ import {
   arrivalRate,
   crowdingFactor,
   depositRegrowth,
+  depositMax,
   nextDepositMax,
   depositGrowthPerReset,
   pollutionFactor,
@@ -419,10 +420,11 @@ export class GameView {
       if (!shown) continue;
       const def = DEPOSITS[id];
       const d = state.deposits[id];
-      el.style.setProperty('--left', `${((d.max > 0 ? d.left / d.max : 0) * 100).toFixed(1)}%`);
+      const max = depositMax(state, mods, id);
+      el.style.setProperty('--left', `${((max > 0 ? Math.min(1, d.left / max) : 0) * 100).toFixed(1)}%`);
       const refill = depositRegrowth(mods, id);
       const name = RESOURCES[id].name;
-      let text = `${def.icon} ${def.name}: ${formatNumber(d.left)} / ${formatNumber(d.max)} ${name}`;
+      let text = `${def.icon} ${def.name}: ${formatNumber(Math.min(d.left, max))} / ${formatNumber(max)} ${name}`;
       if (refill > 0) {
         text += ` · ${id === 'wood' ? 'regrows' : 'refills'} ${formatNumber(refill)}/s`;
         if (def.pollutionSlows && smog >= 0.005) text += ` (pollution −${Math.round(smog * 100)}%)`;

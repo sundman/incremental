@@ -68,6 +68,7 @@ export function statWorld(stat: Stat): WorldId {
     stat === 'crowding' ||
     stat === 'pollution' ||
     stat.startsWith('regrow:') ||
+    stat.startsWith('size:') ||
     stat === 'deaths'
   ) {
     return 'realm';
@@ -287,6 +288,11 @@ export function depositRegrowth(mods: Modifiers, deposit: DepositId): number {
   const def = DEPOSITS[deposit];
   const rate = Math.max(0, (def.baseRegrow + getAdd(mods, `regrow:${deposit}`)) * getMul(mods, `regrow:${deposit}`));
   return def.pollutionSlows ? rate * pollutionFactor(mods) : rate;
+}
+
+/** The most a deposit can hold right now: its size this run, less what buildings took (Quarries clear forest). */
+export function depositMax(state: GameState, mods: Modifiers, deposit: DepositId): number {
+  return Math.max(0, (state.deposits[deposit].max + getAdd(mods, `size:${deposit}`)) * getMul(mods, `size:${deposit}`));
 }
 
 /** Share of what was gathered that deposits grow by on a Realm reset (Rich Earth in the Echo shop). */
@@ -767,7 +773,7 @@ function step(state: GameState, dt: number) {
   const mods = computeModifiers(state);
   for (const id of DEPOSIT_ORDER) {
     const d = state.deposits[id];
-    d.left = Math.min(d.max, d.left + depositRegrowth(mods, id) * dt);
+    d.left = Math.min(depositMax(state, mods, id), d.left + depositRegrowth(mods, id) * dt);
   }
   for (const r of RESOURCE_ORDER) {
     if (!isWorldUnlocked(state, RESOURCES[r].world)) continue;

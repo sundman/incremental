@@ -209,11 +209,14 @@ const nodeList: NodeDef[] = [
     world: 'realm',
     kind: 'building',
     name: 'Quarry',
-    description: 'Opens the Stonecutter job. Each Quarry makes stonecutters faster.',
+    description: 'Opens the Stonecutter job. Each Quarry makes stonecutters faster, but clears woodland: the forest holds 500 less Wood.',
     baseCost: { wood: 35 },
     costGrowth: 1.3,
     tier: 1,
-    effects: [{ stat: 'yield:stone', kind: 'add', amount: 0.15 }],
+    effects: [
+      { stat: 'yield:stone', kind: 'add', amount: 0.15 },
+      { stat: 'size:wood', kind: 'add', amount: -500 },
+    ],
   },
   {
     id: 'clayPit',

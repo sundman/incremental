@@ -28,6 +28,12 @@ export function describeEffect(effect: Effect, amount: number): string {
       ? `${DEPOSITS[deposit].name} ${verb} +${formatNumber(amount)} ${RESOURCES[deposit].name}/s`
       : `${DEPOSITS[deposit].name} ${verb} ${formatMultiplier(amount)}`;
   }
+  if (effect.stat.startsWith('size:')) {
+    const deposit = effect.stat.slice('size:'.length) as DepositId;
+    return effect.kind === 'add'
+      ? `${DEPOSITS[deposit].name} holds ${amount >= 0 ? '+' : '−'}${formatNumber(Math.abs(amount))} ${RESOURCES[deposit].name}`
+      : `${DEPOSITS[deposit].name} size ${formatMultiplier(amount)}`;
+  }
   if (effect.stat === 'deaths') {
     return effect.kind === 'add' ? `Kills ${formatPerHour(amount)} people` : `Deaths ${formatMultiplier(amount)}`;
   }

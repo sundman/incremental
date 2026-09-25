@@ -15,6 +15,7 @@ import {
   buildSeconds,
   completeConstruction,
   needsPeople,
+  depositMax,
   constructionSecondsLeft,
   arrivalRate,
   crowdingFactor,
@@ -341,6 +342,22 @@ describe('deposits', () => {
     tick(state, 60);
     expect(state.resources.stone).toBeCloseTo(5);
     expect(DEPOSITS.stone.start).toBeGreaterThan(DEPOSITS.wood.start);
+  });
+
+  it('shrinks the forest by 500 Wood for every Quarry, and gives it back on a Realm reset', () => {
+    const state = withNodes({ quarry: 3 });
+    expect(depositMax(state, computeModifiers(state), 'wood')).toBe(8000 - 3 * 500);
+    tick(state, 1);
+    expect(state.deposits.wood.left).toBeCloseTo(6500);
+    tick(state, 100); // full, so it can't regrow past its smaller size
+    expect(state.deposits.wood.left).toBeCloseTo(6500);
+    state.deposits.wood.left = 1000; // a cut-down forest keeps what is left
+    state.nodes.quarry = 4;
+    tick(state, 1);
+    expect(state.deposits.wood.left).toBeCloseTo(1000.25);
+    resetWorld(state, 'realm');
+    expect(depositMax(state, computeModifiers(state), 'wood')).toBe(8000);
+    expect(state.deposits.wood.left).toBe(8000);
   });
 
   it('regrows the forest faster with Forester\'s Lodges and Forestry, and slower with pollution', () => {

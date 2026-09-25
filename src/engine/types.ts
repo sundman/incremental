@@ -36,6 +36,7 @@ export type ResourceId =
  * - `crowding`         Realm crowding, which slows growth; homes add it, sanitation cuts it
  * - `pollution`        Realm pollution, which slows growth; dirty industry adds it, parks and filters cut it
  * - `regrow:<deposit>`  how fast one of the Realm's deposits (forest, quarries...) refills per second
+ * - `size:<deposit>`    how much one of the Realm's deposits can hold this run
  * - `deaths`           Realm people killed per hour
  * - `speed:<world>`    build speed multiplier in a world (higher is faster)
  */
@@ -50,6 +51,7 @@ export type Stat =
   | 'crowding'
   | 'pollution'
   | `regrow:${DepositId}`
+  | `size:${DepositId}`
   | 'deaths'
   | `speed:${WorldId}`;
 
@@ -72,7 +74,7 @@ export interface DepositDef {
 export interface Deposit {
   /** Still there to be gathered. */
   left: number;
-  /** The most it can hold this Realm run; grows with every Realm reset. */
+  /** The most it can hold this Realm run, before `size` modifiers; grows with every Realm reset. */
   max: number;
   /** Gathered from it this Realm run; decides how much bigger it is next run. */
   cut: number;
