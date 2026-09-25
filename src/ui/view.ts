@@ -126,6 +126,12 @@ const echoesLabel = (n: number) => `${formatNumber(n)} ${n === 1 ? 'Echo' : 'Ech
 
 const escape = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
+/** For a repeatable tech, which level is being researched: "Level 4 of 10 · ". Empty for one-level techs. */
+function nextLevel(state: GameState, id: NodeId): string {
+  const max = maxLevel(id);
+  return max > 1 ? `Level ${state.nodes[id] + 1} of ${max} · ` : '';
+}
+
 interface ResourceRow {
   row: HTMLElement;
   amount: HTMLElement;
@@ -336,13 +342,13 @@ export class GameView {
         const progress = state.researchProgress[id];
         const pct = progress === undefined ? 0 : Math.floor((progress / Math.max(1e-9, researchNeeded(state, id, mods))) * 100);
         const status = busy
-          ? `Researching ${pct}%`
+          ? `${nextLevel(state, id)}Researching ${pct}%`
           : progress !== undefined
-            ? `Paused at ${pct}%`
+            ? `${nextLevel(state, id)}Paused at ${pct}%`
             : done
             ? 'Researched'
-            : max > 1 && level > 0
-              ? `${level} / ${max}`
+            : max > 1
+              ? `${level} / ${max} done`
               : open
                 ? 'Available'
                 : 'Locked';
@@ -685,7 +691,7 @@ export class GameView {
       const secs = researchSecondsLeft(state, mods);
       setText(
         this.researchStatus,
-        `Researching ${NODES[id].name}: ${formatNumber(state.researchProgress[id] ?? 0)} / ${formatNumber(need)} Research` +
+        `Researching ${NODES[id].name}${maxLevel(id) > 1 ? ` (level ${state.nodes[id] + 1} of ${maxLevel(id)})` : ''}: ${formatNumber(state.researchProgress[id] ?? 0)} / ${formatNumber(need)} Research` +
           (Number.isFinite(secs) ? ` · ${formatDuration(secs)} left` : ' · no Research coming in'),
       );
     } else {
@@ -731,9 +737,9 @@ export class GameView {
     if (target) {
       c.button.style.setProperty('--progress', `${researchPct.toFixed(1)}%`);
       const secs = researchSecondsLeft(state, mods);
-      setText(c.level, `Researching ${Math.floor(researchPct)}%${Number.isFinite(secs) ? ' · ' + formatDuration(secs) : ''} · click to pause`);
+      setText(c.level, `${nextLevel(state, id)}Researching ${Math.floor(researchPct)}%${Number.isFinite(secs) ? ' · ' + formatDuration(secs) : ''} · click to pause`);
     } else if (progress !== undefined) {
-      setText(c.level, `Paused at ${Math.floor(researchPct)}%`);
+      setText(c.level, `${nextLevel(state, id)}Paused at ${Math.floor(researchPct)}%`);
     } else if (building) {
       const pct = Math.min(100, (building.done / building.needed) * 100);
       c.button.style.setProperty('--progress', `${pct.toFixed(1)}%`);
@@ -752,7 +758,7 @@ export class GameView {
         on ? (eff < 0.999 ? `On · ${Math.round(eff * 100)}% power` : 'On') : swap ? `Off · swaps out ${NODES[swap].name}` : 'Off',
       );
     } else if (node.kind === 'tech' && max > 1) {
-      setText(c.level, level > 0 ? `${level} / ${max}` : '');
+      setText(c.level, `${level} / ${max} done`);
     } else if (node.kind === 'tech') {
       setText(c.level, level > 0 ? (node.world === 'arcana' ? 'Discovered' : 'Researched') : '');
     } else {
