@@ -762,9 +762,9 @@ export class GameView {
       log.length
         ? [...log]
             .reverse()
-            .map((e) => `<li><time>${time(e.time)}</time> ${escape(e.text)}</li>`)
+            .map((e) => `<li class="log-${e.kind}"><time>${time(e.time)}</time> ${escape(e.text)}</li>`)
             .join('')
-        : '<li class="muted">Nothing has happened yet. Deaths are written down here.</li>',
+        : '<li class="muted">Nothing has happened yet. Everyone who joins the village or dies is written down here.</li>',
     );
   }
 

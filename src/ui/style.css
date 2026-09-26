@@ -485,6 +485,14 @@ button {
   padding: 1px 0;
 }
 
+.log-arrival {
+  color: var(--good);
+}
+
+.log-death {
+  color: color-mix(in srgb, var(--bad) 80%, var(--text));
+}
+
 .log-list time {
   color: var(--muted);
   font-variant-numeric: tabular-nums;

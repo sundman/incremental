@@ -144,8 +144,20 @@ describe('formatDuration', () => {
 
 describe('chronicle in saves', () => {
   it('keeps valid log lines and drops damaged ones', () => {
-    const loaded = deserialize(JSON.stringify({ log: [{ time: 5, text: 'Alda Brook was kicked by an ox.' }, { text: 3 }, null] }));
-    expect(loaded.log).toEqual([{ time: 5, text: 'Alda Brook was kicked by an ox.' }]);
+    const loaded = deserialize(
+      JSON.stringify({
+        log: [
+          { time: 5, text: 'Alda Brook was kicked by an ox.' },
+          { time: 6, text: 'Ida Reed was born in the village.', kind: 'arrival' },
+          { text: 3 },
+          null,
+        ],
+      }),
+    );
+    expect(loaded.log).toEqual([
+      { time: 5, text: 'Alda Brook was kicked by an ox.', kind: 'death' }, // older saves only logged deaths
+      { time: 6, text: 'Ida Reed was born in the village.', kind: 'arrival' },
+    ]);
     expect(deserialize('{}').log).toEqual([]);
   });
 });

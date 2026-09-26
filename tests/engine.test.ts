@@ -1392,6 +1392,17 @@ describe('chronicle', () => {
     expect(state.log.at(-1)!.text).toMatch(/was dragged off by demons\.$/);
   });
 
+  it('writes a named line for each whole person who joins the village', () => {
+    const state = createInitialState(); // 2 people, room for 3, 1 arrives every 20s
+    state.resources.food = 100;
+    tick(state, 19);
+    expect(state.log).toHaveLength(0);
+    tick(state, 2);
+    expect(state.log).toHaveLength(1);
+    expect(state.log[0]).toMatchObject({ kind: 'arrival' });
+    expect(state.log[0]!.text).toMatch(/^\S+ \S+ (was born|moved|arrived|settled)/);
+  });
+
   it('keeps only the latest lines', () => {
     const state = withJobs({ farmer: 80 });
     setAccidentRandom(() => 0);

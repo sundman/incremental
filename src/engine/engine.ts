@@ -18,8 +18,8 @@ import {
   WORLDS,
   WORLD_ORDER,
 } from './content';
-import { randomName } from './names';
-import type { Cost, DepositId, Effect, GameState, JobId, MetaId, NodeId, ResourceId, Stat, WorldId } from './types';
+import { randomArrival, randomName } from './names';
+import type { Cost, DepositId, Effect, GameState, JobId, LogEntry, MetaId, NodeId, ResourceId, Stat, WorldId } from './types';
 
 export const SAVE_VERSION = 1;
 
@@ -27,8 +27,8 @@ export const SAVE_VERSION = 1;
 export const LOG_LIMIT = 50;
 
 /** Adds a line to the chronicle, dropping the oldest past `LOG_LIMIT`. */
-export function addLog(state: GameState, text: string) {
-  state.log.push({ time: Date.now(), text });
+export function addLog(state: GameState, text: string, kind: LogEntry['kind'] = 'death') {
+  state.log.push({ time: Date.now(), text, kind });
   if (state.log.length > LOG_LIMIT) state.log.splice(0, state.log.length - LOG_LIMIT);
 }
 
@@ -998,8 +998,10 @@ function step(state: GameState, dt: number) {
   if (state.population < cap) {
     let arriving = Math.min(cap - state.population, arrivalRate(mods) * dt);
     arriving = Math.min(arriving, state.resources.food / POPULATION.foodPerPerson);
+    const before = Math.floor(state.population);
     state.population += arriving;
     state.resources.food -= arriving * POPULATION.foodPerPerson;
+    for (let i = before; i < Math.floor(state.population); i++) addLog(state, `${randomName()} ${randomArrival()}.`, 'arrival');
   }
 }
 

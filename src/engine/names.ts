@@ -16,6 +16,19 @@ const FAMILY_NAMES = [
 
 const pick = <T>(list: T[]) => list[Math.floor(Math.random() * list.length)]!;
 
+const ARRIVALS = [
+  'was born in the village',
+  'was born to a farming family',
+  'moved into the village',
+  'arrived looking for work',
+  'settled in with a cart of belongings',
+];
+
+/** How someone joined the village, e.g. "was born in the village". */
+export function randomArrival(): string {
+  return pick(ARRIVALS);
+}
+
 export function randomName(): string {
   return `${pick(FIRST_NAMES)} ${pick(FAMILY_NAMES)}`;
 }

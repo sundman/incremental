@@ -27,7 +27,7 @@ function readLog(raw: unknown): LogEntry[] {
       (e): e is LogEntry =>
         !!e && typeof e === 'object' && typeof e.text === 'string' && typeof e.time === 'number' && Number.isFinite(e.time),
     )
-    .map((e) => ({ time: e.time, text: e.text }))
+    .map((e): LogEntry => ({ time: e.time, text: e.text, kind: e.kind === 'arrival' ? 'arrival' : 'death' }))
     .slice(-LOG_LIMIT);
 }
 

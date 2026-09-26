@@ -317,6 +317,8 @@ export interface LogEntry {
   /** When it happened, in milliseconds since 1970 (Date.now()). */
   time: number;
   text: string;
+  /** Colours the line: someone joining the village, or someone dying. */
+  kind: 'arrival' | 'death';
 }
 
 export interface GameState {
