@@ -84,6 +84,7 @@ import {
   resourceCap,
   accidentChance,
   accidentRate,
+  wastedWorkers,
   isAtCap,
   costOverCap,
 } from '../engine/engine';
@@ -628,6 +629,16 @@ export class GameView {
       setHidden(row.row, !available);
       if (!available) continue;
       setText(row.count, String(state.jobs[id]));
+      const wasted = wastedWorkers(state, mods, id);
+      const name = RESOURCES[job.resource].name;
+      row.count.classList.toggle('wasted', !!wasted);
+      row.count.title =
+        wasted === 'full'
+          ? `${name} storage is full, so what these workers make is lost. Build more storage or move them.`
+          : wasted === 'depleted'
+            ? `The ${name} deposit is used up. It only regrows ${formatNumber(depositRegrowth(mods, job.resource as DepositId))}/s, ` +
+              `which fewer workers could keep up with. Move the rest to other jobs.`
+            : '';
       const parts = [
         `<span>+${formatNumber(jobOutput(mods, id))} ${RESOURCES[job.resource].name}/s each</span>`,
         `<span class="risk" title="Chance per hour that each worker in this job dies in an accident">☠ ${formatNumber(accidentChance(mods, id) * 100)}%/h</span>`,

@@ -611,6 +611,12 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+/* Some of these workers make nothing: storage full, or the deposit is used up. */
+.job-count.wasted {
+  color: var(--bad);
+  cursor: help;
+}
+
 .job-btn {
   background: var(--card);
   border: 1px solid var(--accent);

@@ -51,6 +51,7 @@ import {
   researchUpfrontCost,
   researchSecondsLeft,
   setAccidentRandom,
+  wastedWorkers,
   LOG_LIMIT,
   accidentChance,
   accidentRate,
@@ -1421,5 +1422,31 @@ describe('realm storage', () => {
     const state = withNodes({ hut: 4 }); // the 5th Hut costs 2,560 Wood
     const mods = computeModifiers(state);
     expect(costOverCap(nodeCost(state, 'hut', mods), mods)).toBe('wood');
+  });
+});
+
+describe('wasted workers', () => {
+  it('flags a job whose storage is full and still filling', () => {
+    const state = withJobs({ woodcutter: 2, farmer: 1 });
+    expect(wastedWorkers(state, computeModifiers(state), 'woodcutter')).toBe(null);
+    state.resources.wood = 1000;
+    expect(wastedWorkers(state, computeModifiers(state), 'woodcutter')).toBe('full');
+    expect(wastedWorkers(state, computeModifiers(state), 'farmer')).toBe(null);
+  });
+
+  it('flags more workers on a used-up deposit than its regrowth can keep busy', () => {
+    const state = withJobs({ woodcutter: 1 }); // 0.5 Wood/s each, the forest regrows 0.25/s
+    state.deposits.wood.left = 0;
+    expect(wastedWorkers(state, computeModifiers(state), 'woodcutter')).toBe(null); // one is still needed
+    state.jobs.woodcutter = 2;
+    expect(wastedWorkers(state, computeModifiers(state), 'woodcutter')).toBe('depleted');
+    state.deposits.wood.left = 500;
+    expect(wastedWorkers(state, computeModifiers(state), 'woodcutter')).toBe(null);
+  });
+
+  it('never flags a job with nobody in it', () => {
+    const state = createInitialState();
+    state.resources.wood = 1000;
+    expect(wastedWorkers(state, computeModifiers(state), 'woodcutter')).toBe(null);
   });
 });

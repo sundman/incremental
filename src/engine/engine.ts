@@ -314,6 +314,24 @@ export function isAtCap(state: GameState, mods: Modifiers, resource: ResourceId)
   return state.resources[resource] >= resourceCap(mods, resource) - 1e-9;
 }
 
+/**
+ * Why some of a job's workers are making nothing right now, or null if they all help:
+ * - `full`: their resource's storage is full and still filling up, so what they make is lost;
+ * - `depleted`: their deposit is used up and more of them are assigned than its regrowth can keep busy.
+ */
+export function wastedWorkers(state: GameState, mods: Modifiers, job: JobId): 'full' | 'depleted' | null {
+  const workers = state.jobs[job];
+  if (workers <= 0) return null;
+  const resource = JOBS[job].resource;
+  if (isAtCap(state, mods, resource) && netRate(state, mods, resource) > 1e-9) return 'full';
+  if (isDeposit(resource) && state.deposits[resource].left < 1) {
+    const each = jobOutput(mods, job);
+    const needed = each > 0 ? Math.ceil(depositRegrowth(mods, resource) / each - 1e-9) : 0;
+    if (workers > needed) return 'depleted';
+  }
+  return null;
+}
+
 /** The first resource in a cost that is more than can ever be stored, so storage must grow first. */
 export function costOverCap(cost: Cost, mods: Modifiers): ResourceId | null {
   for (const [r, n] of Object.entries(cost) as [ResourceId, number][]) {
