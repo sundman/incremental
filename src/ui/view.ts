@@ -88,6 +88,7 @@ import {
   accidentChance,
   accidentRate,
   wastedWorkers,
+  jobCapacity,
   ageTechs,
   ageTechsLeft,
   currentAge,
@@ -785,8 +786,26 @@ export class GameView {
             ? `The ${name} deposit is used up. It only regrows ${formatNumber(depositRegrowth(mods, job.resource as DepositId))}/s, ` +
               `which fewer workers could keep up with. Move the rest to other jobs.`
             : '';
+      const staffs = job.staffs ? NODES[job.staffs] : null;
+      // A worker who runs a building (a Sawyer runs a Sawmill) makes what that building makes.
+      const makes = staffs
+        ? staffs.effects
+            .filter((e) => e.stat.startsWith('rate:') && e.kind === 'add')
+            .map((e) => {
+              const r = e.stat.slice('rate:'.length) as ResourceId;
+              const each = e.amount * (mods.get(`rate:${r}`)?.mul ?? 1) * (mods.get('prod:realm')?.mul ?? 1);
+              return `+${formatNumber(each)} ${RESOURCES[r].name}/s`;
+            })
+            .concat(
+              Object.entries(staffs.upkeep ?? {}).map(
+                ([r, n]) => `<span class="upkeep">uses ${formatNumber(n)} ${RESOURCES[r as ResourceId].name}/s</span>`,
+              ),
+            )
+        : [];
       const parts = [
-        `<span>+${formatNumber(jobOutput(mods, id))} ${RESOURCES[job.resource].name}/s each</span>`,
+        staffs
+          ? `<span>runs a ${escape(staffs.name)}: ${makes.join(', ')} · ${state.jobs[id]} of ${state.nodes[job.staffs!]} staffed</span>`
+          : `<span>+${formatNumber(jobOutput(mods, id))} ${RESOURCES[job.resource].name}/s each</span>`,
         `<span class="risk" title="Chance per minute that each worker in this job dies in an accident">☠ ${formatNumber((accidentChance(mods, id) / 60) * 100)}%/min</span>`,
         ...(job.effects ?? []).map((e) => {
           const to = statWorld(e.stat);
@@ -797,7 +816,7 @@ export class GameView {
       ];
       setHtml(row.info, parts.join(' '));
       row.minus.disabled = state.jobs[id] <= 0;
-      row.plus.disabled = idle <= 0;
+      row.plus.disabled = idle <= 0 || state.jobs[id] >= jobCapacity(state, id);
     }
   }
 
@@ -1114,7 +1133,9 @@ export class GameView {
     } else if (node.kind === 'tech') {
       setText(c.level, level > 0 ? (node.world === 'arcana' ? 'Discovered' : 'Researched') : '');
     } else {
-      setText(c.level, String(level));
+      // Buildings that need a worker (Sawmills, Kilns) show how many actually run.
+      const crew = JOB_ORDER.find((j) => JOBS[j].staffs === id);
+      setText(c.level, crew && level > 0 ? `${level} · ${Math.min(level, state.jobs[crew])} staffed` : String(level));
     }
     c.card.classList.toggle('switched-off', !!c.power && isSwitchedOff(state, id) && level > 0);
     c.card.classList.toggle('constructing', !!building || target);

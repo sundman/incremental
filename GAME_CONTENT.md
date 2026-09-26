@@ -81,6 +81,8 @@ Realm resources are dug from deposits that run out. Buildings open up more.
 | Miners | Iron | 0.2/s | 2 deaths/h (3.33%/min) | Mine | Mana/s ×0.98 (Arcana) |
 | Colliers | Coal | 0.25/s | 2 deaths/h (3.33%/min) | Coal Mine | Essence/s ×0.99 (Arcana) |
 | Prospectors | Gold | 0.05/s | 1 death/h (1.67%/min) | Gold Mine | Research/s ×0.99 (Lab) |
+| Sawyers | Planks | 0/s | 0.5 deaths/h (0.83%/min) | Sawmill | — |
+| Brickmakers | Bricks | 0/s | 0.3 deaths/h (0.5%/min) | Kiln | — |
 | Drillers | Oil | 0.2/s | 1.5 deaths/h (2.5%/min) | Oil Well | — |
 | Uranium Miners | Uranium | 0.02/s | 4 deaths/h (6.67%/min) | Uranium Mine | — |
 

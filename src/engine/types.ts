@@ -144,7 +144,9 @@ export type JobId =
   | 'collier'
   | 'prospector'
   | 'driller'
-  | 'uraniumMiner';
+  | 'uraniumMiner'
+  | 'sawyer'
+  | 'brickmaker';
 
 /** A Realm job. Each assigned person produces `baseYield` (plus `yield:` bonuses) of `resource` per second. */
 export interface JobDef {
@@ -163,6 +165,11 @@ export interface JobDef {
   requires?: NodeId[];
   /** Extra effects per assigned worker, e.g. miners disturbing the ley lines. */
   effects?: Effect[];
+  /**
+   * A building this job runs: each worker runs one of them, and a building nobody runs does
+   * nothing (no output, no upkeep). No more can be assigned than there are buildings.
+   */
+  staffs?: NodeId;
 }
 
 /** `tech` is a one-time unlock: a Lab technology or an Arcana discovery. */

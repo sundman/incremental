@@ -51,6 +51,7 @@ import {
   researchUpfrontCost,
   researchSecondsLeft,
   setAccidentRandom,
+  jobCapacity,
   currentAge,
   ageTechs,
   startPopulation,
@@ -595,8 +596,8 @@ describe('population', () => {
   });
 
   it('slows growth with pollution from dirty industry, on top of crowding', () => {
-    const state = unlockAll(withNodes({ hut: 5, coalMine: 3, kiln: 2, industrialization: 1 }));
-    const smog = 3 * 2 + 2 * 1 + 8; // 16
+    const state = unlockAll(withJobs({ brickmaker: 2 }, withNodes({ hut: 5, coalMine: 3, kiln: 2, industrialization: 1 })));
+    const smog = 3 * 2 + 2 * 1 + 8; // 16: Kilns only smoke while someone runs them
     const mods = computeModifiers(state);
     expect(pollutionFactor(mods)).toBeCloseTo(1 / (1 + 0.03 * smog));
     expect(arrivalRate(mods)).toBeCloseTo(0.05 / (1 + 0.02 * 5) / (1 + 0.03 * smog));
@@ -1095,7 +1096,7 @@ describe('building list', () => {
 
 describe('switching buildings off', () => {
   it('stops a consuming building from using or making anything until it is switched back on', () => {
-    const state = withNodes({ sawmill: 1 });
+    const state = withJobs({ sawyer: 1 }, withNodes({ sawmill: 1 }));
     state.resources.wood = 100;
     expect(canSwitchOff('sawmill')).toBe(true);
     expect(canSwitchOff('hut')).toBe(false); // uses nothing
@@ -1819,7 +1820,7 @@ describe('warehouse costs', () => {
 
 describe('Basic Machinery', () => {
   it('doubles what Sawmills and Kilns make, from the same Wood and Clay', () => {
-    const state = unlockAll(withNodes({ sawmill: 2, kiln: 1 }));
+    const state = unlockAll(withJobs({ sawyer: 2, brickmaker: 1 }, withNodes({ sawmill: 2, kiln: 1 })));
     Object.assign(state.resources, { wood: 500, clay: 500 });
     const before = computeModifiers(state);
     const planks = grossRate(state, before, 'planks');
@@ -1947,5 +1948,37 @@ describe('building groups', () => {
     const grouped = BUILDING_GROUPS.flatMap((g) => g.ids);
     const realm = NODE_ORDER.filter((id) => NODES[id].world === 'realm' && NODES[id].kind === 'building');
     expect([...grouped].sort()).toEqual([...realm].sort());
+  });
+});
+
+describe('staffed buildings', () => {
+  it('make nothing and use nothing until someone runs them', () => {
+    const state = withNodes({ sawmill: 2 });
+    state.population = 5;
+    state.resources.wood = 100;
+    tick(state, 10);
+    expect(state.resources.planks).toBe(0);
+    expect(state.resources.wood).toBe(100);
+    expect(assignJob(state, 'sawyer', 1)).toBe(1);
+    tick(state, 10);
+    expect(state.resources.planks).toBeCloseTo(1); // one of the two Sawmills runs
+    expect(state.resources.wood).toBeCloseTo(90);
+  });
+
+  it('take at most one worker per building', () => {
+    const state = withNodes({ kiln: 2 });
+    state.population = 10;
+    expect(jobCapacity(state, 'brickmaker')).toBe(2);
+    expect(assignJob(state, 'brickmaker', 5)).toBe(2);
+    expect(state.jobs.brickmaker).toBe(2);
+    expect(assignJob(state, 'brickmaker', 1)).toBe(0);
+    expect(jobCapacity(state, 'woodcutter')).toBe(Infinity);
+  });
+
+  it('send their workers back to idle when the buildings are gone', () => {
+    const state = withJobs({ sawyer: 1 }, withNodes({ sawmill: 1 }));
+    state.nodes.sawmill = 0;
+    tick(state, 1);
+    expect(state.jobs.sawyer).toBe(0);
   });
 });

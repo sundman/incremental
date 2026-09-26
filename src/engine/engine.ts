@@ -211,7 +211,20 @@ export function runningLevel(state: GameState, id: NodeId): number {
   if (NODES[id].spell && !isSpellActive(state, id)) return 0;
   if (state.switchedOff.includes(id)) return 0;
   if (NODES[id].horde) return state.demons;
+  const crew = STAFFED_BY[id];
+  if (crew) return Math.min(state.nodes[id], state.jobs[crew]); // only the ones someone runs
   return state.nodes[id];
+}
+
+/** The job that runs each staffed building (a Sawmill needs a Sawyer). */
+const STAFFED_BY: Partial<Record<NodeId, JobId>> = Object.fromEntries(
+  JOB_ORDER.filter((j) => JOBS[j].staffs).map((j) => [JOBS[j].staffs, j]),
+);
+
+/** The most workers a job can have: one per building for jobs that run buildings. */
+export function jobCapacity(state: GameState, job: JobId): number {
+  const building = JOBS[job].staffs;
+  return building ? state.nodes[building] : Infinity;
 }
 
 /** Buildings that consume resources every second can be switched off and on. */
@@ -628,7 +641,7 @@ export function isJobAvailable(state: GameState, job: JobId): boolean {
 export function assignJob(state: GameState, job: JobId, delta: number): number {
   if (delta > 0) {
     if (!isJobAvailable(state, job)) return 0;
-    const moved = Math.min(delta, idleWorkers(state));
+    const moved = Math.max(0, Math.min(delta, idleWorkers(state), jobCapacity(state, job) - state.jobs[job]));
     state.jobs[job] += moved;
     return moved;
   }
@@ -730,6 +743,7 @@ function losePeople(state: GameState, population: number, scholarsToo = true, ho
 function settleJobs(state: GameState) {
   for (const id of JOB_ORDER) {
     if (!isJobAvailable(state, id)) state.jobs[id] = 0;
+    state.jobs[id] = Math.min(state.jobs[id], jobCapacity(state, id));
   }
   let excess = assignedWorkers(state) - Math.floor(state.population);
   for (const id of [...JOB_ORDER].reverse()) {
