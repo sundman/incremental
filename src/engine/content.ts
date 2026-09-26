@@ -1144,7 +1144,7 @@ const nodeList: NodeDef[] = [
     kind: 'building',
     name: 'Scholar',
     description: 'Produces Research. Each Scholar is an idle Realm person who moves into the Lab: paid for in Realm Food and still eating it, but taking no Realm housing or jobs. Demons hunt Scholars too.',
-    baseCost: { food: 1000 },
+    baseCost: { food: 500 },
     costGrowth: 1.5,
     tier: 1,
     upkeep: { food: 0.2 },
