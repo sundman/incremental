@@ -297,11 +297,11 @@ const nodeList: NodeDef[] = [
     kind: 'building',
     name: 'Mine',
     description:
-      'Opens the Miner job, and each Mine makes miners dig faster. Miners disturb the ley lines, and every Mine after the first makes each miner disturb them more.',
+      'Opens the Miner job, and each Mine makes miners dig faster. Miners disturb the ley lines, and every Mine after the first makes each miner disturb them more. Needs Mining from the Lab.',
     baseCost: { wood: 60, stone: 80 },
     costGrowth: 1.35,
     tier: 2,
-    requires: ['quarry'],
+    requires: ['quarry', 'mining'],
     effects: [{ stat: 'yield:iron', kind: 'add', amount: 0.05 }],
   },
   {
@@ -1113,6 +1113,18 @@ const nodeList: NodeDef[] = [
       { stat: 'rate:planks', kind: 'mul', amount: 1.25 },
       { stat: 'rate:bricks', kind: 'mul', amount: 1.25 },
     ],
+  },
+  {
+    id: 'mining',
+    world: 'lab',
+    kind: 'tech',
+    name: 'Mining',
+    description: 'Shafts, pit props and ore sorting. Lets the Realm dig Mines for Iron.',
+    baseCost: { research: 120, stone: 60 },
+    costGrowth: 1,
+    tier: 2,
+    requires: ['scientificMethod'],
+    effects: [],
   },
   {
     id: 'geology',

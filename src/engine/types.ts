@@ -244,6 +244,7 @@ export type NodeId =
   | 'labAssistants'
   | 'scientificMethod'
   | 'engineering'
+  | 'mining'
   | 'geology'
   | 'optics'
   | 'printing'

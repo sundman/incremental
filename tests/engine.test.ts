@@ -1296,3 +1296,17 @@ describe('mana storage', () => {
     expect(state.resources.mana).toBeCloseTo(1000);
   });
 });
+
+describe('mining', () => {
+  it('keeps the Mine locked until Mining is researched in the Lab', () => {
+    const state = withNodes({ quarry: 1 });
+    expect(isNodeAvailable(state, 'mine')).toBe(false);
+    withNodes({ mining: 1 }, state);
+    expect(isNodeAvailable(state, 'mine')).toBe(true);
+  });
+
+  it('puts Mining right after Scientific Method in the research tree', () => {
+    expect(NODES.mining.requires).toEqual(['scientificMethod']);
+    expect(isResearchListed(unlockAll(withNodes({ scientificMethod: 1 })), 'mining')).toBe(true);
+  });
+});
