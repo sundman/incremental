@@ -75,14 +75,14 @@ Realm resources are dug from deposits that run out. Buildings open up more.
 | Job | Makes | Per worker | Accident risk | Needs | Also |
 | --- | --- | --- | --- | --- | --- |
 | Woodcutters | Wood | 0.5/s | 0.5 deaths/h (0.83%/min) | — | — |
-| Stonecutters | Stone | 0.4/s | 1 death/h (1.67%/min) | Quarry | — |
+| Stonecutters | Stone | 0.4/s | 1 death/h (1.67%/min) | Quarry; one worker per Quarry | — |
 | Farmers | Food | 0.6/s | 0.2 deaths/h (0.33%/min) | — | — |
-| Diggers | Clay | 0.3/s | 0.5 deaths/h (0.83%/min) | Clay Pit | — |
+| Diggers | Clay | 0.3/s | 0.5 deaths/h (0.83%/min) | Clay Pit; one worker per Clay Pit | — |
 | Miners | Iron | 0.2/s | 2 deaths/h (3.33%/min) | Mine | Mana/s ×0.98 (Arcana) |
 | Colliers | Coal | 0.25/s | 2 deaths/h (3.33%/min) | Coal Mine | Essence/s ×0.99 (Arcana) |
 | Prospectors | Gold | 0.05/s | 1 death/h (1.67%/min) | Gold Mine | Research/s ×0.99 (Lab) |
-| Sawyers | Planks | 0/s | 0.5 deaths/h (0.83%/min) | Sawmill | — |
-| Brickmakers | Bricks | 0/s | 0.3 deaths/h (0.5%/min) | Kiln | — |
+| Sawyers | Planks | runs a Sawmill | 0.5 deaths/h (0.83%/min) | Sawmill; one worker per Sawmill, which does nothing without one | — |
+| Brickmakers | Bricks | runs a Kiln | 0.3 deaths/h (0.5%/min) | Kiln; one worker per Kiln, which does nothing without one | — |
 | Drillers | Oil | 0.2/s | 1.5 deaths/h (2.5%/min) | Oil Well | — |
 | Uranium Miners | Uranium | 0.02/s | 4 deaths/h (6.67%/min) | Uranium Mine | — |
 

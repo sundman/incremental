@@ -170,6 +170,8 @@ export interface JobDef {
    * nothing (no output, no upkeep). No more can be assigned than there are buildings.
    */
   staffs?: NodeId;
+  /** A building that limits this job to one worker each (a Quarry has room for one Stonecutter). */
+  onePer?: NodeId;
 }
 
 /** `tech` is a one-time unlock: a Lab technology or an Arcana discovery. */

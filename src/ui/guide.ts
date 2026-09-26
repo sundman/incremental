@@ -188,9 +188,13 @@ export function gameGuide(): GuideSection[] {
         return [
           j.name,
           RESOURCES[j.resource].name,
-          `${j.baseYield}/s`,
+          j.staffs ? `runs a ${NODES[j.staffs].name}` : `${j.baseYield}/s`,
           `${j.accidentsPerHour} ${j.accidentsPerHour === 1 ? 'death' : 'deaths'}/h (${formatNumber((j.accidentsPerHour / 60) * 100)}%/min)`,
-          (j.requires ?? []).map((n) => NODES[n].name).join(', ') || '—',
+          [
+            ...(j.requires ?? []).map((n) => NODES[n].name),
+            ...(j.staffs ? [`one worker per ${NODES[j.staffs].name}, which does nothing without one`] : []),
+            ...(j.onePer ? [`one worker per ${NODES[j.onePer].name}`] : []),
+          ].join('; ') || '—',
           (j.effects ?? []).map((e) => effectText(e, 'realm')).join('; ') || '—',
         ];
       }),

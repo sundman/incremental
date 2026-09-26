@@ -805,7 +805,9 @@ export class GameView {
       const parts = [
         staffs
           ? `<span>runs a ${escape(staffs.name)}: ${makes.join(', ')} · ${state.jobs[id]} of ${state.nodes[job.staffs!]} staffed</span>`
-          : `<span>+${formatNumber(jobOutput(mods, id))} ${RESOURCES[job.resource].name}/s each</span>`,
+          : `<span>+${formatNumber(jobOutput(mods, id))} ${RESOURCES[job.resource].name}/s each` +
+            (job.onePer ? ` · ${state.jobs[id]} of ${state.nodes[job.onePer]} places` : '') +
+            `</span>`,
         `<span class="risk" title="Chance per minute that each worker in this job dies in an accident">☠ ${formatNumber((accidentChance(mods, id) / 60) * 100)}%/min</span>`,
         ...(job.effects ?? []).map((e) => {
           const to = statWorld(e.stat);

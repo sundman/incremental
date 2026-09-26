@@ -221,9 +221,9 @@ const STAFFED_BY: Partial<Record<NodeId, JobId>> = Object.fromEntries(
   JOB_ORDER.filter((j) => JOBS[j].staffs).map((j) => [JOBS[j].staffs, j]),
 );
 
-/** The most workers a job can have: one per building for jobs that run buildings. */
+/** The most workers a job can have: one per building for jobs that run buildings or need a place (a Quarry). */
 export function jobCapacity(state: GameState, job: JobId): number {
-  const building = JOBS[job].staffs;
+  const building = JOBS[job].staffs ?? JOBS[job].onePer;
   return building ? state.nodes[building] : Infinity;
 }
 

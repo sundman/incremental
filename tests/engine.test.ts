@@ -1976,6 +1976,14 @@ describe('staffed buildings', () => {
     expect(jobCapacity(state, 'woodcutter')).toBe(Infinity);
   });
 
+  it('limit Stonecutters to one per Quarry and Diggers to one per Clay Pit', () => {
+    const state = withNodes({ quarry: 2, clayPit: 1 });
+    state.population = 10;
+    expect(assignJob(state, 'stonecutter', 5)).toBe(2);
+    expect(assignJob(state, 'digger', 5)).toBe(1);
+    expect(jobCapacity(state, 'farmer')).toBe(Infinity);
+  });
+
   it('send their workers back to idle when the buildings are gone', () => {
     const state = withJobs({ sawyer: 1 }, withNodes({ sawmill: 1 }));
     state.nodes.sawmill = 0;

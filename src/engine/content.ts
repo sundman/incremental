@@ -155,6 +155,7 @@ const jobList: JobDef[] = [
     accidentsPerHour: 1,
     accidentText: 'was buried in a rockslide at the quarry',
     requires: ['quarry'],
+    onePer: 'quarry',
   },
   {
     id: 'farmer',
@@ -172,6 +173,7 @@ const jobList: JobDef[] = [
     accidentsPerHour: 0.5,
     accidentText: 'drowned when a clay pit flooded',
     requires: ['clayPit'],
+    onePer: 'clayPit',
   },
   {
     id: 'miner',
@@ -478,7 +480,7 @@ const nodeList: NodeDef[] = [
     kind: 'building',
     name: 'Quarry',
     description:
-      'Opens the Stonecutter job. Each Quarry opens up 5,000 Stone to cut and makes stonecutters faster, but clears woodland: the forest holds 500 less Wood.',
+      'Opens the Stonecutter job, with room for one Stonecutter per Quarry. Each Quarry opens up 5,000 Stone to cut and makes stonecutters faster, but clears woodland: the forest holds 500 less Wood.',
     baseCost: { wood: 35 },
     costGrowth: 1.8,
     tier: 1,
@@ -494,7 +496,7 @@ const nodeList: NodeDef[] = [
     kind: 'building',
     name: 'Clay Pit',
     description:
-      'Opens the Digger job. Each pit opens up 3,000 Clay to dig and makes diggers faster, but the digging clears woodland: the forest holds 300 less Wood.',
+      'Opens the Digger job, with room for one Digger per pit. Each pit opens up 3,000 Clay to dig and makes diggers faster, but the digging clears woodland: the forest holds 300 less Wood.',
     baseCost: { wood: 40, stone: 20 },
     costGrowth: 1.8,
     tier: 2,
