@@ -52,6 +52,7 @@ import {
   researchSecondsLeft,
   setAccidentRandom,
   wastedWorkers,
+  decayRate,
   LOG_LIMIT,
   accidentChance,
   accidentRate,
@@ -1472,5 +1473,36 @@ describe('wasted workers', () => {
     const state = createInitialState();
     state.resources.wood = 1000;
     expect(wastedWorkers(state, computeModifiers(state), 'woodcutter')).toBe(null);
+  });
+});
+
+describe('warehouse decay', () => {
+  it('spoils only what is kept above the starting capacity', () => {
+    const state = withNodes({ warehouse: 1 });
+    state.resources.wood = 900;
+    expect(decayRate(state, computeModifiers(state), 'wood')).toBe(0);
+    state.resources.wood = 2000;
+    expect(decayRate(state, computeModifiers(state), 'wood')).toBeCloseTo(1000 * 0.0002);
+    expect(decayRate(withNodes({}), computeModifiers(withNodes({})), 'wood')).toBe(0);
+  });
+
+  it('spoils faster with every Warehouse, so full Warehouses lose about the square of their number', () => {
+    const full = (n: number) => {
+      const state = withNodes({ warehouse: n });
+      state.resources.wood = 1000 * (n + 1);
+      return decayRate(state, computeModifiers(state), 'wood');
+    };
+    expect(full(1)).toBeCloseTo(0.2);
+    expect(full(3)).toBeCloseTo(1.8);
+    expect(full(5)).toBeCloseTo(5);
+  });
+
+  it('takes the spoiled goods away over time, and shows them in the net rate', () => {
+    const state = withNodes({ warehouse: 2 });
+    state.resources.stone = 3000; // 2,000 in Warehouses, 0.04%/s of it spoils: 0.8/s
+    expect(netRate(state, computeModifiers(state), 'stone')).toBeCloseTo(-0.8);
+    tick(state, 10);
+    expect(state.resources.stone).toBeLessThan(3000 - 7.9);
+    expect(state.resources.stone).toBeGreaterThan(3000 - 8.1);
   });
 });

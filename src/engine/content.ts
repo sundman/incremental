@@ -210,12 +210,15 @@ const nodeList: NodeDef[] = [
     kind: 'building',
     name: 'Warehouse',
     description:
-      'Sheds, bins and a granary. Each one stores as much of every Realm resource again as you start with. Needs Warehousing from the Lab.',
+      'Stores as much again of every Realm resource as you start with. Goods kept here slowly spoil, faster the more Warehouses you have. Needs Warehousing.',
     baseCost: { wood: 60, stone: 40 },
     costGrowth: 1.4,
     tier: 2,
     requires: ['warehousing'],
-    effects: [{ stat: 'storage:realm', kind: 'add', amount: 1 }],
+    effects: [
+      { stat: 'storage:realm', kind: 'add', amount: 1 },
+      { stat: 'decay:realm', kind: 'add', amount: 0.0002 },
+    ],
   },
   {
     id: 'farm',

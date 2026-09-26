@@ -42,6 +42,7 @@ export type ResourceId =
  * - `speed:<world>`    build speed multiplier in a world (higher is faster)
  * - `cap:<resource>`   how much of a resource can be stored (only for resources with a `baseCap`)
  * - `storage:<world>`  more storage for every capped resource in a world: `add` 1 is one more `baseCap` of each
+ * - `decay:<world>`    share per second of each resource stored above its `baseCap` (in Warehouses) that spoils
  */
 export type Stat =
   | `rate:${ResourceId}`
@@ -59,7 +60,8 @@ export type Stat =
   | 'accidents'
   | `speed:${WorldId}`
   | `cap:${ResourceId}`
-  | `storage:${WorldId}`;
+  | `storage:${WorldId}`
+  | `decay:${WorldId}`;
 
 export type Cost = Partial<Record<ResourceId, number>>;
 

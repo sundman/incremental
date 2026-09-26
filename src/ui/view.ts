@@ -85,6 +85,7 @@ import {
   accidentChance,
   accidentRate,
   wastedWorkers,
+  decayRate,
   isAtCap,
   costOverCap,
 } from '../engine/engine';
@@ -827,7 +828,11 @@ export class GameView {
       setText(row.rate, full ? 'full' : rate === 0 ? '' : `${rate > 0 ? '+' : ''}${formatNumber(rate)}/s`);
       row.rate.classList.toggle('negative', rate < 0);
       row.rate.classList.toggle('full', full);
-      row.row.title = capped ? `Holds at most ${formatNumber(cap)} ${RESOURCES[r].name}. More is lost; storage buildings raise the limit.` : '';
+      const decay = decayRate(state, mods, r);
+      row.row.title = capped
+        ? `Holds at most ${formatNumber(cap)} ${RESOURCES[r].name}. More is lost; storage buildings raise the limit.` +
+          (decay > 0 ? ` Spoiling in Warehouses: ${formatNumber(decay)}/s (included in the rate).` : '')
+        : '';
     }
 
     if (world === 'lab') this.renderResearchStatus(mods);

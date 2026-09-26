@@ -94,6 +94,7 @@ export function statWorld(stat: Stat): WorldId {
   }
   if (stat.startsWith('speed:')) return stat.slice('speed:'.length) as WorldId;
   if (stat.startsWith('storage:')) return stat.slice('storage:'.length) as WorldId;
+  if (stat.startsWith('decay:')) return stat.slice('decay:'.length) as WorldId;
   const [type, target] = stat.split(':') as [string, string];
   if (type === 'rate' || type === 'yield' || type === 'cap') return RESOURCES[target as ResourceId].world;
   return target as WorldId;
@@ -105,6 +106,7 @@ export function isHelpful(effect: Effect): boolean {
     effect.stat.startsWith('cost:') ||
     effect.stat === 'deaths' ||
     effect.stat === 'accidents' ||
+    effect.stat.startsWith('decay:') ||
     effect.stat === 'crowding' ||
     effect.stat === 'pollution';
   const increases = effect.kind === 'add' ? effect.amount > 0 : effect.amount > 1;
@@ -383,7 +385,19 @@ export function upkeepRate(state: GameState, resource: ResourceId): number {
 /** Net change per second, including the Food that people moving in eat. */
 export function netRate(state: GameState, mods: Modifiers, resource: ResourceId): number {
   const net = grossRate(state, mods, resource) - upkeepRate(state, resource);
-  return resource === 'food' ? net - arrivalFoodRate(state, mods, net) : net;
+  const eaten = resource === 'food' ? arrivalFoodRate(state, mods, net) : 0;
+  return net - eaten - decayRate(state, mods, resource);
+}
+
+/**
+ * How much of a resource spoils per second: only what is kept in Warehouses (above the starting
+ * capacity) decays, and each Warehouse makes all of it decay faster.
+ */
+export function decayRate(state: GameState, mods: Modifiers, resource: ResourceId): number {
+  const { baseCap, world } = RESOURCES[resource];
+  if (baseCap === undefined) return 0;
+  const share = getAdd(mods, `decay:${world}`);
+  return share > 0 ? Math.max(0, state.resources[resource] - baseCap) * share : 0;
 }
 
 /** Food eaten per second by people moving into free housing right now. */
@@ -973,6 +987,8 @@ function step(state: GameState, dt: number) {
     if (!isWorldUnlocked(state, RESOURCES[r].world)) continue;
     gain(state, mods, r, grossRate(state, mods, r) * dt);
     if (state.resources[r] < 0) state.resources[r] = 0;
+    // Goods in Warehouses spoil; the rate is a share of what is there, so it never dips below the starting capacity.
+    state.resources[r] -= decayRate(state, mods, r) * dt;
   }
   pourResearch(state);
 
