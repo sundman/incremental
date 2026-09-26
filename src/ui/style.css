@@ -1,0 +1,1064 @@
+:root {
+  --bg: #14161b;
+  --panel: #1c1f26;
+  --card: #242832;
+  --card-hover: #2c313d;
+  --border: #333846;
+  --text: #e6e8ee;
+  --muted: #8b91a1;
+  --good: #5fd08a;
+  --bad: #f07178;
+  --short: #f0a060;
+  --upkeep: #e8d36a;
+  --realm: #d9a55b;
+  --arcana: #b48cf2;
+  --lab: #5cc8e0;
+  --echo: #f2d479;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.top h1 {
+  font-size: 18px;
+  margin: 0;
+  flex: 1;
+}
+
+.echoes {
+  color: var(--echo);
+  font-weight: 600;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Tab bar: one tab per world plus the Echo shop. */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px 0;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 120px;
+  padding: 6px 14px 7px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-top: 3px solid transparent;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  color: var(--muted);
+  position: relative;
+}
+
+.tab-realm { --accent: var(--realm); }
+.tab-arcana { --accent: var(--arcana); }
+.tab-lab { --accent: var(--lab); }
+.tab-shop { --accent: var(--echo); }
+
+.tab:hover {
+  background: var(--card);
+}
+
+.tab.active {
+  background: var(--card);
+  border-top-color: var(--accent);
+  color: var(--text);
+}
+
+.tab-label {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.tab-note {
+  font-size: 11px;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-note:empty::before {
+  content: '\00a0';
+}
+
+.tab.is-locked {
+  opacity: 0.6;
+}
+
+/* Something on that tab wants attention (idle people, wasted Research, an affordable upgrade). */
+.tab.attention::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--short);
+}
+
+.worlds {
+  padding: 12px;
+}
+
+/* Inside a world tab: resources across the top, then a status column and a wide card area. */
+.world-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.world-head .tagline {
+  margin: 0;
+}
+
+.world-columns {
+  display: grid;
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.world-side {
+  display: grid;
+  gap: 10px;
+}
+
+.world-side .link-box,
+.world-side .deposits {
+  margin: 0;
+}
+
+.world-side .reset-box {
+  margin-top: 0;
+}
+
+@media (max-width: 800px) {
+  .world-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.world {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 0;
+}
+
+.world-realm { --accent: var(--realm); }
+.world-arcana { --accent: var(--arcana); }
+.world-lab { --accent: var(--lab); }
+
+.world h2 {
+  margin: 0;
+  color: var(--accent);
+}
+
+.world h3 {
+  margin: 12px 0 6px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.world.is-locked {
+  opacity: 0.6;
+}
+
+.tagline,
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 12px;
+}
+
+.locked {
+  padding: 24px 0;
+  text-align: center;
+}
+
+.resources {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 4px 24px;
+  margin: 10px 0 14px;
+  padding: 8px 12px;
+  background: var(--card);
+  border-radius: 6px;
+}
+
+.resource {
+  display: grid;
+  grid-template-columns: 1fr auto 72px;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.resource .amount {
+  font-weight: 600;
+  text-align: right;
+}
+
+.resource .rate {
+  color: var(--good);
+  text-align: right;
+}
+
+.resource .rate.negative {
+  color: var(--bad);
+}
+
+/* Storage is full: more production is lost. */
+.resource .rate.full {
+  color: var(--short);
+}
+
+.reset {
+  background: var(--card);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.reset:hover {
+  background: var(--card-hover);
+}
+
+/* Realm buildings, in groups with a small heading each. */
+.building-groups {
+  display: grid;
+  gap: 10px;
+}
+
+.building-group h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 3px;
+}
+
+.nodes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 8px;
+  align-items: start;
+}
+
+.node-button {
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 9px;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.node-button:hover:not(:disabled) {
+  background: var(--card-hover);
+  border-color: var(--accent, var(--echo));
+}
+
+.node-button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.node.owned .node-button {
+  opacity: 1;
+  border-color: var(--accent);
+}
+
+.node-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.node-title .level {
+  color: var(--accent, var(--echo));
+}
+
+.node-desc {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.effects,
+.links {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0;
+  font-size: 12px;
+}
+
+/*
+ * A card's effects read as one line: "+0.4 Mana/s · Uses 1 Wood/s". Every item starts with a
+ * separator, and the list is shifted left and clipped, so the one opening each line is hidden.
+ */
+.effects {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 3px 0 3px -14px;
+  clip-path: inset(0 0 0 14px);
+}
+
+.effects li::before {
+  content: '·';
+  display: inline-block;
+  width: 14px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.effects:empty,
+.unlocks:empty {
+  display: none;
+}
+
+/* Which buildings, techs and jobs a card opens up. */
+.unlocks {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+/* Cost and build time share a line. */
+.node-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+  align-items: baseline;
+}
+
+.good {
+  color: var(--good);
+}
+
+.bad {
+  color: var(--bad);
+}
+
+/* What a building or spell burns every second. */
+.upkeep {
+  color: var(--upkeep);
+}
+
+.switch-list {
+  display: grid;
+  gap: 4px;
+}
+
+.switches h3 {
+  margin-top: 0;
+}
+
+.switches p {
+  margin: 0 0 6px;
+}
+
+.power {
+  display: block;
+  width: 100%;
+  padding: 3px 10px;
+  font-size: 12px;
+  text-align: left;
+  background: var(--card);
+  color: var(--good);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.power:hover {
+  background: var(--card-hover);
+}
+
+.power.is-off {
+  color: var(--bad);
+  border-color: var(--bad);
+}
+
+.node.switched-off .node-button {
+  opacity: 0.55;
+}
+
+.cost {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cost .short {
+  color: var(--short);
+}
+
+.needs {
+  font-size: 12px;
+  color: var(--short);
+}
+
+.needs:empty,
+.cost:empty {
+  display: none;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #111;
+}
+
+.tag-realm { background: var(--realm); }
+.tag-arcana { background: var(--arcana); }
+.tag-lab { background: var(--lab); }
+
+.link-box {
+  margin-top: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+/* The chronicle: who died and how, newest first. */
+.log-box {
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.log-box summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.log-list {
+  list-style: none;
+  margin: 4px 0;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.log-list li {
+  padding: 1px 0;
+}
+
+.log-arrival {
+  color: var(--good);
+}
+
+.log-death {
+  color: color-mix(in srgb, var(--bad) 80%, var(--text));
+}
+
+.log-list time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  margin-right: 4px;
+}
+
+.link-box summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.reset-box {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.reset {
+  border-color: var(--echo);
+  color: var(--echo);
+}
+
+.shop {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--echo);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+/* Achievements tab */
+.achievements {
+  --accent: var(--good);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--good);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.achievements h2 {
+  margin: 0 0 6px;
+  color: var(--good);
+}
+
+.achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+
+.achievement {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.achievement.done {
+  border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 10%, var(--card));
+}
+
+.achievement-status {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.achievement.done .achievement-status {
+  color: var(--good);
+}
+
+.achievement-goal {
+  font-size: 13px;
+  margin: 2px 0 6px;
+}
+
+.achievement-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--good) var(--progress, 0%), var(--border) var(--progress, 0%));
+  margin-bottom: 6px;
+}
+
+.achievement-reward {
+  font-size: 12px;
+  color: var(--echo);
+}
+
+.log-achievement {
+  color: var(--echo);
+  font-weight: 600;
+}
+
+.tab-achievements { --accent: var(--good); }
+.tab-guide { --accent: var(--text); }
+
+/* Guide tab: every rule, building and tech, as tables. */
+.guide {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--muted);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.guide h2 {
+  margin: 0 0 6px;
+}
+
+.guide-search {
+  width: 100%;
+  max-width: 480px;
+  margin: 4px 0 10px;
+  padding: 6px 10px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+}
+
+.guide-section {
+  border-top: 1px solid var(--border);
+  padding: 6px 0;
+}
+
+.guide-section summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 2px 0;
+}
+
+.guide-section p {
+  margin: 4px 0;
+}
+
+.guide-list {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+
+.guide-scroll {
+  overflow-x: auto;
+}
+
+.guide-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+  margin: 4px 0 8px;
+}
+
+.guide-table th,
+.guide-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.guide-table th {
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.guide-table td:first-child {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.shop h2 {
+  margin: 0 0 6px;
+  color: var(--echo);
+}
+
+.shop.dim {
+  opacity: 0.6;
+}
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 6px;
+}
+
+.population {
+  margin-top: 4px;
+}
+
+.pop-summary {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.pop-summary.attention {
+  color: var(--short);
+}
+
+.pop-summary.starving {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+/* How many people have no job: stands out while anyone is idle. */
+.idle-box {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin: 4px 0 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+}
+
+.idle-count {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--good);
+}
+
+.idle-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.idle-box.has-idle {
+  border-color: var(--short);
+  background: color-mix(in srgb, var(--short) 14%, var(--card));
+}
+
+.idle-box.has-idle .idle-count {
+  color: var(--short);
+}
+
+.jobs {
+  display: grid;
+  gap: 4px;
+}
+
+.job {
+  display: grid;
+  grid-template-columns: 100px 1fr 26px 32px 26px;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.job-info {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+}
+
+/* Work accident risk per worker. */
+.job-info .risk {
+  color: color-mix(in srgb, var(--bad) 70%, var(--muted));
+}
+
+.job-count {
+  text-align: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Some of these workers make nothing: storage full, or the deposit is used up. */
+.job-count.wasted {
+  color: var(--bad);
+  cursor: help;
+}
+
+.job-btn {
+  background: var(--card);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+  height: 24px;
+}
+
+.job-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+
+/* Construction: the whole tile fills like a progress bar. */
+.node.constructing .node-button {
+  opacity: 1;
+  cursor: progress;
+  border-color: var(--accent, var(--echo));
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--accent, var(--echo)) 32%, var(--card)) var(--progress, 0%),
+    var(--card) var(--progress, 0%)
+  );
+}
+
+.node.constructing .node-title .level {
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.build-time {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.build-time:empty {
+  display: none;
+}
+
+
+/* Learned spells: the card is an on/off switch. */
+.node.spell-off .node-button {
+  opacity: 0.8;
+  border-style: dashed;
+  border-color: var(--accent);
+}
+
+.node.spell-on .node-button {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--card));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* A summoned horde glows red: it can't be switched off. */
+.node.horde.spell-on .node-button {
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 18%, var(--card));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--bad) 55%, transparent);
+}
+
+/* The Realm's deposits: bars that empty as they are worked. */
+.deposits {
+  display: grid;
+  gap: 4px;
+  margin: 6px 0 10px;
+}
+
+.deposit {
+  --fill: #3fa55b;
+  white-space: pre-line;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.9em;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--fill) 30%, var(--card)) var(--left, 100%),
+    var(--card) var(--left, 100%)
+  );
+  border: 1px solid color-mix(in srgb, var(--fill) 50%, transparent);
+}
+
+.deposit-stone {
+  --fill: #9aa3ad;
+}
+
+.deposit-clay {
+  --fill: #c07a4a;
+}
+
+.deposit-coal {
+  --fill: #6b6b6b;
+}
+
+.deposit-iron {
+  --fill: #a8745a;
+}
+
+.deposit-gold {
+  --fill: #d9b44a;
+}
+
+.deposit.attention {
+  border-color: var(--bad);
+}
+
+/* Realm land: a bar that fills as buildings take up squares. */
+.land {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.9em;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, #d4b25c 30%, var(--card)) var(--used, 0%),
+    var(--card) var(--used, 0%)
+  );
+  border: 1px solid color-mix(in srgb, #d4b25c 50%, transparent);
+}
+
+.land.attention {
+  border-color: var(--bad);
+}
+
+/* Research tree */
+.tree-button {
+  --accent: var(--lab);
+  margin-left: 4px;
+}
+
+.tech-tree {
+  width: min(1200px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 16px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--lab);
+  border-radius: 10px;
+}
+
+.tech-tree::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.tree-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tree-head h2 {
+  margin: 0;
+  color: var(--lab);
+}
+
+.tree-columns {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.tree-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 0 210px;
+}
+
+/* Lab: which age the research is in. */
+.age-status {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: var(--lab);
+}
+
+.tree-age {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--card);
+}
+
+.tree-age-now {
+  color: var(--lab);
+  outline: 1px solid var(--lab);
+}
+
+.tree-age-later {
+  opacity: 0.6;
+}
+
+.tree-node {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.tree-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.tree-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.tree-status {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.tree-effects {
+  margin: 4px 0;
+  padding-left: 16px;
+}
+
+.tree-cost,
+.tree-needs {
+  color: var(--muted);
+}
+
+.tree-needs .met {
+  color: var(--good);
+}
+
+.tree-needs .unmet {
+  color: var(--bad);
+}
+
+.tree-done {
+  border-left-color: var(--good);
+  opacity: 0.75;
+}
+
+.tree-done .tree-status {
+  color: var(--good);
+}
+
+.tree-open,
+.tree-busy {
+  border-left-color: var(--lab);
+}
+
+.tree-open .tree-status,
+.tree-busy .tree-status {
+  color: var(--lab);
+}
+
+.tree-locked {
+  opacity: 0.6;
+}
+
+@media (max-width: 600px) {
+  .tech-tree {
+    width: calc(100vw - 16px);
+    padding: 12px;
+  }
+
+  .tree-column {
+    flex-basis: 180px;
+  }
+}
