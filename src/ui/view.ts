@@ -219,6 +219,8 @@ export class GameView {
   private shopHint: HTMLElement;
   private tabs = {} as Record<Tab, TabButton>;
   private tab: Tab = loadTab();
+  /** Per world: the on/off switches for buildings that consume resources, listed in the side column. */
+  private switches = {} as Record<WorldId, HTMLElement>;
 
   constructor(
     root: HTMLElement,
@@ -348,6 +350,14 @@ export class GameView {
     }
 
     const populationEl = world === 'realm' ? this.buildPopulation() : null;
+    const switchList = h('div', { class: 'switch-list' });
+    this.switches[world] = h(
+      'div',
+      { class: 'switches' },
+      h('h3', {}, 'Switches'),
+      h('p', { class: 'muted small' }, 'Buildings that use up resources. Switch one off to stop its upkeep and its output.'),
+      switchList,
+    );
 
     const buildings = h('div', { class: 'nodes' });
     const techs = h('div', { class: 'nodes' });
@@ -355,7 +365,7 @@ export class GameView {
     for (const id of NODE_ORDER) {
       const node = NODES[id];
       if (node.world !== world) continue;
-      (node.spell ? spells : node.kind === 'tech' ? techs : buildings).append(this.buildNode(id));
+      (node.spell ? spells : node.kind === 'tech' ? techs : buildings).append(this.buildNode(id, switchList));
     }
 
     const incoming = h('ul', { class: 'links' });
@@ -381,6 +391,7 @@ export class GameView {
         ? [h('div', { class: 'deposits' }, this.landEl, ...DEPOSIT_ORDER.map((d) => this.deposits[d]))]
         : []),
       ...(populationEl ? [populationEl] : []),
+      this.switches[world],
       h('details', { class: 'link-box', open: '' }, h('summary', {}, 'Effects from other worlds'), incoming),
       h('details', { class: 'link-box', open: '' }, h('summary', {}, 'Effects this world sends out'), outgoing),
       h('div', { class: 'reset-box' }, resetButton, resetNote),
@@ -599,7 +610,7 @@ export class GameView {
     }
   }
 
-  private buildNode(id: NodeId): HTMLElement {
+  private buildNode(id: NodeId, switchList: HTMLElement): HTMLElement {
     const node = NODES[id];
     const level = h('span', { class: 'level' });
     const cost = h('div', { class: 'cost' });
@@ -639,7 +650,7 @@ export class GameView {
         toggleBuilding(this.state, id);
         this.hooks.onChange();
       });
-      card.append(power);
+      switchList.append(power);
     }
     this.nodes[id] = { card, button, level, cost, effects, needs, time, power };
     return card;
@@ -680,6 +691,7 @@ export class GameView {
     for (const id of NODE_ORDER) this.renderNode(id, mods);
     if (this.treeDialog.open) this.renderTree(mods);
     this.renderTabs(mods);
+    this.renderSwitches();
 
     const anyGain = WORLD_ORDER.some((w) => isWorldUnlocked(state, w) && echoGain(state, w) > 0);
     setHidden(this.shopHint, state.totalEchoes > 0);
@@ -692,6 +704,23 @@ export class GameView {
       setText(cost, maxed ? 'Maxed' : echoesLabel(metaCost(state, id)));
       button.disabled = !canBuyMeta(state, id);
     }
+  }
+
+  private renderSwitches() {
+    const state = this.state;
+    const shown = {} as Record<WorldId, boolean>;
+    for (const id of NODE_ORDER) {
+      const power = this.nodes[id].power;
+      if (!power) continue;
+      const owned = state.nodes[id] > 0;
+      setHidden(power, !owned);
+      if (!owned) continue;
+      shown[NODES[id].world] = true;
+      const off = isSwitchedOff(state, id);
+      setText(power, `⏻ ${NODES[id].name}${state.nodes[id] > 1 ? ' ×' + state.nodes[id] : ''}: ${off ? 'Off · switch on' : 'On · switch off'}`);
+      power.classList.toggle('is-off', off);
+    }
+    for (const world of WORLD_ORDER) setHidden(this.switches[world], !shown[world]);
   }
 
   private renderWorld(world: WorldId, mods: Modifiers, links: ActiveLink[]) {
@@ -858,13 +887,7 @@ export class GameView {
     } else {
       setText(c.level, String(level));
     }
-    if (c.power) {
-      const off = isSwitchedOff(state, id);
-      setHidden(c.power, level <= 0);
-      setText(c.power, off ? '⏻ Off · switch on' : '⏻ On · switch off');
-      c.power.classList.toggle('is-off', off);
-      c.card.classList.toggle('switched-off', off && level > 0);
-    }
+    c.card.classList.toggle('switched-off', !!c.power && isSwitchedOff(state, id) && level > 0);
     c.card.classList.toggle('constructing', !!building || target);
     c.card.classList.toggle('owned', node.kind === 'tech' && maxed);
 

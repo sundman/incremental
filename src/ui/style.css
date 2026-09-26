@@ -336,10 +336,22 @@ button {
   color: var(--upkeep);
 }
 
+.switch-list {
+  display: grid;
+  gap: 4px;
+}
+
+.switches h3 {
+  margin-top: 0;
+}
+
+.switches p {
+  margin: 0 0 6px;
+}
+
 .power {
   display: block;
   width: 100%;
-  margin-top: 3px;
   padding: 3px 10px;
   font-size: 12px;
   text-align: left;
