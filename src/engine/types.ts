@@ -317,7 +317,7 @@ export interface MetaDef {
   effects?: Effect[];
 }
 
-export type AchievementId = 'village' | 'deforested';
+export type AchievementId = 'village' | 'deforested' | 'crowdedLand';
 
 /** Combined effects on each stat: every `add` summed, every `mul` multiplied. */
 export type StatTotals = ReadonlyMap<Stat, { add: number; mul: number }>;

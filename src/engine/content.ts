@@ -1696,6 +1696,20 @@ const achievementList: AchievementDef[] = [
     },
     effects: [{ stat: 'size:wood', kind: 'add', amount: 2000 }],
   },
+  {
+    id: 'crowdedLand',
+    name: 'Not an Inch to Spare',
+    goal: 'Use every square of the Realm\'s land for buildings.',
+    reward: '5 more squares of land, for good.',
+    progress: (state, mods) => {
+      // Every Realm building level takes a square, and so does one being built.
+      const used = nodeList
+        .filter((n) => n.world === 'realm' && n.kind === 'building')
+        .reduce((sum, n) => sum + state.nodes[n.id] + (state.construction[n.id] ? 1 : 0), 0);
+      return [used, LAND.base + (mods.get('land')?.add ?? 0)];
+    },
+    effects: [{ stat: 'land', kind: 'add', amount: 5 }],
+  },
 ];
 
 export const ACHIEVEMENTS = Object.fromEntries(achievementList.map((a) => [a.id, a])) as Record<AchievementId, AchievementDef>;

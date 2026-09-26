@@ -441,12 +441,13 @@ describe('deposits', () => {
 
 describe('land', () => {
   it('gives every Realm building level a square, and blocks building once the land is full', () => {
-    const state = withNodes({ hut: 15, farm: 4, forestry: 1 }); // 19 of 20 squares
+    const state = withNodes({ hut: 20, farm: 4, forestry: 1 }); // 24 of 25 squares
+    state.achievements = ['crowdedLand']; // already had its 5 extra squares, so filling up gives no more
     Object.assign(state.resources, { wood: 1e6, stone: 1e6, iron: 1e6 });
-    expect(land(state)).toBe(20);
-    expect(landUsed(state)).toBe(19);
-    expect(buyNode(state, 'lumberCamp')).toBe(true); // the 20th square, taken while it is built
-    expect(landUsed(state)).toBe(20);
+    expect(land(state)).toBe(25);
+    expect(landUsed(state)).toBe(24);
+    expect(buyNode(state, 'lumberCamp')).toBe(true); // the last square, taken while it is built
+    expect(landUsed(state)).toBe(25);
     tick(state, 60);
     expect(buyNode(state, 'quarry')).toBe(false);
   });
@@ -1704,5 +1705,20 @@ describe('mines', () => {
     state.deposits.iron.left = 2;
     tick(state, 60);
     expect(state.resources.iron).toBeCloseTo(2);
+  });
+});
+
+describe('Not an Inch to Spare', () => {
+  it('is reached when every square of land is built on, and gives 5 more for good', () => {
+    const state = withNodes({ hut: 10, farm: 9 }); // 19 of 20 squares
+    checkAchievements(state);
+    expect(state.achievements).not.toContain('crowdedLand');
+    state.nodes.farm = 10;
+    checkAchievements(state);
+    expect(state.achievements).toContain('crowdedLand');
+    expect(land(state)).toBe(25);
+    state.runEarned.realm = 1e6;
+    resetWorld(state, 'realm');
+    expect(land(state)).toBe(25);
   });
 });
