@@ -39,6 +39,7 @@ export type ResourceId =
  * - `size:<deposit>`    how much one of the Realm's deposits can hold this run
  * - `deaths`           Realm people killed per hour
  * - `accidents`        chance of Realm workers dying at work (only `mul` is used)
+ * - `starvation`       how fast Realm people starve while there is no Food (only `mul` is used)
  * - `speed:<world>`    build speed multiplier in a world (higher is faster)
  * - `cap:<resource>`   how much of a resource can be stored (only for resources with a `baseCap`)
  * - `storage:<world>`  more storage for every capped resource in a world: `add` 1 is one more `baseCap` of each
@@ -58,6 +59,7 @@ export type Stat =
   | `size:${DepositId}`
   | 'deaths'
   | 'accidents'
+  | 'starvation'
   | `speed:${WorldId}`
   | `cap:${ResourceId}`
   | `storage:${WorldId}`
@@ -374,6 +376,8 @@ export interface GameState {
    * other costs (Planks, Glass...) are paid, so switching away and back costs nothing more.
    */
   researchProgress: Partial<Record<NodeId, number>>;
+  /** Progress (0..1) towards the next person starving; only grows while people go without Food. */
+  hunger: number;
   /** Achievements reached, in the order they were reached. Never reset except by wiping the save. */
   achievements: AchievementId[];
   /** Recent events, oldest first; only the last `LOG_LIMIT` are kept. */

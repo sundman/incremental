@@ -47,7 +47,7 @@ const MAX_STEP_SECONDS = 1;
 export function createInitialState(): GameState {
   const zeroes = <K extends string>(keys: readonly K[]) =>
     Object.fromEntries(keys.map((k) => [k, 0])) as Record<K, number>;
-  return {
+  const state: GameState = {
     version: SAVE_VERSION,
     resources: zeroes(RESOURCE_ORDER),
     nodes: zeroes(NODE_ORDER),
@@ -70,8 +70,11 @@ export function createInitialState(): GameState {
     researching: null,
     researchProgress: {},
     achievements: [],
+    hunger: 0,
     log: [],
   };
+  state.resources.food = POPULATION.startFood;
+  return state;
 }
 
 /** People a Realm run starts with: the usual, plus what achievements add. */
@@ -107,7 +110,8 @@ export function statWorld(stat: Stat): WorldId {
     stat.startsWith('regrow:') ||
     stat.startsWith('size:') ||
     stat === 'deaths' ||
-    stat === 'accidents'
+    stat === 'accidents' ||
+    stat === 'starvation'
   ) {
     return 'realm';
   }
@@ -125,6 +129,7 @@ export function isHelpful(effect: Effect): boolean {
     effect.stat.startsWith('cost:') ||
     effect.stat === 'deaths' ||
     effect.stat === 'accidents' ||
+    effect.stat === 'starvation' ||
     effect.stat.startsWith('decay:') ||
     effect.stat === 'crowding' ||
     effect.stat === 'pollution';
@@ -403,9 +408,27 @@ export function upkeepRate(state: GameState, resource: ResourceId): number {
 
 /** Net change per second, including the Food that people moving in eat. */
 export function netRate(state: GameState, mods: Modifiers, resource: ResourceId): number {
-  const net = grossRate(state, mods, resource) - upkeepRate(state, resource);
-  const eaten = resource === 'food' ? arrivalFoodRate(state, mods, net) : 0;
-  return net - eaten - decayRate(state, mods, resource);
+  let net = grossRate(state, mods, resource) - upkeepRate(state, resource);
+  if (resource === 'food') {
+    net -= eatingRate(state);
+    net -= arrivalFoodRate(state, mods, net);
+  }
+  return net - decayRate(state, mods, resource);
+}
+
+/** Food the Realm's people eat per second. */
+export function eatingRate(state: GameState): number {
+  return Math.floor(state.population) * POPULATION.foodPerSecond;
+}
+
+/** People starving to death per second while nobody gets fed; Wells slow it. */
+export function starvationRate(mods: Modifiers): number {
+  return POPULATION.starvationRate * getMul(mods, 'starvation');
+}
+
+/** Whether people are going hungry right now: the stores are empty and what comes in does not feed everyone. */
+export function isStarving(state: GameState, mods: Modifiers): boolean {
+  return state.resources.food < 1e-9 && grossRate(state, mods, 'food') - upkeepRate(state, 'food') < eatingRate(state) - 1e-9;
 }
 
 /**
@@ -420,7 +443,11 @@ export function decayRate(state: GameState, mods: Modifiers, resource: ResourceI
 }
 
 /** Food eaten per second by people moving into free housing right now. */
-export function arrivalFoodRate(state: GameState, mods: Modifiers, foodIncome = grossRate(state, mods, 'food') - upkeepRate(state, 'food')): number {
+export function arrivalFoodRate(
+  state: GameState,
+  mods: Modifiers,
+  foodIncome = grossRate(state, mods, 'food') - upkeepRate(state, 'food') - eatingRate(state),
+): number {
   if (state.population >= housing(mods)) return 0;
   const wanted = arrivalRate(mods) * POPULATION.foodPerPerson;
   // With empty stores, newcomers can only eat what comes in.
@@ -633,7 +660,11 @@ function workAccidents(state: GameState, mods: Modifiers, dt: number): number {
  * random worker or, when `scholarsToo`, a Scholar. A Scholar lives in the Lab, so killing
  * one spares a Realm person.
  */
-function losePeople(state: GameState, population: number, scholarsToo = true) {
+/**
+ * Kills people down to `population`: the idle first, then random workers or, when
+ * `scholarsToo`, Scholars. `how` finishes each chronicle line, e.g. "starved to death".
+ */
+function losePeople(state: GameState, population: number, scholarsToo = true, how = 'was dragged off by demons') {
   let people = Math.floor(state.population);
   const deaths = people - Math.floor(population);
   state.population = population;
@@ -641,7 +672,7 @@ function losePeople(state: GameState, population: number, scholarsToo = true) {
     const workers = assignedWorkers(state);
     if (people > workers) {
       people--;
-      addLog(state, `${randomName()} was dragged off by demons.`);
+      addLog(state, `${randomName()} ${how}.`);
       continue;
     }
     const scholars = scholarsToo ? state.nodes.scholar : 0;
@@ -656,7 +687,7 @@ function losePeople(state: GameState, population: number, scholarsToo = true) {
     for (const id of JOB_ORDER) {
       if (pick < state.jobs[id]) {
         state.jobs[id] -= 1;
-        addLog(state, `${randomName()} the ${jobWorker(id)} was dragged off by demons.`);
+        addLog(state, `${randomName()} the ${jobWorker(id)} ${how}.`);
         break;
       }
       pick -= state.jobs[id];
@@ -1014,7 +1045,25 @@ function step(state: GameState, dt: number) {
   // 3. Construction progresses.
   advanceConstruction(state, mods, dt);
 
-  // 4. Deaths, then new people move into free housing, eating Food as they arrive.
+  // 4. Everyone eats. Whatever share goes unfed brings the next death by starvation closer.
+  const hungry = eatingRate(state) * dt;
+  if (hungry > 0) {
+    const eaten = Math.min(hungry, state.resources.food);
+    state.resources.food -= eaten;
+    const unfed = 1 - eaten / hungry;
+    if (unfed > 1e-9 && state.population >= POPULATION.starvationSurvivors + 1) {
+      state.hunger += unfed * starvationRate(mods) * dt;
+      while (state.hunger >= 1 && state.population >= POPULATION.starvationSurvivors + 1) {
+        state.hunger -= 1;
+        losePeople(state, state.population - 1, false, 'starved to death');
+      }
+      settleJobs(state);
+    } else if (unfed <= 1e-9) {
+      state.hunger = 0; // fed again: the hungry recover
+    }
+  }
+
+  // 5. Deaths, then new people move into free housing, eating Food as they arrive.
   //    A demon horde feeds until only the survivors are left, then vanishes.
   workAccidents(state, mods, dt);
   const dying = deathRate(mods) * dt;
@@ -1149,6 +1198,8 @@ export function resetWorld(state: GameState, world: WorldId): number {
       state.deposits[id] = { left: max, max, cut: 0 };
     }
     state.population = startPopulation(state);
+    state.resources.food = POPULATION.startFood;
+    state.hunger = 0;
     for (const id of JOB_ORDER) state.jobs[id] = 0;
   }
   applyHeadStart(state, world);

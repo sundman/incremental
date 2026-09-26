@@ -619,6 +619,11 @@ button {
   color: var(--short);
 }
 
+.pop-summary.starving {
+  color: var(--bad);
+  font-weight: 600;
+}
+
 /* How many people have no job: stands out while anyone is idle. */
 .idle-box {
   display: flex;

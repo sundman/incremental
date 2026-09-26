@@ -34,6 +34,9 @@ export function describeEffect(effect: Effect, amount: number): string {
       ? `${DEPOSITS[deposit].name} holds ${amount >= 0 ? '+' : '−'}${formatNumber(Math.abs(amount))} ${RESOURCES[deposit].name}`
       : `${DEPOSITS[deposit].name} size ${formatMultiplier(amount)}`;
   }
+  if (effect.stat === 'starvation') {
+    return `Starvation −${formatNumber((1 - amount) * 100)}%`;
+  }
   if (effect.stat === 'accidents') {
     return `Work accidents −${formatNumber((1 - amount) * 100)}%`;
   }

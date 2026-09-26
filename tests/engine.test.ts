@@ -52,6 +52,9 @@ import {
   researchSecondsLeft,
   setAccidentRandom,
   startPopulation,
+  eatingRate,
+  isStarving,
+  starvationRate,
   checkAchievements,
   wastedWorkers,
   decayRate,
@@ -544,10 +547,10 @@ describe('population', () => {
     expect(housing(computeModifiers(state))).toBe(7);
     tick(state, 10); // 1 person every 20s, slowed a little by crowding
     expect(state.population).toBeCloseTo(2 + 0.5 / 1.04);
-    expect(state.resources.food).toBeCloseTo(1000 - 5 / 1.04);
+    expect(state.resources.food).toBeCloseTo(1000 - 5 / 1.04 - 2 * 0.1 * 10); // newcomers, and 2 people eating
     tick(state, 1000);
     expect(state.population).toBe(7);
-    expect(state.resources.food).toBeCloseTo(1000 - 50);
+    expect(state.resources.food).toBeLessThan(1000 - 50);
     expect(arrivalBlocker(state, computeModifiers(state))).toBe('housing');
   });
 
@@ -588,12 +591,12 @@ describe('population', () => {
     const state = withJobs({ farmer: 2 }); // 1.2 Food/s, 2 of 3 housing used
     state.resources.food = 100;
     const mods = computeModifiers(state);
-    expect(netRate(state, mods, 'food')).toBeCloseTo(1.2 - 0.05 * 10);
+    expect(netRate(state, mods, 'food')).toBeCloseTo(1.2 - 2 * 0.1 - 0.05 * 10);
     const before = state.resources.food;
     tick(state, 1);
-    expect(state.resources.food - before).toBeCloseTo(1.2 - 0.05 * 10, 5);
+    expect(state.resources.food - before).toBeCloseTo(1.2 - 2 * 0.1 - 0.05 * 10, 5);
     state.population = 3; // housing is full, so nobody eats on arrival
-    expect(netRate(state, computeModifiers(state), 'food')).toBeCloseTo(1.2);
+    expect(netRate(state, computeModifiers(state), 'food')).toBeCloseTo(1.2 - 3 * 0.1);
   });
 
   it('speeds up growth with Wells, Taverns and the Fertility Rite', () => {
@@ -721,7 +724,8 @@ describe('population', () => {
     const state = withNodes({ hut: 5 });
     state.resources.food = 15;
     tick(state, 100);
-    expect(state.population).toBeCloseTo(3.5);
+    expect(state.population).toBeGreaterThan(2);
+    expect(state.population).toBeLessThan(3.5); // the 2 people eat some of the Food too
     expect(state.resources.food).toBeCloseTo(0);
     expect(arrivalBlocker(state, computeModifiers(state))).toBe('food');
   });
@@ -1137,7 +1141,7 @@ describe('scholars', () => {
     const people = state.population;
     startResearch(state, 'scientificMethod');
     tick(state, 10);
-    expect(state.resources.food).toBeCloseTo(100 - 5 * 0.2 * 10, 5);
+    expect(state.resources.food).toBeCloseTo(100 - 5 * 0.2 * 10 - 3 * 0.1 * 10, 5); // Scholars, and the 3 people
     expect(state.population).toBe(people);
     expect(state.researchProgress.scientificMethod).toBeGreaterThan(0);
 
@@ -1185,6 +1189,7 @@ describe('scholars', () => {
   it('are left alone by the last demon feast, which leaves exactly the survivors in the Realm', () => {
     const state = unlockAll(withJobs({ woodcutter: 3 }, withNodes({ summoningCircle: 1, scholar: 5 })));
     state.population = 3;
+    state.resources.food = 0; // nobody new arrives after the feast
     toggleSpell(state, 'summoningCircle');
     state.demons = 600;
     const previous = setRandom(() => 0.99); // every pick lands on a Scholar
@@ -1214,7 +1219,7 @@ describe('scholars', () => {
     state.resources.food = 100;
     state.population = 3;
     tick(state, 10);
-    expect(state.resources.food).toBeCloseTo(100 - 2 * 0.2 * 10, 5);
+    expect(state.resources.food).toBeCloseTo(100 - 2 * 0.2 * 10 - 3 * 0.1 * 10, 5);
     expect(computeModifiers(state).get('rate:research')?.mul).toBeCloseTo(1.21, 5);
     state.resources.food = 0;
     tick(state, 1);
@@ -1553,5 +1558,63 @@ describe('achievements', () => {
     resetWorld(state, 'realm');
     expect(state.population).toBe(4);
     expect(state.achievements).toEqual(['village']);
+  });
+});
+
+describe('eating and starvation', () => {
+  it('feeds every person 0.1 Food/s, and starts each run with some Food in store', () => {
+    const state = createInitialState();
+    expect(state.resources.food).toBe(50);
+    state.population = 3; // housing is full, so only eating uses Food
+    expect(eatingRate(state)).toBeCloseTo(0.3);
+    tick(state, 10);
+    expect(state.resources.food).toBeCloseTo(47);
+    expect(state.hunger).toBe(0);
+  });
+
+  it('starves someone every 30s while nobody is fed, idle first, and logs it', () => {
+    const state = withJobs({ woodcutter: 2 });
+    state.population = 5;
+    state.resources.food = 0;
+    expect(isStarving(state, computeModifiers(state))).toBe(true);
+    tick(state, 29);
+    expect(Math.floor(state.population)).toBe(5);
+    tick(state, 2);
+    expect(Math.floor(state.population)).toBe(4);
+    expect(state.jobs.woodcutter).toBe(2); // one of the 3 idle went
+    expect(state.log.at(-1)!.text).toMatch(/starved to death\.$/);
+  });
+
+  it('starves more slowly when some of the Food still comes in', () => {
+    const state = withJobs({ farmer: 1 }); // 0.6 Food/s for 12 people who need 1.2/s
+    state.population = 12;
+    state.resources.food = 0;
+    tick(state, 59);
+    expect(Math.floor(state.population)).toBe(12); // half fed: one dies every 60s
+    tick(state, 2);
+    expect(Math.floor(state.population)).toBe(11);
+  });
+
+  it('never starves the last 2 people, so the village can recover', () => {
+    const state = createInitialState();
+    state.population = 3;
+    state.resources.food = 0;
+    tick(state, 600);
+    expect(Math.floor(state.population)).toBe(2);
+  });
+
+  it('forgets the hunger once everyone is fed again', () => {
+    const state = createInitialState();
+    state.population = 3;
+    state.resources.food = 0;
+    tick(state, 20);
+    expect(state.hunger).toBeGreaterThan(0.5);
+    state.resources.food = 100;
+    tick(state, 1);
+    expect(state.hunger).toBe(0);
+  });
+
+  it('is slowed 20% by each Well', () => {
+    expect(starvationRate(computeModifiers(withNodes({ well: 2 })))).toBeCloseTo((1 / 30) * 0.8 ** 2);
   });
 });

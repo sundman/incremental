@@ -88,6 +88,9 @@ import {
   accidentRate,
   wastedWorkers,
   decayRate,
+  eatingRate,
+  isStarving,
+  starvationRate,
   isAtCap,
   costOverCap,
 } from '../engine/engine';
@@ -340,7 +343,7 @@ export class GameView {
         const idle = idleWorkers(state);
         text = `${Math.floor(state.population)} people`;
         if (idle > 0) text += ` · ${idle} idle`;
-        attention = idle > 0 || arrivalBlocker(state, mods) === 'food';
+        attention = idle > 0 || arrivalBlocker(state, mods) === 'food' || isStarving(state, mods);
       } else if (world === 'lab') {
         const id = state.researching;
         const idleResearch = !id && netRate(state, mods, 'research') > 0;
@@ -639,7 +642,11 @@ export class GameView {
     const cap = housing(mods);
     const people = Math.floor(state.population);
     const idle = idleWorkers(state);
-    let text = `${people} / ${formatNumber(cap)} people`;
+    const starving = isStarving(state, mods);
+    let text = starving
+      ? `STARVING: someone dies about every ${formatDuration(1 / starvationRate(mods))} until there is Food · `
+      : '';
+    text += `${people} / ${formatNumber(cap)} people · eating ${formatNumber(eatingRate(state))} Food/s`;
     const blocker = arrivalBlocker(state, mods);
     const growth = arrivalRate(mods);
     if (blocker === 'housing') {
@@ -662,7 +669,8 @@ export class GameView {
     const accidents = accidentRate(state, mods);
     if (accidents > 0) text += ` · work accidents kill ~${formatPerHour(accidents)}`;
     setText(summary, text);
-    summary.classList.toggle('attention', blocker === 'food');
+    summary.classList.toggle('attention', blocker === 'food' || starving);
+    summary.classList.toggle('starving', starving);
     const { idle: idleBox, idleCount, idleHint } = this.population;
     setText(idleCount, `${idle} idle ${idle === 1 ? 'worker' : 'workers'}`);
     setText(idleHint, idle > 0 ? 'Use + below to give them a job (Shift+click assigns all)' : `All ${people} people are working`);

@@ -109,6 +109,14 @@ export const POPULATION = {
   baseGrowth: 0.05,
   /** Food eaten to bring in each new person; nobody arrives while the stores are empty. */
   foodPerPerson: 10,
+  /** Food each person eats per second. */
+  foodPerSecond: 0.1,
+  /** Food in the stores at the start of every Realm run, so nobody starves before the first Farmers are out. */
+  startFood: 50,
+  /** People who starve per second while nobody gets fed, before `starvation` modifiers (1 every 30s). */
+  starvationRate: 1 / 30,
+  /** Starvation never takes the last few, so the village can always recover. */
+  starvationSurvivors: 2,
   /** Growth is divided by `1 + crowdingPenalty * crowding`, so each point of crowding slows it a little more. */
   crowdingPenalty: 0.02,
   /** Growth is also divided by `1 + pollutionPenalty * pollution`. */
@@ -418,7 +426,7 @@ const nodeList: NodeDef[] = [
     world: 'realm',
     kind: 'building',
     name: 'Well',
-    description: 'Clean water keeps families healthy, so the population grows faster and fewer workers die.',
+    description: 'Clean water keeps families healthy: the population grows faster, fewer workers die, and the hungry last longer.',
     baseCost: { stone: 30, wood: 10 },
     costGrowth: 1.8,
     tier: 1,
@@ -427,6 +435,7 @@ const nodeList: NodeDef[] = [
     effects: [
       { stat: 'growth', kind: 'mul', amount: 1.1 },
       { stat: 'accidents', kind: 'mul', amount: 0.97 },
+      { stat: 'starvation', kind: 'mul', amount: 0.8 },
     ],
   },
   {
