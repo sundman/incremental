@@ -1511,3 +1511,12 @@ describe('warehouse decay', () => {
     expect(state.resources.stone).toBeGreaterThan(3000 - 8.1);
   });
 });
+
+describe('parks', () => {
+  it('need Forestry from the Lab as well as a Well', () => {
+    const state = withNodes({ hut: 1, well: 1 });
+    expect(isNodeAvailable(state, 'park')).toBe(false);
+    withNodes({ forestry: 1 }, state);
+    expect(isNodeAvailable(state, 'park')).toBe(true);
+  });
+});
