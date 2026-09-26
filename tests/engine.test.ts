@@ -50,6 +50,9 @@ import {
   researchNeeded,
   researchUpfrontCost,
   researchSecondsLeft,
+  resourceCap,
+  costOverCap,
+  isAtCap,
 } from '../src/engine/engine';
 import { DEPOSITS, NODES, RESOURCES } from '../src/engine/content';
 import type { GameState, JobId, NodeId, ResourceId } from '../src/engine/types';
@@ -1254,5 +1257,42 @@ describe('research', () => {
     resetWorld(state, 'lab');
     expect(state.researching).toBe(null);
     expect(state.researchProgress).toEqual({});
+  });
+});
+
+describe('mana storage', () => {
+  it('caps Mana, and production past the cap is lost and earns nothing', () => {
+    const state = unlockAll(withNodes({ manaWell: 10 }));
+    const mods = computeModifiers(state);
+    expect(resourceCap(mods, 'mana')).toBe(300);
+    tick(state, 100); // 4 Mana/s would make 400
+    expect(state.resources.mana).toBeCloseTo(300);
+    expect(isAtCap(state, computeModifiers(state), 'mana')).toBe(true);
+    expect(state.runEarned.arcana).toBeCloseTo(300 * RESOURCES.mana.value);
+  });
+
+  it('leaves resources without a cap unlimited', () => {
+    expect(resourceCap(computeModifiers(createInitialState()), 'wood')).toBe(Infinity);
+  });
+
+  it('grows with Mana Cisterns, then Ley Vaults multiply the total', () => {
+    const state = unlockAll(withNodes({ manaCistern: 2, leyVault: 1 }));
+    expect(resourceCap(computeModifiers(state), 'mana')).toBeCloseTo((300 + 2 * 250) * 1.5);
+  });
+
+  it('flags a cost that is more than can be stored', () => {
+    const state = unlockAll(withNodes({ aetherRift: 1 })); // the next Rift costs 1000 Mana
+    const mods = computeModifiers(state);
+    expect(costOverCap(nodeCost(state, 'aetherRift', mods), mods)).toBe('mana');
+    withNodes({ manaCistern: 3 }, state);
+    const more = computeModifiers(state);
+    expect(costOverCap(nodeCost(state, 'aetherRift', more), more)).toBe(null);
+  });
+
+  it('keeps Mana over the cap from an older save, but adds no more', () => {
+    const state = unlockAll(withNodes({ manaWell: 5 }));
+    state.resources.mana = 1000;
+    tick(state, 10);
+    expect(state.resources.mana).toBeCloseTo(1000);
   });
 });

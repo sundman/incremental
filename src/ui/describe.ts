@@ -56,6 +56,10 @@ export function describeEffect(effect: Effect, amount: number): string {
       const name = RESOURCES[target as ResourceId].name;
       return `${value} ${name}/s per worker`;
     }
+    case 'cap': {
+      const name = RESOURCES[target as ResourceId].name;
+      return effect.kind === 'add' ? `Stores ${value} ${name}` : `${name} storage ${value}`;
+    }
     case 'prod':
       return `All ${WORLDS[target as WorldId].name} production ${value}`;
     case 'cost':

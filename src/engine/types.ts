@@ -39,6 +39,7 @@ export type ResourceId =
  * - `size:<deposit>`    how much one of the Realm's deposits can hold this run
  * - `deaths`           Realm people killed per hour
  * - `speed:<world>`    build speed multiplier in a world (higher is faster)
+ * - `cap:<resource>`   how much of a resource can be stored (only for resources with a `baseCap`)
  */
 export type Stat =
   | `rate:${ResourceId}`
@@ -53,7 +54,8 @@ export type Stat =
   | `regrow:${DepositId}`
   | `size:${DepositId}`
   | 'deaths'
-  | `speed:${WorldId}`;
+  | `speed:${WorldId}`
+  | `cap:${ResourceId}`;
 
 export type Cost = Partial<Record<ResourceId, number>>;
 
@@ -113,6 +115,8 @@ export interface ResourceDef {
   value: number;
   /** Hidden until this node is owned (e.g. Aether appears once the Rift opens). */
   revealedBy?: NodeId;
+  /** Storage limit before `cap:` modifiers. Omit for unlimited storage. Production past the cap is lost. */
+  baseCap?: number;
 }
 
 export type JobId = 'woodcutter' | 'stonecutter' | 'farmer' | 'digger' | 'miner' | 'collier' | 'prospector';
@@ -208,6 +212,8 @@ export type NodeId =
   | 'golemWorks'
   // Arcana
   | 'manaWell'
+  | 'manaCistern'
+  | 'leyVault'
   | 'condenser'
   | 'focusCrystal'
   | 'enchantedTools'

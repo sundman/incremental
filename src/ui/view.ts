@@ -81,6 +81,9 @@ import {
   researchNeeded,
   researchUpfrontCost,
   researchSecondsLeft,
+  resourceCap,
+  isAtCap,
+  costOverCap,
 } from '../engine/engine';
 import { formatDuration, formatNumber, formatPerHour } from '../engine/format';
 import type { DepositId, GameState, JobId, MetaId, NodeId, ResourceId, WorldId } from '../engine/types';
@@ -753,10 +756,19 @@ export class GameView {
       setHidden(row.row, !shown);
       if (!shown) continue;
       // Research never piles up: it streams straight into the research target.
-      setText(row.amount, r === 'research' ? '' : formatNumber(state.resources[r]));
+      const cap = resourceCap(mods, r);
+      const capped = Number.isFinite(cap);
+      setText(
+        row.amount,
+        r === 'research' ? '' : formatNumber(state.resources[r]) + (capped ? ` / ${formatNumber(cap)}` : ''),
+      );
       const rate = netRate(state, mods, r);
-      setText(row.rate, rate === 0 ? '' : `${rate > 0 ? '+' : ''}${formatNumber(rate)}/s`);
+      // At the cap, anything more made is lost, so the rate would only mislead.
+      const full = capped && rate > 0 && isAtCap(state, mods, r);
+      setText(row.rate, full ? 'full' : rate === 0 ? '' : `${rate > 0 ? '+' : ''}${formatNumber(rate)}/s`);
       row.rate.classList.toggle('negative', rate < 0);
+      row.rate.classList.toggle('full', full);
+      row.row.title = capped ? `Holds at most ${formatNumber(cap)} ${RESOURCES[r].name}. More is lost; storage buildings raise the limit.` : '';
     }
 
     if (world === 'lab') this.renderResearchStatus(mods);
@@ -967,6 +979,10 @@ export class GameView {
     }
     if (available && !building && !maxed && !research && !hasFreeBuildSlot(state, node.world)) {
       needs.push(`a free build slot (${activeBuilds(state, node.world)}/${buildSlots(state)} in use)`);
+    }
+    if (!maxed && !building) {
+      const over = costOverCap(research ? (progress === undefined ? researchUpfrontCost(state, id, mods) : {}) : nodeCost(state, id, mods), mods);
+      if (over) needs.push(`more ${RESOURCES[over].name} storage (holds ${formatNumber(resourceCap(mods, over))})`);
     }
     if (node.horde && level > 0 && !isSpellActive(state, id) && state.population <= DEMONS.survivors) {
       needs.push(`more than ${DEMONS.survivors} people to feed on`);

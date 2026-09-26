@@ -255,6 +255,11 @@ button {
   color: var(--bad);
 }
 
+/* Storage is full: more production is lost. */
+.resource .rate.full {
+  color: var(--short);
+}
+
 .reset {
   background: var(--card);
   border: 1px solid var(--accent);

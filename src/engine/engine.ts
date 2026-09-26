@@ -77,7 +77,7 @@ export function statWorld(stat: Stat): WorldId {
   }
   if (stat.startsWith('speed:')) return stat.slice('speed:'.length) as WorldId;
   const [type, target] = stat.split(':') as [string, string];
-  if (type === 'rate' || type === 'yield') return RESOURCES[target as ResourceId].world;
+  if (type === 'rate' || type === 'yield' || type === 'cap') return RESOURCES[target as ResourceId].world;
   return target as WorldId;
 }
 
@@ -279,6 +279,26 @@ export function grossRate(state: GameState, mods: Modifiers, resource: ResourceI
   const rate = add * getMul(mods, `rate:${resource}`) * getMul(mods, `prod:${world}`);
   // A deposit can only be worked as fast as it holds out (steps are at most one second).
   return isDeposit(resource) ? Math.min(rate, state.deposits[resource].left + depositRegrowth(mods, resource)) : rate;
+}
+
+/** How much of a resource can be stored; Infinity for resources without a storage limit. */
+export function resourceCap(mods: Modifiers, resource: ResourceId): number {
+  const base = RESOURCES[resource].baseCap;
+  if (base === undefined) return Infinity;
+  return Math.max(0, (base + getAdd(mods, `cap:${resource}`)) * getMul(mods, `cap:${resource}`));
+}
+
+/** Whether a resource is at its storage limit, so any more made is lost. */
+export function isAtCap(state: GameState, mods: Modifiers, resource: ResourceId): boolean {
+  return state.resources[resource] >= resourceCap(mods, resource) - 1e-9;
+}
+
+/** The first resource in a cost that is more than can ever be stored, so storage must grow first. */
+export function costOverCap(cost: Cost, mods: Modifiers): ResourceId | null {
+  for (const [r, n] of Object.entries(cost) as [ResourceId, number][]) {
+    if (n > resourceCap(mods, r) + 1e-9) return r;
+  }
+  return null;
 }
 
 export function isDeposit(resource: ResourceId): resource is DepositId {
@@ -824,8 +844,10 @@ function advanceConstruction(state: GameState, mods: Modifiers, dt: number) {
 
 // ------------------------------------------------------------------- time
 
-/** Adds a resource, and returns how much was actually gained (deposits can run out). */
-function gain(state: GameState, resource: ResourceId, amount: number): number {
+/** Adds a resource, and returns how much was actually gained (deposits can run out, storage can be full). */
+function gain(state: GameState, mods: Modifiers, resource: ResourceId, amount: number): number {
+  amount = Math.min(amount, resourceCap(mods, resource) - state.resources[resource]);
+  if (amount <= 0) return 0;
   if (isDeposit(resource)) {
     const d = state.deposits[resource];
     amount = Math.min(amount, d.left);
@@ -871,7 +893,7 @@ function step(state: GameState, dt: number) {
   }
   for (const r of RESOURCE_ORDER) {
     if (!isWorldUnlocked(state, RESOURCES[r].world)) continue;
-    gain(state, r, grossRate(state, mods, r) * dt);
+    gain(state, mods, r, grossRate(state, mods, r) * dt);
     if (state.resources[r] < 0) state.resources[r] = 0;
   }
   pourResearch(state);
