@@ -317,7 +317,7 @@ export interface MetaDef {
   effects?: Effect[];
 }
 
-export type AchievementId = 'village' | 'deforested' | 'crowdedLand';
+export type AchievementId = 'village' | 'deforested' | 'crowdedLand' | 'hundredGraves';
 
 /** Combined effects on each stat: every `add` summed, every `mul` multiplied. */
 export type StatTotals = ReadonlyMap<Stat, { add: number; mul: number }>;
@@ -381,6 +381,8 @@ export interface GameState {
    * other costs (Planks, Glass...) are paid, so switching away and back costs nothing more.
    */
   researchProgress: Partial<Record<NodeId, number>>;
+  /** People who have died (at work, of hunger, to demons) since the Realm was last reset. */
+  runDeaths: number;
   /** Progress (0..1) towards the next person starving; only grows while people go without Food. */
   hunger: number;
   /** Achievements reached, in the order they were reached. Never reset except by wiping the save. */

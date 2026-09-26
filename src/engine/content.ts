@@ -1710,6 +1710,14 @@ const achievementList: AchievementDef[] = [
     },
     effects: [{ stat: 'land', kind: 'add', amount: 5 }],
   },
+  {
+    id: 'hundredGraves',
+    name: 'A Hundred Graves',
+    goal: 'Have 100 people die in a single Realm run: at work, of hunger or to demons.',
+    reward: 'The Realm\'s population grows 10% faster, for good.',
+    progress: (state) => [state.runDeaths, 100],
+    effects: [{ stat: 'growth', kind: 'mul', amount: 1.1 }],
+  },
 ];
 
 export const ACHIEVEMENTS = Object.fromEntries(achievementList.map((a) => [a.id, a])) as Record<AchievementId, AchievementDef>;

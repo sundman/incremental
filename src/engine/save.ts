@@ -131,6 +131,7 @@ export function deserialize(text: string): GameState {
     efficiency: {},
     ...research,
     hunger: Math.min(1, Math.max(0, num(raw.hunger, 0))),
+    runDeaths: Math.max(0, Math.floor(num(raw.runDeaths, 0))),
     achievements: Array.isArray(raw.achievements)
       ? ACHIEVEMENT_ORDER.filter((id) => (raw.achievements as unknown[]).includes(id))
       : [],

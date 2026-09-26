@@ -1722,3 +1722,30 @@ describe('Not an Inch to Spare', () => {
     expect(land(state)).toBe(25);
   });
 });
+
+describe('A Hundred Graves', () => {
+  it('counts every death in a Realm run, and is reached at 100', () => {
+    const state = withJobs({ farmer: 60 });
+    state.population = 70;
+    setAccidentRandom(() => 0); // every worker has an accident
+    tick(state, 1);
+    expect(state.runDeaths).toBe(60);
+    setAccidentRandom(() => 1);
+    state.resources.food = 0;
+    state.population = 50;
+    tick(state, 30 * 60); // starvation takes 48 more, down to the last 2
+    expect(state.runDeaths).toBeGreaterThanOrEqual(100);
+    expect(state.achievements).toContain('hundredGraves');
+  });
+
+  it('starts counting again after a Realm reset, and speeds up growth for good', () => {
+    const state = createInitialState();
+    state.runDeaths = 42;
+    const before = arrivalRate(computeModifiers(state));
+    state.achievements = ['hundredGraves'];
+    expect(arrivalRate(computeModifiers(state))).toBeCloseTo(before * 1.1);
+    state.runEarned.realm = 1e6;
+    resetWorld(state, 'realm');
+    expect(state.runDeaths).toBe(0);
+  });
+});

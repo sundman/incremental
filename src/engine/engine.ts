@@ -33,6 +33,12 @@ export const SAVE_VERSION = 3;
 export const LOG_LIMIT = 50;
 
 /** Adds a line to the chronicle, dropping the oldest past `LOG_LIMIT`. */
+/** Someone died: counts them for this Realm run and writes it in the chronicle. */
+function recordDeath(state: GameState, text: string) {
+  state.runDeaths += 1;
+  addLog(state, text, 'death');
+}
+
 export function addLog(state: GameState, text: string, kind: LogEntry['kind'] = 'death') {
   state.log.push({ time: Date.now(), text, kind });
   if (state.log.length > LOG_LIMIT) state.log.splice(0, state.log.length - LOG_LIMIT);
@@ -74,6 +80,7 @@ export function createInitialState(): GameState {
     researching: null,
     researchProgress: {},
     achievements: [],
+    runDeaths: 0,
     hunger: 0,
     log: [],
   };
@@ -653,7 +660,7 @@ function workAccidents(state: GameState, mods: Modifiers, dt: number): number {
     let dead = 0;
     for (let i = 0; i < state.jobs[id]; i++) if (accidentRandom() < chance) dead++;
     state.jobs[id] -= dead;
-    for (let i = 0; i < dead; i++) addLog(state, `${randomName()} the ${jobWorker(id)} ${JOBS[id].accidentText}.`);
+    for (let i = 0; i < dead; i++) recordDeath(state, `${randomName()} the ${jobWorker(id)} ${JOBS[id].accidentText}.`);
     died += dead;
   }
   state.population = Math.max(0, state.population - died);
@@ -681,7 +688,7 @@ function losePeople(state: GameState, population: number, scholarsToo = true, ho
     const workers = assignedWorkers(state);
     if (people > workers) {
       people--;
-      addLog(state, `${randomName()} ${how}.`);
+      recordDeath(state, `${randomName()} ${how}.`);
       continue;
     }
     const scholars = scholarsToo ? state.nodes.scholar : 0;
@@ -689,14 +696,14 @@ function losePeople(state: GameState, population: number, scholarsToo = true, ho
     if (pick >= workers) {
       state.nodes.scholar -= 1;
       state.population += 1;
-      addLog(state, `${randomName()} the Scholar was hunted down by demons in the Lab.`);
+      recordDeath(state, `${randomName()} the Scholar was hunted down by demons in the Lab.`);
       continue;
     }
     people--;
     for (const id of JOB_ORDER) {
       if (pick < state.jobs[id]) {
         state.jobs[id] -= 1;
-        addLog(state, `${randomName()} the ${jobWorker(id)} ${how}.`);
+        recordDeath(state, `${randomName()} the ${jobWorker(id)} ${how}.`);
         break;
       }
       pick -= state.jobs[id];
@@ -1222,6 +1229,7 @@ export function resetWorld(state: GameState, world: WorldId): number {
     state.population = startPopulation(state);
     state.resources.food = POPULATION.startFood;
     state.hunger = 0;
+    state.runDeaths = 0;
     for (const id of JOB_ORDER) state.jobs[id] = 0;
   }
   applyHeadStart(state, world);
