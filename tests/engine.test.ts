@@ -960,6 +960,9 @@ describe('research list', () => {
     expect(isResearchListed(state, 'arcaneTheory')).toBe(true);
     state.nodes.scientificMethod = 1;
     expect(isResearchListed(state, 'scientificMethod')).toBe(false);
+    expect(isResearchListed(state, 'mining')).toBe(true);
+    expect(isResearchListed(state, 'geology')).toBe(false); // needs Mining
+    state.nodes.mining = 1;
     expect(isResearchListed(state, 'geology')).toBe(true);
     expect(isResearchListed(state, 'engineering')).toBe(false); // needs Geology and Metallurgy
     state.nodes.geology = 1;
@@ -984,11 +987,12 @@ describe('research list', () => {
     expect(col('homebuilding')).toBe(1);
     expect(col('currency')).toBe(1);
     expect(col('arcaneTheory')).toBe(1);
-    expect(col('geology')).toBe(1);
-    expect(col('engineering')).toBe(2); // after Geology and Metallurgy
-    expect(col('sailing')).toBe(3);
-    expect(col('navigation')).toBe(4); // after Sailing and Optics, both in column 3
-    expect(col('expedition')).toBe(5);
+    expect(col('mining')).toBe(1);
+    expect(col('geology')).toBe(2); // after Mining
+    expect(col('engineering')).toBe(3); // after Geology and Metallurgy
+    expect(col('sailing')).toBe(4);
+    expect(col('navigation')).toBe(5); // after Sailing and Optics, both in column 4
+    expect(col('expedition')).toBe(6);
     expect(cols.flat()).toHaveLength(new Set(cols.flat()).size);
   });
 });
@@ -1226,7 +1230,7 @@ describe('research', () => {
   });
 
   it('pays other costs once when a tech is first picked, and keeps progress when you switch away', () => {
-    const state = unlockAll(withNodes({ scientificMethod: 1 }));
+    const state = unlockAll(withNodes({ scientificMethod: 1, mining: 1 }));
     Object.assign(state.resources, { food: 200, stone: 100 });
     expect(researchUpfrontCost(state, 'medicine')).toEqual({ food: 200 });
     expect(startResearch(state, 'medicine')).toBe(true);
@@ -1305,8 +1309,9 @@ describe('mining', () => {
     expect(isNodeAvailable(state, 'mine')).toBe(true);
   });
 
-  it('puts Mining right after Scientific Method in the research tree', () => {
+  it('puts Mining right after Scientific Method, and Geology after Mining', () => {
     expect(NODES.mining.requires).toEqual(['scientificMethod']);
+    expect(NODES.geology.requires).toEqual(['mining']);
     expect(isResearchListed(unlockAll(withNodes({ scientificMethod: 1 })), 'mining')).toBe(true);
   });
 });
