@@ -195,6 +195,9 @@ interface JobRow {
 
 interface PopulationView {
   summary: HTMLElement;
+  idle: HTMLElement;
+  idleCount: HTMLElement;
+  idleHint: HTMLElement;
   jobs: Record<JobId, JobRow>;
 }
 
@@ -534,8 +537,11 @@ export class GameView {
       list.append(row);
       jobs[id] = { row, count, info, minus, plus };
     }
-    this.population = { summary, jobs };
-    return h('div', { class: 'population' }, h('h3', {}, 'People'), summary, list);
+    const idleCount = h('span', { class: 'idle-count' });
+    const idleHint = h('span', { class: 'idle-hint' });
+    const idle = h('div', { class: 'idle-box' }, idleCount, idleHint);
+    this.population = { summary, idle, idleCount, idleHint, jobs };
+    return h('div', { class: 'population' }, h('h3', {}, 'People'), summary, idle, list);
   }
 
   private renderDeposits(mods: Modifiers) {
@@ -580,7 +586,7 @@ export class GameView {
     const cap = housing(mods);
     const people = Math.floor(state.population);
     const idle = idleWorkers(state);
-    let text = `${people} / ${formatNumber(cap)} people · ${idle} idle`;
+    let text = `${people} / ${formatNumber(cap)} people`;
     const blocker = arrivalBlocker(state, mods);
     const growth = arrivalRate(mods);
     if (blocker === 'housing') {
@@ -601,7 +607,11 @@ export class GameView {
       text += ` · ${horde} kill ${formatPerHour(deaths)}`;
     }
     setText(summary, text);
-    summary.classList.toggle('attention', idle > 0 || blocker === 'food');
+    summary.classList.toggle('attention', blocker === 'food');
+    const { idle: idleBox, idleCount, idleHint } = this.population;
+    setText(idleCount, `${idle} idle ${idle === 1 ? 'worker' : 'workers'}`);
+    setText(idleHint, idle > 0 ? 'Use + below to give them a job (Shift+click assigns all)' : `All ${people} people are working`);
+    idleBox.classList.toggle('has-idle', idle > 0);
 
     for (const id of JOB_ORDER) {
       const row = jobs[id];
