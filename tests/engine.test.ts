@@ -475,7 +475,7 @@ describe('repeatable research', () => {
 describe('build slots', () => {
   it('builds one thing per world at a time, while other worlds build in parallel', () => {
     const state = unlockAll(withNodes({ hut: 1, library: 1, shrine: 1, forestry: 1 }));
-    Object.assign(state.resources, { wood: 1000, stone: 1000, iron: 1000, research: 1000, mana: 1000 });
+    Object.assign(state.resources, { wood: 1000, stone: 1000, iron: 1000, food: 1000, research: 1000, mana: 1000 });
     expect(buyNode(state, 'hut')).toBe(true);
     expect(buyNode(state, 'lumberCamp')).toBe(false); // the Realm is busy
     expect(startResearch(state, 'scientificMethod')).toBe(true); // research takes no build slot
@@ -793,9 +793,10 @@ describe('build times', () => {
 
   it('builds over time, and the level only counts when finished', () => {
     const state = createInitialState();
-    state.resources.wood = 100;
+    Object.assign(state.resources, { wood: 100, food: 100 });
     expect(buyNode(state, 'hut')).toBe(true);
-    expect(state.resources.wood).toBeCloseTo(85); // paid up front
+    expect(state.resources.wood).toBeCloseTo(90); // paid up front
+    expect(state.resources.food).toBeCloseTo(90);
     tick(state, 4);
     expect(state.nodes.hut).toBe(0);
     expect(constructionSecondsLeft(state, 'hut')).toBeCloseTo(1);
@@ -828,8 +829,8 @@ describe('build times', () => {
 
   it('drops unfinished construction when its world is reset', () => {
     const state = createInitialState();
-    state.resources.wood = 100;
-    buyNode(state, 'hut');
+    Object.assign(state.resources, { wood: 100, food: 100 });
+    expect(buyNode(state, 'hut')).toBe(true);
     resetWorld(state, 'realm');
     expect(state.construction.hut).toBeUndefined();
     tick(state, 10);

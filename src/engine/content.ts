@@ -159,7 +159,7 @@ const nodeList: NodeDef[] = [
     kind: 'building',
     name: 'Hut',
     description: 'Room for more people to move in, though every home crowds the village a little.',
-    baseCost: { wood: 15 },
+    baseCost: { wood: 10, food: 10 },
     costGrowth: 4,
     tier: 1,
     effects: [
