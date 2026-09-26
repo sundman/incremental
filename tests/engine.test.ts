@@ -452,18 +452,31 @@ describe('land', () => {
     expect(buyNode(state, 'quarry')).toBe(false);
   });
 
-  it('finds more land with Cartography and each Expedition, and keeps it through a Lab reset', () => {
-    const state = unlockAll(withNodes({ hut: 20, cartography: 1, expedition: 3, agriculture: 1 }));
+  it('finds land with Cartography and each Expedition that is kept for good, while the techs reset', () => {
+    const state = unlockAll(withNodes({ hut: 5, agriculture: 1, scientificMethod: 1, navigation: 1, library: 1 }));
+    expect(startResearch(state, 'cartography')).toBe(true);
+    pour(state, 120);
+    for (let i = 0; i < 3; i++) {
+      state.resources.food = 1000; // each expedition needs its own supplies
+      expect(startResearch(state, 'expedition')).toBe(true);
+      pour(state, 1000 * 1.3 ** i);
+    }
+    expect(state.nodes.expedition).toBe(3);
     expect(land(state)).toBe(20 + 1 + 3 * 5);
-    expect(maxLevel('expedition')).toBe(30);
     state.resources.wood = 1e6;
     expect(buyNode(state, 'farm')).toBe(true);
     const link = activeLinks(state).find((l) => l.source === 'expedition');
     expect(link).toMatchObject({ from: 'lab', to: 'realm', helpful: true, total: 15 });
+
+    state.runEarned.lab = 1e6;
     resetWorld(state, 'lab');
-    expect(land(state)).toBe(36); // exploring is permanent
-    expect(state.nodes.cartography).toBe(1);
-    expect(state.nodes.expedition).toBe(3);
+    expect(state.nodes.cartography).toBe(0); // the techs reset...
+    expect(state.nodes.expedition).toBe(0);
+    expect(land(state)).toBe(36); // ...but the land they found stays
+    withNodes({ scientificMethod: 1 }, state);
+    expect(startResearch(state, 'cartography')).toBe(true);
+    pour(state, 120);
+    expect(land(state)).toBe(37); // and mapping again finds more
   });
 });
 

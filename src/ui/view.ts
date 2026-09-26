@@ -72,7 +72,6 @@ import {
   nodeCost,
   resetWorld,
   retainedTechs,
-  permanentNodes,
   statWorld,
   type ActiveLink,
   type Modifiers,
@@ -974,7 +973,7 @@ export class GameView {
     const blocker = resetBlocker(state, world);
     v.resetButton.disabled = !!blocker;
     const harms = outgoing.filter((l) => !l.helpful).length;
-    const kept = [...(world === 'lab' ? retainedTechs(state) : []), ...permanentNodes(state, world)];
+    const kept = world === 'lab' ? retainedTechs(state) : [];
     setText(
       v.resetNote,
       [
@@ -1105,6 +1104,14 @@ export class GameView {
           : [],
       )
       .concat(node.unlocksWorld && !isWorldUnlocked(state, node.unlocksWorld) ? [`<li class="good">Opens ${WORLDS[node.unlocksWorld].name}</li>`] : [])
+      .concat(
+        // Lasting techs reset with the Lab, but what they found is kept: show the running total.
+        node.lasting && (state.lasting[id] ?? 0) > 0
+          ? node.effects.map(
+              (e) => `<li class="good">Kept for good: ${escape(describeEffect(e, e.amount * (state.lasting[id] ?? 0)))} so far</li>`,
+            )
+          : [],
+      )
       .join('');
     setHtml(c.effects, effectsHtml);
 

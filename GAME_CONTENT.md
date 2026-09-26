@@ -164,10 +164,10 @@ Research streams into the tech you pick. Other costs are paid once when a tech i
 | Occultism | 10K Research | 1 | — | Mana/s ×1.1 (Arcana) |
 | Arcane Theory | 400 Research, 30 Essence | 1 | Occultism | Essence/s ×1.3 (Arcana) |
 | Industrialization | 600 Research, 100 Iron | 1 | Metallurgy | Realm costs ×0.85 (Realm); Essence/s ×0.85 (Arcana); +8 pollution (slows growth) (Realm) |
-| Cartography | 120 Research | 10 (cost ×2 each) | Scientific Method | +1 square of land (Realm); Kept through resets |
+| Cartography | 120 Research | 10 (cost ×2 each) | Scientific Method | +1 square of land (Realm); Kept for good; the tech resets, so each run can add more |
 | Sailing | 500 Research, 150 Planks | 1 | Cartography, Engineering | Food/s ×1.15 (Realm) |
 | Navigation | 1K Research, 20 Glass | 1 | Sailing, Optics | Gold/s ×1.25 (Realm) |
-| Expedition | 1K Research, 500 Food | 30 (cost ×1.3 each) | Navigation | +5 squares of land (Realm); Kept through resets |
+| Expedition | 1K Research, 500 Food | 30 (cost ×1.3 each) | Navigation | +5 squares of land (Realm); Kept for good; the tech resets, so each run can add more |
 | Forestry | 250 Research, 200 Wood | 1 | Scientific Method | Forest regrows ×2 (Realm) |
 | Environmental Science | 1.2K Research, 40 Glass | 1 | Forestry, Filtration | Forest regrows ×2 (Realm); Pollution −20% (Realm) |
 | Filtration | 800 Research, 80 Iron | 1 | Metallurgy, Medicine | Pollution −50% (Realm) |

@@ -65,7 +65,7 @@ function nodeEffects(node: NodeDef): string {
   }
   if (node.people) parts.push(`Takes ${node.people} idle Realm ${node.people === 1 ? 'person' : 'people'}`);
   if (node.unlocksWorld) parts.push(`Opens ${WORLDS[node.unlocksWorld].name}`);
-  if (node.permanent) parts.push('Kept through resets');
+  if (node.lasting) parts.push('Kept for good; the tech resets, so each run can add more');
   return parts.join('; ') || '—';
 }
 

@@ -189,8 +189,11 @@ export interface NodeDef {
    * Realm is down to its last survivors, and the horde vanishes with it.
    */
   horde?: boolean;
-  /** Survives resets of its world (e.g. land found by exploring). */
-  permanent?: boolean;
+  /**
+   * Its effects are kept for good: every level ever finished counts, across all runs, while the
+   * node itself resets with its world as usual and can be taken again (e.g. land found by exploring).
+   */
+  lasting?: boolean;
   /** Owning at least one level opens this world for good. */
   unlocksWorld?: WorldId;
 }
@@ -393,6 +396,8 @@ export interface GameState {
   runDeaths: number;
   /** Progress (0..1) towards the next person starving; only grows while people go without Food. */
   hunger: number;
+  /** Levels ever finished of each lasting node, across all runs; their effects count these, not the current level. */
+  lasting: Partial<Record<NodeId, number>>;
   /** Achievements reached, in the order they were reached. Never reset except by wiping the save. */
   achievements: AchievementId[];
   /** Recent events, oldest first; only the last `LOG_LIMIT` are kept. */

@@ -20,6 +20,21 @@ function mergeNumbers<T extends Record<string, number>>(defaults: T, raw: unknow
   return out;
 }
 
+/** Levels ever finished of lasting nodes. Before version 5 they were simply never reset, so their levels are the tally. */
+function readLasting(raw: Record<string, unknown>): GameState['lasting'] {
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0);
+  const saved = (raw.lasting && typeof raw.lasting === 'object' ? raw.lasting : {}) as Record<string, unknown>;
+  const levels = (raw.nodes && typeof raw.nodes === 'object' ? raw.nodes : {}) as Record<string, unknown>;
+  const old = num(raw.version) < 5;
+  const out: GameState['lasting'] = {};
+  for (const id of NODE_ORDER) {
+    if (!NODES[id].lasting) continue;
+    const n = old ? num(levels[id]) : num(saved[id]);
+    if (n > 0) out[id] = n;
+  }
+  return out;
+}
+
 function readLog(raw: unknown): LogEntry[] {
   if (!Array.isArray(raw)) return [];
   return raw
@@ -134,6 +149,7 @@ export function deserialize(text: string): GameState {
     ...research,
     hunger: Math.min(1, Math.max(0, num(raw.hunger, 0))),
     runDeaths: Math.max(0, Math.floor(num(raw.runDeaths, 0))),
+    lasting: readLasting(raw),
     achievements: Array.isArray(raw.achievements)
       ? ACHIEVEMENT_ORDER.filter((id) => (raw.achievements as unknown[]).includes(id))
       : [],

@@ -27,8 +27,9 @@ import type { Cost, DepositId, Effect, GameState, JobId, LogEntry, MetaId, NodeI
  * 2: Stone and Clay deposits start empty and grow with each Quarry and Clay Pit.
  * 3: Coal does too, with each Coal Mine, and Iron and Gold become deposits opened by their mines.
  * 4: Rich Earth only grows the forest.
+ * 5: Land techs reset with the Lab, but the land they found is kept (see `lasting`).
  */
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 /** How many chronicle lines are kept. */
 export const LOG_LIMIT = 50;
@@ -82,6 +83,7 @@ export function createInitialState(): GameState {
     researching: null,
     researchProgress: {},
     achievements: [],
+    lasting: {},
     runDeaths: 0,
     hunger: 0,
     log: [],
@@ -201,6 +203,7 @@ export function isSpellActive(state: GameState, id: NodeId): boolean {
  * and a horde spell counts its demons.
  */
 export function runningLevel(state: GameState, id: NodeId): number {
+  if (NODES[id].lasting) return state.lasting[id] ?? 0; // every level ever finished, kept through resets
   if (NODES[id].spell && !isSpellActive(state, id)) return 0;
   if (state.switchedOff.includes(id)) return 0;
   if (NODES[id].horde) return state.demons;
@@ -1027,6 +1030,7 @@ function growDeposits(state: GameState, effects: Effect[]) {
 
 function finishLevel(state: GameState, id: NodeId) {
   state.nodes[id] += 1;
+  if (NODES[id].lasting) state.lasting[id] = (state.lasting[id] ?? 0) + 1;
   growDeposits(state, NODES[id].effects);
   const opens = NODES[id].unlocksWorld;
   if (opens && !isWorldUnlocked(state, opens)) {
@@ -1189,16 +1193,12 @@ export function retainedTechs(state: GameState): NodeId[] {
   const keep = state.meta.retainedKnowledge;
   if (keep <= 0) return [];
   return NODE_ORDER.filter(
-    (id) => NODES[id].world === 'lab' && NODES[id].kind === 'tech' && !NODES[id].permanent && state.nodes[id] > 0,
+    (id) => NODES[id].world === 'lab' && NODES[id].kind === 'tech' && !NODES[id].lasting && state.nodes[id] > 0,
   )
     .sort((a, b) => techValue(b) - techValue(a))
     .slice(0, keep);
 }
 
-/** Owned nodes in a world that its reset never takes away. */
-export function permanentNodes(state: GameState, world: WorldId): NodeId[] {
-  return NODE_ORDER.filter((id) => NODES[id].world === world && NODES[id].permanent && state.nodes[id] > 0);
-}
 
 const HEAD_START_META: Record<WorldId, MetaId> = {
   realm: 'headStartRealm',
@@ -1231,7 +1231,7 @@ export function canResetWorld(state: GameState, world: WorldId): boolean {
 export function resetWorld(state: GameState, world: WorldId): number {
   if (!canResetWorld(state, world)) return 0;
   const reward = echoGain(state, world);
-  const keep = new Set([...(world === 'lab' ? retainedTechs(state) : []), ...permanentNodes(state, world)]);
+  const keep = new Set(world === 'lab' ? retainedTechs(state) : []);
   state.echoes += reward;
   state.totalEchoes += reward;
   state.resets[world] += 1;

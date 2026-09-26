@@ -8,6 +8,7 @@ _Status: proposal for review. Nothing here is in the game yet. Existing techs ar
 - **Finish an age to leave it.** An age's capstone can only be researched once **every other tech of that age is done** (repeatable techs count once they have their first level). The capstone then opens the next age.
 - **New resources come from the Realm.** The late ages need Machine Parts, Oil, Plastics, Uranium, Silicon and Electronics, each made by a new Realm building that one of the age's techs unlocks.
 - **Lab research does not survive resets.** A Lab reset sends the Lab back to Age I, and every age has to be researched again.
+- **Land is banked.** Land techs (Cartography, Expedition, Globalization, Satellites, Space Flight) reset with the Lab like every other tech, but the land they find is kept for good. Each run can research them again for more, so lots of Lab resets steadily grow the Realm. (This part is already in the game for Cartography and Expedition.)
 - **Achievements make ages easier next time.** Researching every tech of an age once earns that age's achievement, with a lasting bonus (mostly to research speed). Each run climbs the early ages faster than the last.
 
 ## Cost formula
@@ -74,7 +75,7 @@ Costs grow ×10 per age. Research speed has to grow too, from each age's own res
 | 1 | Currency **(existing)** | 1.2K | 50 Gold | Writing | Gold ×1.15; Markets |
 | 2 | Geology **(existing)** | 1.6K | 200 Stone | Mining, Writing | Stone ×1.2; Gold Mines |
 | 3 | Medicine **(existing)** | 2K | 300 Food | Writing | Crowding −30%; accidents −30% |
-| 4 | Cartography **(existing)** repeatable | 2.4K (first level) | — | Writing | +1 land per level, kept through resets |
+| 4 | Cartography **(existing)** repeatable | 2.4K (first level) | — | Writing | +1 land per level, kept for good |
 | 5 | Rationalism **(existing)** repeatable | 3.1K (first level) | — | Writing | Research ×1.3, Mana ×0.8 per level |
 | 6 | Aqueducts _(new)_ | 3.8K | 150 Bricks | Medicine | Aqueducts; starvation −25% |
 | 7 | Mathematics _(new)_ | 4.8K | — | Writing | Research ×1.5 |
@@ -101,7 +102,7 @@ Costs grow ×10 per age. Research speed has to grow too, from each age's own res
 | 0 | Navigation **(existing)** | 100K | 60 Glass | Sailing, Printing | Gold ×1.25 |
 | 1 | Banking _(new)_ | 120K | 300 Gold | Currency, Printing | Gold ×1.5; Markets ×2 as strong |
 | 2 | Scientific Instruments _(new)_ | 160K | 150 Glass | Optics, Printing | Research ×1.5; Observatories ×2 as strong |
-| 3 | Expedition **(existing)** repeatable | 200K (first level) | 1K Food | Navigation | +5 land per level, kept through resets |
+| 3 | Expedition **(existing)** repeatable | 200K (first level) | 1K Food | Navigation | +5 land per level, kept for good |
 | 4 | Chemistry _(new)_ | 240K | 100 Glass, 200 Coal | Printing | Coal ×1.5; Glass ×1.25 |
 | 5 | Anatomy _(new)_ | 310K | 500 Food | Medicine, Printing | Accidents −25%; starvation −25% |
 | 6 | **Enlightenment** _(new)_ capstone | 380K | 200 Gold | **every other Age IV tech** | Research ×2; Mana ×0.9; opens Age V |
@@ -147,10 +148,10 @@ Costs grow ×10 per age. Research speed has to grow too, from each age's own res
 | --- | --- | --- | --- | --- | --- |
 | 0 | Semiconductors _(new)_ | 1B | 500 Plastics | Nuclear Physics | **Silicon Works** (new resource: Silicon) |
 | 1 | Transistors _(new)_ | 1.2B | 200 Silicon | Semiconductors | **Chip Fabs** (new resource: Electronics) |
-| 2 | Globalization _(new)_ | 1.6B | 2K Gold | Nuclear Physics | Gold ×2; +10 land (kept) |
+| 2 | Globalization _(new)_ | 1.6B | 2K Gold | Nuclear Physics | Gold ×2; +10 land, kept for good |
 | 3 | Computers _(new)_ | 2B | 100 Electronics | Transistors | Research ×2 |
 | 4 | Genetics _(new)_ | 2.4B | 100 Electronics | Computers, Antibiotics | Population growth ×2; accidents −50% |
-| 5 | Satellites _(new)_ | 3.1B | 150 Electronics, 1K Steel | Computers | +20 land (kept); Observatories ×2 as strong |
+| 5 | Satellites _(new)_ | 3.1B | 150 Electronics, 1K Steel | Computers | +20 land, kept for good; Observatories ×2 as strong |
 | 6 | **The Internet** _(new)_ capstone | 3.8B | 300 Electronics | **every other Age VIII tech** | All Lab production ×2; Mana ×0.8; opens Age IX |
 
 ### Age IX: Current Age (first tech 10B)
@@ -159,7 +160,7 @@ Costs grow ×10 per age. Research speed has to grow too, from each age's own res
 | --- | --- | --- | --- | --- | --- |
 | 0 | Renewable Energy _(new)_ | 10B | 300 Electronics, 2K Steel | The Internet | Pollution −90% |
 | 1 | Gene Editing _(new)_ | 12B | 300 Electronics | Genetics | Population growth ×2; starvation −75% |
-| 2 | Space Flight _(new)_ repeatable | 16B (first level) | 500 Electronics, 2K Steel | Satellites | +25 land per level (kept) |
+| 2 | Space Flight _(new)_ repeatable | 16B (first level) | 500 Electronics, 2K Steel | Satellites | +25 land per level, kept for good |
 | 3 | Machine Learning _(new)_ | 20B | 500 Electronics | The Internet | Research ×3 |
 | 4 | Quantum Computing _(new)_ | 24B | 800 Electronics | Machine Learning | All Lab production ×2 |
 | 5 | **Artificial Intelligence** _(new)_ capstone | 31B | 1K Electronics | **every other Age IX tech** | All production in every world ×3 |
@@ -207,6 +208,5 @@ Electronics sits at the end of the longest production chain in the game: Silicon
 
 ## Still open
 
-1. **Land techs and resets:** Cartography and Expedition are kept through Lab resets today, so explored land isn't lost. The draft adds three more land techs (Globalization, Satellites, Space Flight). Should those five stay the exception, or be reset like everything else, with land perhaps moved into achievements instead?
-2. **Research speed sources:** which new research buildings and Echo-shop upgrades, and in which ages. The pacing table gives the targets.
-3. **Tuning:** the achievement rewards and the new buildings' numbers are first guesses.
+1. **Research speed sources:** which new research buildings and Echo-shop upgrades, and in which ages. The pacing table gives the targets.
+2. **Tuning:** the achievement rewards and the new buildings' numbers are first guesses.

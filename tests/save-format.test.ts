@@ -200,3 +200,12 @@ describe('mine deposits from older saves', () => {
     expect(loaded.deposits.gold).toEqual({ left: 500, max: 0, cut: 0 });
   });
 });
+
+describe('land from older saves', () => {
+  it('turns the kept Cartography and Expedition levels into land kept for good', () => {
+    const loaded = deserialize(JSON.stringify({ version: 4, nodes: { cartography: 3, expedition: 2 } }));
+    expect(loaded.lasting).toEqual({ cartography: 3, expedition: 2 });
+    expect(deserialize(serialize(loaded)).lasting).toEqual({ cartography: 3, expedition: 2 });
+    expect(deserialize(JSON.stringify({ version: 5, nodes: { cartography: 3 } })).lasting).toEqual({});
+  });
+});
