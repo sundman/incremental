@@ -137,7 +137,7 @@ export interface JobDef {
   baseYield: number;
   /**
    * Chance per hour that each worker in this job dies in an accident, before `deaths` multipliers.
-   * Rolled every second, so 0.1 is about a 1 in 36,000 chance per worker per second.
+   * Rolled every second, so 0.5 is about a 1 in 7,200 chance per worker per second.
    */
   accidentsPerHour: number;
   /** How a worker in this job dies at work, finishing "Alda Brook the Woodcutter ...". */

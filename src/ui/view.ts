@@ -706,7 +706,7 @@ export class GameView {
             : '';
       const parts = [
         `<span>+${formatNumber(jobOutput(mods, id))} ${RESOURCES[job.resource].name}/s each</span>`,
-        `<span class="risk" title="Chance per hour that each worker in this job dies in an accident">☠ ${formatNumber(accidentChance(mods, id) * 100)}%/h</span>`,
+        `<span class="risk" title="Chance per minute that each worker in this job dies in an accident">☠ ${formatNumber((accidentChance(mods, id) / 60) * 100)}%/min</span>`,
         ...(job.effects ?? []).map((e) => {
           const to = statWorld(e.stat);
           const amount = effectiveAmount(state, e, 'realm');

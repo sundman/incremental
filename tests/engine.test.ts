@@ -1343,10 +1343,10 @@ describe('mining', () => {
 describe('work accidents', () => {
   it('gives every job a small chance per hour of killing each worker, mining the worst', () => {
     const mods = computeModifiers(createInitialState());
-    expect(accidentChance(mods, 'farmer')).toBeCloseTo(0.04);
-    expect(accidentChance(mods, 'miner')).toBeCloseTo(0.4);
+    expect(accidentChance(mods, 'farmer')).toBeCloseTo(0.2);
+    expect(accidentChance(mods, 'miner')).toBeCloseTo(2);
     const state = withJobs({ farmer: 10, woodcutter: 5 });
-    expect(accidentRate(state, computeModifiers(state))).toBeCloseTo(10 * 0.04 + 5 * 0.1);
+    expect(accidentRate(state, computeModifiers(state))).toBeCloseTo(10 * 0.2 + 5 * 0.5);
   });
 
   it('kills a worker when the dice roll under the chance, taking them off their job', () => {
@@ -1371,24 +1371,24 @@ describe('work accidents', () => {
   it('is cut by 30% with Medicine, which leaves demons alone', () => {
     const state = unlockAll(withNodes({ medicine: 1 }));
     const mods = computeModifiers(state);
-    expect(accidentChance(mods, 'miner')).toBeCloseTo(0.4 * 0.7);
+    expect(accidentChance(mods, 'miner')).toBeCloseTo(2 * 0.7);
     expect(mods.get('deaths')).toBeUndefined();
   });
 
   it('is cut another 20% by Sanitation, on top of Medicine', () => {
     const state = unlockAll(withNodes({ medicine: 1, sanitation: 1 }));
-    expect(accidentChance(computeModifiers(state), 'miner')).toBeCloseTo(0.4 * 0.7 * 0.8);
+    expect(accidentChance(computeModifiers(state), 'miner')).toBeCloseTo(2 * 0.7 * 0.8);
   });
 
   it('is cut 3% per Well', () => {
     const state = withNodes({ well: 5 });
-    expect(accidentChance(computeModifiers(state), 'farmer')).toBeCloseTo(0.04 * 0.97 ** 5);
+    expect(accidentChance(computeModifiers(state), 'farmer')).toBeCloseTo(0.2 * 0.97 ** 5);
   });
 
   it('is halved by Healing Light, like other deaths', () => {
     const state = unlockAll(withNodes({ healingLight: 1 }));
     state.activeSpells = ['healingLight'];
-    expect(accidentChance(computeModifiers(state), 'miner')).toBeCloseTo(0.2);
+    expect(accidentChance(computeModifiers(state), 'miner')).toBeCloseTo(1);
   });
 });
 
