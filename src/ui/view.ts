@@ -780,7 +780,8 @@ export class GameView {
       if (!owned) continue;
       shown[NODES[id].world] = true;
       const off = isSwitchedOff(state, id);
-      setText(power, `⏻ ${NODES[id].name}${state.nodes[id] > 1 ? ' ×' + state.nodes[id] : ''}: ${off ? 'Off · switch on' : 'On · switch off'}`);
+      setText(power, `⏻ ${NODES[id].name}${state.nodes[id] > 1 ? ' ×' + state.nodes[id] : ''}: ${off ? 'Off' : 'On'}`);
+      power.title = off ? 'Click to switch on' : 'Click to switch off';
       power.classList.toggle('is-off', off);
     }
     for (const world of WORLD_ORDER) setHidden(this.switches[world], !shown[world]);
