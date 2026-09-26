@@ -85,6 +85,10 @@ function pour(state: GameState, amount: number) {
 
 function withNodes(levels: Partial<Record<NodeId, number>>, state = createInitialState()): GameState {
   Object.assign(state.nodes, levels);
+  // Lasting nodes count every level ever finished; as if these had just been built.
+  for (const [id, n] of Object.entries(levels) as [NodeId, number][]) {
+    if (NODES[id].lasting) state.lasting[id] = Math.max(state.lasting[id] ?? 0, n);
+  }
   return state;
 }
 
@@ -301,7 +305,8 @@ describe('resets and Echoes', () => {
     expect(state.population).toBe(2);
     expect(state.resources.wood).toBe(0);
     expect(state.runEarned.realm).toBe(0);
-    expect(activeLinks(state).filter((l) => l.from === 'realm')).toHaveLength(0);
+    // Everything the Realm did to other worlds is gone, except the Research Libraries keep for good.
+    expect(activeLinks(state).filter((l) => l.from === 'realm').map((l) => l.source)).toEqual(['library']);
     // Other worlds keep their progress and stay open.
     expect(state.nodes.manaWell).toBe(3);
     expect(state.resources.mana).toBe(70);
@@ -1819,5 +1824,25 @@ describe('Basic Machinery', () => {
     expect(grossRate(state, after, 'bricks')).toBeCloseTo(bricks * 2);
     expect(upkeepRate(state, 'wood')).toBeCloseTo(2 * 1 + 0.5); // the same Wood as before
     expect(NODES.basicMachinery.requires).toEqual(['scientificMethod']);
+  });
+});
+
+describe('libraries', () => {
+  it('keep the Research they add for good, and add more when built again after a Realm reset', () => {
+    const state = unlockAll(createInitialState());
+    Object.assign(state.resources, { planks: 500, bricks: 500 });
+    withNodes({ sawmill: 1, kiln: 1 }, state);
+    expect(buyNode(state, 'library')).toBe(true);
+    completeConstruction(state, 'library');
+    expect(grossRate(state, computeModifiers(state), 'research')).toBeCloseTo(0.5);
+    state.runEarned.realm = 1e6;
+    resetWorld(state, 'realm');
+    expect(state.nodes.library).toBe(0);
+    expect(grossRate(state, computeModifiers(state), 'research')).toBeCloseTo(0.5); // still there
+    Object.assign(state.resources, { planks: 500, bricks: 500 });
+    withNodes({ sawmill: 1, kiln: 1 }, state);
+    expect(buyNode(state, 'library')).toBe(true);
+    completeConstruction(state, 'library');
+    expect(grossRate(state, computeModifiers(state), 'research')).toBeCloseTo(1);
   });
 });

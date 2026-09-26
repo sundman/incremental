@@ -1,5 +1,5 @@
 import { canSwitchOff, createInitialState, isResearch, LOG_LIMIT, SAVE_VERSION } from './engine';
-import type { DepositId, GameState, LogEntry } from './types';
+import type { DepositId, GameState, LogEntry, NodeId } from './types';
 import { ACHIEVEMENT_ORDER, DEMONS, DEPOSIT_ORDER, NODES, NODE_ORDER, WORLD_ORDER } from './content';
 
 export const SAVE_KEY = 'incremental-worlds-save';
@@ -20,16 +20,19 @@ function mergeNumbers<T extends Record<string, number>>(defaults: T, raw: unknow
   return out;
 }
 
-/** Levels ever finished of lasting nodes. Before version 5 they were simply never reset, so their levels are the tally. */
+/** The save version each node became lasting in; older saves count its current levels as the tally. */
+const LASTING_SINCE: Partial<Record<NodeId, number>> = { library: 6 };
+
+/** Levels ever finished of lasting nodes. Saves from before a node became lasting start its tally at its current level. */
 function readLasting(raw: Record<string, unknown>): GameState['lasting'] {
   const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0);
   const saved = (raw.lasting && typeof raw.lasting === 'object' ? raw.lasting : {}) as Record<string, unknown>;
   const levels = (raw.nodes && typeof raw.nodes === 'object' ? raw.nodes : {}) as Record<string, unknown>;
-  const old = num(raw.version) < 5;
   const out: GameState['lasting'] = {};
   for (const id of NODE_ORDER) {
     if (!NODES[id].lasting) continue;
-    const n = old ? num(levels[id]) : num(saved[id]);
+    const old = num(raw.version) < (LASTING_SINCE[id] ?? 5);
+    const n = old ? Math.max(num(levels[id]), num(saved[id])) : num(saved[id]);
     if (n > 0) out[id] = n;
   }
   return out;

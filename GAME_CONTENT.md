@@ -97,7 +97,7 @@ Realm resources are dug from deposits that run out. Buildings open up more.
 | Well | 30 Stone, 10 Wood | ×1.8 per level | 5s (×1.05 per level) | 5 | Hut | Population growth ×1.1; Work accidents −3%; Starvation −20% |
 | Park | 60 Wood, 40 Stone, 40 Food | ×1.6 per level | 15s (×1.05 per level) | 5 | Well, Environmental Science (Lab) | Pollution −10% |
 | Tavern | 40 Planks, 100 Food | ×1.5 per level | 45s (×1.05 per level) | ∞ | House | +1.2 people/min growth; Uses 0.02 Gold/s |
-| Library | 60 Planks, 40 Bricks | ×1.6 per level | 45s (×1.05 per level) | ∞ | Sawmill, Kiln | +0.5 Research/s (Lab); Opens Lab |
+| Library | 60 Planks, 40 Bricks | ×1.6 per level | 45s (×1.05 per level) | ∞ | Sawmill, Kiln | +0.5 Research/s (Lab); Opens Lab; Kept for good; the tech resets, so each run can add more |
 | Shrine | 120 Wood, 150 Stone | ×1.3 per level | 45s (×1.05 per level) | ∞ | Workshop, Occultism (Lab) | +0.3 Mana/s (Arcana); Opens Arcana |
 | Irrigation | 50 Planks, 80 Stone | ×1.35 per level | 2m 00s (×1.05 per level) | ∞ | Farm, Engineering (Lab) | +0.4 Food/s per worker |
 | Aqueduct | 150 Stone, 60 Bricks | ×1.6 per level | 2m 00s (×1.05 per level) | 5 | Well, Engineering (Lab) | Crowding −15% |

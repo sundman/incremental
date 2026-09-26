@@ -28,8 +28,9 @@ import type { Cost, DepositId, Effect, GameState, JobId, LogEntry, MetaId, NodeI
  * 3: Coal does too, with each Coal Mine, and Iron and Gold become deposits opened by their mines.
  * 4: Rich Earth only grows the forest.
  * 5: Land techs reset with the Lab, but the land they found is kept (see `lasting`).
+ * 6: So does the Research from Libraries.
  */
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 /** How many chronicle lines are kept. */
 export const LOG_LIMIT = 50;

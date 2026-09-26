@@ -497,7 +497,7 @@ export class GameView {
       const gain = echoGain(this.state, world);
       const msg =
         `Reset ${def.name}? Its resources and ${RESET_WIPES[world]} go back to zero, ` +
-        `along with every effect it has on the other worlds. You gain ${echoesLabel(gain)}.`;
+        `along with its effects on the other worlds (except what is kept for good, like Library Research). You gain ${echoesLabel(gain)}.`;
       if (!canResetWorld(this.state, world)) return;
       if (confirm(msg)) {
         resetWorld(this.state, world);

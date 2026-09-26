@@ -500,12 +500,14 @@ const nodeList: NodeDef[] = [
     world: 'realm',
     kind: 'building',
     name: 'Library',
-    description: 'A place to study, built from Planks and Bricks. The first one opens the Lab.',
+    description:
+      'A place to study, built from Planks and Bricks. The first one opens the Lab. The Research each Library adds is kept for good: Libraries go with a Realm reset, but building them again adds more.',
     baseCost: { planks: 60, bricks: 40 },
     costGrowth: 1.6,
     tier: 3,
     requires: ['sawmill', 'kiln'],
     unlocksWorld: 'lab',
+    lasting: true,
     effects: [{ stat: 'rate:research', kind: 'add', amount: 0.5 }],
   },
   {

@@ -209,3 +209,11 @@ describe('land from older saves', () => {
     expect(deserialize(JSON.stringify({ version: 5, nodes: { cartography: 3 } })).lasting).toEqual({});
   });
 });
+
+describe('libraries from older saves', () => {
+  it('count the Libraries already built as Research kept for good', () => {
+    const loaded = deserialize(JSON.stringify({ version: 5, nodes: { library: 3 }, lasting: { cartography: 2 } }));
+    expect(loaded.lasting).toEqual({ library: 3, cartography: 2 });
+    expect(deserialize(serialize(loaded)).lasting).toEqual({ library: 3, cartography: 2 });
+  });
+});
