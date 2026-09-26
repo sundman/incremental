@@ -1,4 +1,6 @@
 import {
+  ACHIEVEMENTS,
+  ACHIEVEMENT_ORDER,
   DEMONS,
   DEPOSITS,
   DEPOSIT_ORDER,
@@ -90,7 +92,7 @@ import {
   costOverCap,
 } from '../engine/engine';
 import { formatDuration, formatNumber, formatPerHour } from '../engine/format';
-import type { DepositId, GameState, JobId, MetaId, NodeId, ResourceId, WorldId } from '../engine/types';
+import type { AchievementId, DepositId, GameState, JobId, MetaId, NodeId, ResourceId, WorldId } from '../engine/types';
 import { describeEffect } from './describe';
 
 type Attrs = Record<string, string>;
@@ -129,8 +131,9 @@ const RESET_WIPES: Record<WorldId, string> = {
   lab: 'buildings and techs',
 };
 
-type Tab = WorldId | 'shop';
-const TABS: Tab[] = [...WORLD_ORDER, 'shop'];
+type Tab = WorldId | 'shop' | 'achievements';
+const TABS: Tab[] = [...WORLD_ORDER, 'shop', 'achievements'];
+const TAB_NAMES: Record<Exclude<Tab, WorldId>, string> = { shop: 'Echo shop', achievements: 'Achievements' };
 const TAB_KEY = 'incremental-worlds-tab';
 
 function loadTab(): Tab {
@@ -241,6 +244,8 @@ export class GameView {
   private shopHint: HTMLElement;
   private tabs = {} as Record<Tab, TabButton>;
   private tab: Tab = loadTab();
+  private achievementPanel!: HTMLElement;
+  private achievementCards = {} as Record<AchievementId, { card: HTMLElement; status: HTMLElement; bar: HTMLElement }>;
   /** Per world: the on/off switches for buildings that consume resources, listed in the side column. */
   private switches = {} as Record<WorldId, HTMLElement>;
   private logList = h('ol', { class: 'log-list' });
@@ -273,7 +278,7 @@ export class GameView {
     const shopGrid = h('div', { class: 'shop-grid' });
     for (const id of META_ORDER) shopGrid.append(this.buildMeta(id));
     this.shop = h('section', { class: 'shop', role: 'tabpanel' }, h('h2', {}, 'Echo shop'), this.shopHint, shopGrid);
-    worldsEl.append(this.shop);
+    worldsEl.append(this.shop, this.buildAchievements());
 
     const nav = h('nav', { class: 'tabs', role: 'tablist' });
     for (const tab of TABS) nav.append(this.buildTab(tab));
@@ -295,7 +300,7 @@ export class GameView {
   }
 
   private buildTab(tab: Tab): HTMLElement {
-    const label = h('span', { class: 'tab-label' }, tab === 'shop' ? 'Echo shop' : WORLDS[tab].name);
+    const label = h('span', { class: 'tab-label' }, tab in WORLDS ? WORLDS[tab as WorldId].name : TAB_NAMES[tab as Exclude<Tab, WorldId>]);
     const note = h('span', { class: 'tab-note' });
     const button = h('button', { class: `tab tab-${tab}`, type: 'button', role: 'tab' }, label, note);
     button.addEventListener('click', () => this.selectTab(tab));
@@ -304,7 +309,7 @@ export class GameView {
   }
 
   private tabPanel(tab: Tab): HTMLElement {
-    return tab === 'shop' ? this.shop : this.worlds[tab].panel;
+    return tab === 'shop' ? this.shop : tab === 'achievements' ? this.achievementPanel : this.worlds[tab].panel;
   }
 
   private selectTab(tab: Tab) {
@@ -353,6 +358,46 @@ export class GameView {
     const affordable = META_ORDER.some((id) => canBuyMeta(state, id));
     setText(shop.note, `${formatNumber(state.echoes)} ✦`);
     shop.button.classList.toggle('attention', affordable);
+    setText(this.tabs.achievements.note, `${state.achievements.length} / ${ACHIEVEMENT_ORDER.length} reached`);
+  }
+
+  private buildAchievements(): HTMLElement {
+    const grid = h('div', { class: 'achievement-grid' });
+    for (const id of ACHIEVEMENT_ORDER) {
+      const def = ACHIEVEMENTS[id];
+      const status = h('span', { class: 'achievement-status' });
+      const bar = h('div', { class: 'achievement-bar' });
+      const card = h(
+        'div',
+        { class: 'achievement' },
+        h('div', { class: 'node-title' }, h('span', { class: 'node-name' }, def.name), status),
+        h('div', { class: 'achievement-goal' }, def.goal),
+        bar,
+        h('div', { class: 'achievement-reward' }, 'Reward: ' + def.reward),
+      );
+      grid.append(card);
+      this.achievementCards[id] = { card, status, bar };
+    }
+    this.achievementPanel = h(
+      'section',
+      { class: 'achievements', role: 'tabpanel' },
+      h('h2', {}, 'Achievements'),
+      h('p', { class: 'muted' }, 'Goals to reach across all your runs. Once reached they stay reached, and their rewards last through every reset.'),
+      grid,
+    );
+    return this.achievementPanel;
+  }
+
+  private renderAchievements() {
+    const state = this.state;
+    for (const id of ACHIEVEMENT_ORDER) {
+      const { card, status, bar } = this.achievementCards[id];
+      const done = state.achievements.includes(id);
+      const [current, target] = ACHIEVEMENTS[id].progress(state);
+      card.classList.toggle('done', done);
+      setText(status, done ? '✓ Reached' : `${formatNumber(Math.min(current, target))} / ${formatNumber(target)}`);
+      bar.style.setProperty('--progress', `${done ? 100 : Math.min(100, (current / target) * 100).toFixed(1)}%`);
+    }
   }
 
   private buildWorld(world: WorldId): HTMLElement {
@@ -741,6 +786,7 @@ export class GameView {
     this.renderTabs(mods);
     this.renderSwitches();
     this.renderLog();
+    this.renderAchievements();
 
     const anyGain = WORLD_ORDER.some((w) => isWorldUnlocked(state, w) && echoGain(state, w) > 0);
     setHidden(this.shopHint, state.totalEchoes > 0);

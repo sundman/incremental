@@ -51,6 +51,8 @@ import {
   researchUpfrontCost,
   researchSecondsLeft,
   setAccidentRandom,
+  startPopulation,
+  checkAchievements,
   wastedWorkers,
   decayRate,
   LOG_LIMIT,
@@ -1518,5 +1520,38 @@ describe('parks', () => {
     expect(isNodeAvailable(state, 'park')).toBe(false);
     withNodes({ environmentalScience: 1 }, state);
     expect(isNodeAvailable(state, 'park')).toBe(true);
+  });
+});
+
+describe('achievements', () => {
+  it('reaches A Proper Village at 10 people, once, and writes it in the chronicle', () => {
+    const state = createInitialState();
+    state.population = 9.9;
+    checkAchievements(state);
+    expect(state.achievements).toEqual([]);
+    state.population = 10;
+    checkAchievements(state);
+    checkAchievements(state);
+    expect(state.achievements).toEqual(['village']);
+    expect(state.log.filter((e) => e.kind === 'achievement')).toHaveLength(1);
+  });
+
+  it('is checked as the game runs', () => {
+    const state = withNodes({ hut: 5 });
+    state.population = 9.99;
+    state.resources.food = 100;
+    tick(state, 1);
+    expect(state.achievements).toContain('village');
+  });
+
+  it('starts every Realm run with 2 more people once reached, and survives resets', () => {
+    const state = createInitialState();
+    expect(startPopulation(state)).toBe(2);
+    state.achievements = ['village'];
+    expect(startPopulation(state)).toBe(4);
+    state.runEarned.realm = 1e6;
+    resetWorld(state, 'realm');
+    expect(state.population).toBe(4);
+    expect(state.achievements).toEqual(['village']);
   });
 });

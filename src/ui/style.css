@@ -524,6 +524,72 @@ button {
   padding: 12px;
 }
 
+/* Achievements tab */
+.achievements {
+  --accent: var(--good);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--good);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.achievements h2 {
+  margin: 0 0 6px;
+  color: var(--good);
+}
+
+.achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+
+.achievement {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.achievement.done {
+  border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 10%, var(--card));
+}
+
+.achievement-status {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.achievement.done .achievement-status {
+  color: var(--good);
+}
+
+.achievement-goal {
+  font-size: 13px;
+  margin: 2px 0 6px;
+}
+
+.achievement-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--good) var(--progress, 0%), var(--border) var(--progress, 0%));
+  margin-bottom: 6px;
+}
+
+.achievement-reward {
+  font-size: 12px;
+  color: var(--echo);
+}
+
+.log-achievement {
+  color: var(--echo);
+  font-weight: 600;
+}
+
+.tab-achievements { --accent: var(--good); }
+
 .shop h2 {
   margin: 0 0 6px;
   color: var(--echo);

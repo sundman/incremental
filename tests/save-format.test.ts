@@ -161,3 +161,10 @@ describe('chronicle in saves', () => {
     expect(deserialize('{}').log).toEqual([]);
   });
 });
+
+describe('achievements in saves', () => {
+  it('keeps known achievements and drops unknown ones', () => {
+    expect(deserialize(JSON.stringify({ achievements: ['village', 'nope'] })).achievements).toEqual(['village']);
+    expect(deserialize('{}').achievements).toEqual([]);
+  });
+});

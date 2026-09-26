@@ -315,13 +315,29 @@ export interface MetaDef {
   effects?: Effect[];
 }
 
+export type AchievementId = 'village';
+
+/** A goal that, once reached, stays reached through every reset and gives a lasting reward. */
+export interface AchievementDef {
+  id: AchievementId;
+  name: string;
+  /** What to do, e.g. "Have 10 people in the Realm at once." */
+  goal: string;
+  /** The reward, in words. */
+  reward: string;
+  /** Where you are now and where the goal is, e.g. [7, 10] people. */
+  progress: (state: GameState) => [current: number, target: number];
+  /** People every Realm run starts with on top of the usual. */
+  startPeople?: number;
+}
+
 /** A line in the chronicle, e.g. who died and how. */
 export interface LogEntry {
   /** When it happened, in milliseconds since 1970 (Date.now()). */
   time: number;
   text: string;
   /** Colours the line: someone joining the village, or someone dying. */
-  kind: 'arrival' | 'death';
+  kind: 'arrival' | 'death' | 'achievement';
 }
 
 export interface GameState {
@@ -358,6 +374,8 @@ export interface GameState {
    * other costs (Planks, Glass...) are paid, so switching away and back costs nothing more.
    */
   researchProgress: Partial<Record<NodeId, number>>;
+  /** Achievements reached, in the order they were reached. Never reset except by wiping the save. */
+  achievements: AchievementId[];
   /** Recent events, oldest first; only the last `LOG_LIMIT` are kept. */
   log: LogEntry[];
 }

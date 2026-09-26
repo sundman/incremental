@@ -1,4 +1,6 @@
 import {
+  ACHIEVEMENTS,
+  ACHIEVEMENT_ORDER,
   BUILD_TIME_GROWTH,
   DEMONS,
   DEPOSITS,
@@ -67,8 +69,25 @@ export function createInitialState(): GameState {
     efficiency: {},
     researching: null,
     researchProgress: {},
+    achievements: [],
     log: [],
   };
+}
+
+/** People a Realm run starts with: the usual, plus what achievements add. */
+export function startPopulation(state: GameState): number {
+  return state.achievements.reduce((n, id) => n + (ACHIEVEMENTS[id].startPeople ?? 0), POPULATION.start);
+}
+
+/** Marks every achievement whose goal is met, once, and writes it in the chronicle. */
+export function checkAchievements(state: GameState) {
+  for (const id of ACHIEVEMENT_ORDER) {
+    if (state.achievements.includes(id)) continue;
+    const [current, target] = ACHIEVEMENTS[id].progress(state);
+    if (current < target) continue;
+    state.achievements.push(id);
+    addLog(state, `Achievement: ${ACHIEVEMENTS[id].name}! ${ACHIEVEMENTS[id].reward}`, 'achievement');
+  }
 }
 
 export function isWorldUnlocked(state: GameState, world: WorldId): boolean {
@@ -1034,6 +1053,7 @@ export function tick(state: GameState, seconds: number): void {
   while (left > 1e-9) {
     const dt = Math.min(MAX_STEP_SECONDS, left);
     step(state, dt);
+    checkAchievements(state);
     left -= dt;
   }
 }
@@ -1128,7 +1148,7 @@ export function resetWorld(state: GameState, world: WorldId): number {
       const max = nextDepositMax(state, id);
       state.deposits[id] = { left: max, max, cut: 0 };
     }
-    state.population = POPULATION.start;
+    state.population = startPopulation(state);
     for (const id of JOB_ORDER) state.jobs[id] = 0;
   }
   applyHeadStart(state, world);

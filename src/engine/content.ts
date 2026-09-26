@@ -1,4 +1,6 @@
 import type {
+  AchievementDef,
+  AchievementId,
   DepositDef,
   DepositId,
   JobDef,
@@ -1632,3 +1634,19 @@ const metaList: MetaDef[] = [
 
 export const META = Object.fromEntries(metaList.map((m) => [m.id, m])) as Record<MetaId, MetaDef>;
 export const META_ORDER: MetaId[] = metaList.map((m) => m.id);
+
+// ------------------------------------------------------------ achievements
+
+const achievementList: AchievementDef[] = [
+  {
+    id: 'village',
+    name: 'A Proper Village',
+    goal: 'Have 10 people in the Realm at once.',
+    reward: 'Every Realm run starts with 2 more people.',
+    progress: (state) => [Math.floor(state.population), 10],
+    startPeople: 2,
+  },
+];
+
+export const ACHIEVEMENTS = Object.fromEntries(achievementList.map((a) => [a.id, a])) as Record<AchievementId, AchievementDef>;
+export const ACHIEVEMENT_ORDER: AchievementId[] = achievementList.map((a) => a.id);
