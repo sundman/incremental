@@ -155,6 +155,18 @@ function nextLevel(state: GameState, id: NodeId): string {
   return max > 1 ? `Level ${state.nodes[id] + 1} of ${max} · ` : '';
 }
 
+/** What owning a node opens up: the buildings, techs and jobs that require it. Empty when nothing does. */
+function unlocksHtml(id: NodeId): string {
+  const from = NODES[id].world;
+  const tagged = (world: WorldId, name: string) =>
+    (world !== from ? `<span class="tag tag-${world}">${WORLDS[world].name}</span> ` : '') + escape(name);
+  const items = [
+    ...NODE_ORDER.filter((n) => NODES[n].requires?.includes(id)).map((n) => tagged(NODES[n].world, NODES[n].name)),
+    ...JOB_ORDER.filter((j) => JOBS[j].requires?.includes(id)).map((j) => tagged('realm', `${JOBS[j].name} job`)),
+  ];
+  return items.length ? `Unlocks: ${items.join(', ')}` : '';
+}
+
 interface ResourceRow {
   row: HTMLElement;
   amount: HTMLElement;
@@ -620,14 +632,16 @@ export class GameView {
     const effects = h('ul', { class: 'effects' });
     const needs = h('div', { class: 'needs' });
     const time = h('div', { class: 'build-time' });
+    const unlocks = h('div', { class: 'unlocks' });
+    unlocks.innerHTML = unlocksHtml(id);
     const button = h(
       'button',
       { class: 'node-button', type: 'button' },
       h('div', { class: 'node-title' }, h('span', { class: 'node-name' }, node.name), level),
       h('div', { class: 'node-desc' }, node.description),
       effects,
-      cost,
-      time,
+      unlocks,
+      h('div', { class: 'node-meta' }, cost, time),
       needs,
     );
     button.addEventListener('click', () => {

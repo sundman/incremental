@@ -285,7 +285,8 @@ button {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 8px 10px;
+  padding: 6px 9px;
+  line-height: 1.35;
   cursor: pointer;
 }
 
@@ -326,6 +327,45 @@ button {
   padding: 0;
   margin: 4px 0;
   font-size: 12px;
+}
+
+/*
+ * A card's effects read as one line: "+0.4 Mana/s · Uses 1 Wood/s". Every item starts with a
+ * separator, and the list is shifted left and clipped, so the one opening each line is hidden.
+ */
+.effects {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 3px 0 3px -14px;
+  clip-path: inset(0 0 0 14px);
+}
+
+.effects li::before {
+  content: '·';
+  display: inline-block;
+  width: 14px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.effects:empty,
+.unlocks:empty {
+  display: none;
+}
+
+/* Which buildings, techs and jobs a card opens up. */
+.unlocks {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+/* Cost and build time share a line. */
+.node-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+  align-items: baseline;
 }
 
 .good {
