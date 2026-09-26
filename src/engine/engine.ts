@@ -130,7 +130,8 @@ export function statWorld(stat: Stat): WorldId {
     stat.startsWith('size:') ||
     stat === 'deaths' ||
     stat === 'accidents' ||
-    stat === 'starvation'
+    stat === 'starvation' ||
+    stat.startsWith('risk:')
   ) {
     return 'realm';
   }
@@ -149,6 +150,7 @@ export function isHelpful(effect: Effect): boolean {
     effect.stat === 'deaths' ||
     effect.stat === 'accidents' ||
     effect.stat === 'starvation' ||
+    effect.stat.startsWith('risk:') ||
     effect.stat.startsWith('decay:') ||
     effect.stat === 'crowding' ||
     effect.stat === 'pollution';
@@ -657,7 +659,7 @@ export function setAccidentRandom(source: () => number): () => number {
 
 /** Chance per hour that one worker in a job dies in an accident; Medicine and Healing Light lower it. */
 export function accidentChance(mods: Modifiers, job: JobId): number {
-  return JOBS[job].accidentsPerHour * getMul(mods, 'deaths') * getMul(mods, 'accidents');
+  return JOBS[job].accidentsPerHour * getMul(mods, 'deaths') * getMul(mods, 'accidents') * getMul(mods, `risk:${JOBS[job].resource}`);
 }
 
 /** Workers expected to die in accidents per hour, across every job. */

@@ -101,7 +101,7 @@ Realm resources are dug from deposits that run out. Buildings open up more.
 | Forester's Lodge | 50 Wood, 30 Stone | ×1.5 per level | 15s (×1.05 per level) | 10 | Lumber Camp | Forest regrows +0.25 Wood/s |
 | Quarry | 35 Wood | ×1.8 per level | 5s (×1.05 per level) | ∞ | — | +0.15 Stone/s per worker; Stone quarries holds +5K Stone; Forest holds −500 Wood |
 | Clay Pit | 40 Wood, 20 Stone | ×1.8 per level | 15s (×1.05 per level) | ∞ | Quarry | +0.1 Clay/s per worker; Clay beds holds +3K Clay; Forest holds −300 Wood |
-| Workshop | 40 Wood, 25 Stone | ×2.5 per level | 15s (×1.05 per level) | 10 | Quarry | Wood/s ×1.15; Stone/s ×1.15; Clay/s ×1.15; Iron/s ×1.15 |
+| Workshop | 40 Wood, 25 Stone | ×2.5 per level | 15s (×1.05 per level) | 10 | Quarry | Wood/s ×1.15; Stone/s ×1.15; Clay/s ×1.15; Iron/s ×1.15; Woodcutters' accidents +10%; Stonecutters' accidents +10%; Diggers' accidents +10%; Miners' accidents +10% |
 | Sawmill | 80 Wood, 30 Stone | ×1.35 per level | 15s (×1.05 per level) | ∞ | Workshop | +0.1 Planks/s; Uses 1 Wood/s |
 | Kiln | 120 Stone, 15 Planks | ×1.35 per level | 15s (×1.05 per level) | ∞ | Clay Pit, Sawmill | +0.1 Bricks/s; +1 pollution (slows growth); Uses 1 Clay/s, 0.5 Wood/s |
 | House | 30 Planks, 20 Bricks | ×1.35 per level | 45s (×1.05 per level) | ∞ | Sawmill, Kiln, Housing (Lab) | +5 housing; +2 crowding (slows growth) |

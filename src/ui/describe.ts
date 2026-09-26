@@ -1,4 +1,4 @@
-import { DEPOSITS, RESOURCES, WORLDS } from '../engine/content';
+import { DEPOSITS, JOBS, JOB_ORDER, RESOURCES, WORLDS } from '../engine/content';
 import { formatMultiplier, formatNumber, formatPerHour } from '../engine/format';
 import type { DepositId, Effect, ResourceId, WorldId } from '../engine/types';
 
@@ -33,6 +33,13 @@ export function describeEffect(effect: Effect, amount: number): string {
     return effect.kind === 'add'
       ? `${DEPOSITS[deposit].name} holds ${amount >= 0 ? '+' : '−'}${formatNumber(Math.abs(amount))} ${RESOURCES[deposit].name}`
       : `${DEPOSITS[deposit].name} size ${formatMultiplier(amount)}`;
+  }
+  if (effect.stat.startsWith('risk:')) {
+    const resource = effect.stat.slice('risk:'.length) as ResourceId;
+    const job = JOB_ORDER.find((j) => JOBS[j].resource === resource);
+    const who = job ? JOBS[job].name : `${RESOURCES[resource].name} workers`;
+    const pct = formatNumber(Math.abs(amount - 1) * 100);
+    return `${who}' accidents ${amount >= 1 ? '+' : '−'}${pct}%`;
   }
   if (effect.stat === 'starvation') {
     return `Starvation −${formatNumber((1 - amount) * 100)}%`;

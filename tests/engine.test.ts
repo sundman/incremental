@@ -1406,6 +1406,13 @@ describe('work accidents', () => {
     expect(accidentChance(computeModifiers(state), 'miner')).toBeCloseTo(2 * 0.7 * 0.8);
   });
 
+  it('rises 10% per Workshop for the jobs it speeds up, and only those', () => {
+    const mods = computeModifiers(withNodes({ workshop: 3 }));
+    expect(accidentChance(mods, 'woodcutter')).toBeCloseTo(0.5 * 1.1 ** 3);
+    expect(accidentChance(mods, 'miner')).toBeCloseTo(2 * 1.1 ** 3);
+    expect(accidentChance(mods, 'farmer')).toBeCloseTo(0.2);
+  });
+
   it('is cut 3% per Well', () => {
     const state = withNodes({ well: 5 });
     expect(accidentChance(computeModifiers(state), 'farmer')).toBeCloseTo(0.2 * 0.97 ** 5);

@@ -46,6 +46,7 @@ export type ResourceId =
  * - `deaths`           Realm people killed per hour
  * - `accidents`        chance of Realm workers dying at work (only `mul` is used)
  * - `starvation`       how fast Realm people starve while there is no Food (only `mul` is used)
+ * - `risk:<resource>`  accident chance of the job that makes that resource (only `mul` is used)
  * - `speed:<world>`    build speed multiplier in a world (higher is faster)
  * - `cap:<resource>`   how much of a resource can be stored (only for resources with a `baseCap`)
  * - `storage:<world>`  more storage for every capped resource in a world: `add` 1 is one more `baseCap` of each
@@ -66,6 +67,7 @@ export type Stat =
   | 'deaths'
   | 'accidents'
   | 'starvation'
+  | `risk:${ResourceId}`
   | `speed:${WorldId}`
   | `cap:${ResourceId}`
   | `storage:${WorldId}`
