@@ -141,3 +141,11 @@ describe('formatDuration', () => {
     expect(formatPerHour(3600)).toBe('60/min');
   });
 });
+
+describe('chronicle in saves', () => {
+  it('keeps valid log lines and drops damaged ones', () => {
+    const loaded = deserialize(JSON.stringify({ log: [{ time: 5, text: 'Alda Brook was kicked by an ox.' }, { text: 3 }, null] }));
+    expect(loaded.log).toEqual([{ time: 5, text: 'Alda Brook was kicked by an ox.' }]);
+    expect(deserialize('{}').log).toEqual([]);
+  });
+});

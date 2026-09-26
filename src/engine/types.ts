@@ -132,6 +132,8 @@ export interface JobDef {
    * Rolled every second, so 0.1 is about a 1 in 36,000 chance per worker per second.
    */
   accidentsPerHour: number;
+  /** How a worker in this job dies at work, finishing "Alda Brook the Woodcutter ...". */
+  accidentText: string;
   /** Nodes that must be owned before anyone can take this job. */
   requires?: NodeId[];
   /** Extra effects per assigned worker, e.g. miners disturbing the ley lines. */
@@ -305,6 +307,13 @@ export interface MetaDef {
   effects?: Effect[];
 }
 
+/** A line in the chronicle, e.g. who died and how. */
+export interface LogEntry {
+  /** When it happened, in milliseconds since 1970 (Date.now()). */
+  time: number;
+  text: string;
+}
+
 export interface GameState {
   version: number;
   resources: Record<ResourceId, number>;
@@ -339,4 +348,6 @@ export interface GameState {
    * other costs (Planks, Glass...) are paid, so switching away and back costs nothing more.
    */
   researchProgress: Partial<Record<NodeId, number>>;
+  /** Recent events, oldest first; only the last `LOG_LIMIT` are kept. */
+  log: LogEntry[];
 }

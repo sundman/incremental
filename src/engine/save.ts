@@ -1,5 +1,5 @@
-import { canSwitchOff, createInitialState, isResearch, SAVE_VERSION } from './engine';
-import type { GameState } from './types';
+import { canSwitchOff, createInitialState, isResearch, LOG_LIMIT, SAVE_VERSION } from './engine';
+import type { GameState, LogEntry } from './types';
 import { DEMONS, DEPOSIT_ORDER, NODES, NODE_ORDER, WORLD_ORDER } from './content';
 
 export const SAVE_KEY = 'incremental-worlds-save';
@@ -18,6 +18,17 @@ function mergeNumbers<T extends Record<string, number>>(defaults: T, raw: unknow
     }
   }
   return out;
+}
+
+function readLog(raw: unknown): LogEntry[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter(
+      (e): e is LogEntry =>
+        !!e && typeof e === 'object' && typeof e.text === 'string' && typeof e.time === 'number' && Number.isFinite(e.time),
+    )
+    .map((e) => ({ time: e.time, text: e.text }))
+    .slice(-LOG_LIMIT);
 }
 
 function readConstruction(raw: unknown): GameState['construction'] {
@@ -97,6 +108,7 @@ export function deserialize(text: string): GameState {
     construction,
     efficiency: {},
     ...research,
+    log: readLog(raw.log),
   };
 }
 

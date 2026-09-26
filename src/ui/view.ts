@@ -241,6 +241,7 @@ export class GameView {
   private tab: Tab = loadTab();
   /** Per world: the on/off switches for buildings that consume resources, listed in the side column. */
   private switches = {} as Record<WorldId, HTMLElement>;
+  private logList = h('ol', { class: 'log-list' });
 
   constructor(
     root: HTMLElement,
@@ -412,6 +413,9 @@ export class GameView {
         : []),
       ...(populationEl ? [populationEl] : []),
       this.switches[world],
+      ...(world === 'realm'
+        ? [h('details', { class: 'log-box', open: '' }, h('summary', {}, 'Chronicle'), this.logList)]
+        : []),
       h('details', { class: 'link-box', open: '' }, h('summary', {}, 'Effects from other worlds'), incoming),
       h('details', { class: 'link-box', open: '' }, h('summary', {}, 'Effects this world sends out'), outgoing),
       h('div', { class: 'reset-box' }, resetButton, resetNote),
@@ -724,6 +728,7 @@ export class GameView {
     if (this.treeDialog.open) this.renderTree(mods);
     this.renderTabs(mods);
     this.renderSwitches();
+    this.renderLog();
 
     const anyGain = WORLD_ORDER.some((w) => isWorldUnlocked(state, w) && echoGain(state, w) > 0);
     setHidden(this.shopHint, state.totalEchoes > 0);
@@ -736,6 +741,20 @@ export class GameView {
       setText(cost, maxed ? 'Maxed' : echoesLabel(metaCost(state, id)));
       button.disabled = !canBuyMeta(state, id);
     }
+  }
+
+  private renderLog() {
+    const log = this.state.log;
+    const time = (t: number) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setHtml(
+      this.logList,
+      log.length
+        ? [...log]
+            .reverse()
+            .map((e) => `<li><time>${time(e.time)}</time> ${escape(e.text)}</li>`)
+            .join('')
+        : '<li class="muted">Nothing has happened yet. Deaths are written down here.</li>',
+    );
   }
 
   private renderSwitches() {

@@ -18,9 +18,24 @@ import {
   WORLDS,
   WORLD_ORDER,
 } from './content';
+import { randomName } from './names';
 import type { Cost, DepositId, Effect, GameState, JobId, MetaId, NodeId, ResourceId, Stat, WorldId } from './types';
 
 export const SAVE_VERSION = 1;
+
+/** How many chronicle lines are kept. */
+export const LOG_LIMIT = 50;
+
+/** Adds a line to the chronicle, dropping the oldest past `LOG_LIMIT`. */
+export function addLog(state: GameState, text: string) {
+  state.log.push({ time: Date.now(), text });
+  if (state.log.length > LOG_LIMIT) state.log.splice(0, state.log.length - LOG_LIMIT);
+}
+
+/** One worker of a job, e.g. "Miner" from "Miners". */
+export function jobWorker(job: JobId): string {
+  return JOBS[job].name.replace(/s$/, '');
+}
 
 /** Longest slice of time simulated in one step, so upkeep and unlocks stay accurate. */
 const MAX_STEP_SECONDS = 1;
@@ -52,6 +67,7 @@ export function createInitialState(): GameState {
     efficiency: {},
     researching: null,
     researchProgress: {},
+    log: [],
   };
 }
 
@@ -545,6 +561,7 @@ function workAccidents(state: GameState, mods: Modifiers, dt: number): number {
     let dead = 0;
     for (let i = 0; i < state.jobs[id]; i++) if (accidentRandom() < chance) dead++;
     state.jobs[id] -= dead;
+    for (let i = 0; i < dead; i++) addLog(state, `${randomName()} the ${jobWorker(id)} ${JOBS[id].accidentText}.`);
     died += dead;
   }
   state.population = Math.max(0, state.population - died);
@@ -568,6 +585,7 @@ function losePeople(state: GameState, population: number, scholarsToo = true) {
     const workers = assignedWorkers(state);
     if (people > workers) {
       people--;
+      addLog(state, `${randomName()} was dragged off by demons.`);
       continue;
     }
     const scholars = scholarsToo ? state.nodes.scholar : 0;
@@ -575,12 +593,14 @@ function losePeople(state: GameState, population: number, scholarsToo = true) {
     if (pick >= workers) {
       state.nodes.scholar -= 1;
       state.population += 1;
+      addLog(state, `${randomName()} the Scholar was hunted down by demons in the Lab.`);
       continue;
     }
     people--;
     for (const id of JOB_ORDER) {
       if (pick < state.jobs[id]) {
         state.jobs[id] -= 1;
+        addLog(state, `${randomName()} the ${jobWorker(id)} was dragged off by demons.`);
         break;
       }
       pick -= state.jobs[id];

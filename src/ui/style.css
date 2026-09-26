@@ -459,6 +459,38 @@ button {
   padding: 4px 8px;
 }
 
+/* The chronicle: who died and how, newest first. */
+.log-box {
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.log-box summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.log-list {
+  list-style: none;
+  margin: 4px 0;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.log-list li {
+  padding: 1px 0;
+}
+
+.log-list time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  margin-right: 4px;
+}
+
 .link-box summary {
   cursor: pointer;
   color: var(--muted);

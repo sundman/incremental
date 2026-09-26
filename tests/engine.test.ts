@@ -51,6 +51,7 @@ import {
   researchUpfrontCost,
   researchSecondsLeft,
   setAccidentRandom,
+  LOG_LIMIT,
   accidentChance,
   accidentRate,
   resourceCap,
@@ -1361,5 +1362,32 @@ describe('work accidents', () => {
     const state = unlockAll(withNodes({ healingLight: 1 }));
     state.activeSpells = ['healingLight'];
     expect(accidentChance(computeModifiers(state), 'miner')).toBeCloseTo(0.2);
+  });
+});
+
+describe('chronicle', () => {
+  it('writes a named line for each worker killed at work', () => {
+    const state = withJobs({ miner: 2 }, withNodes({ mine: 1, mining: 1 }));
+    const rolls = [0, 1];
+    setAccidentRandom(() => rolls.shift() ?? 1);
+    tick(state, 1);
+    expect(state.log).toHaveLength(1);
+    expect(state.log[0]!.text).toMatch(/^\S+ \S+ the Miner died when a mine shaft collapsed\.$/);
+  });
+
+  it('writes who the demons took', () => {
+    const state = unlockAll(withJobs({ woodcutter: 2 }, withNodes({ summoningCircle: 1 })));
+    state.population = 5;
+    toggleSpell(state, 'summoningCircle');
+    state.demons = 600; // 1 death a second
+    tick(state, 1);
+    expect(state.log.at(-1)!.text).toMatch(/was dragged off by demons\.$/);
+  });
+
+  it('keeps only the latest lines', () => {
+    const state = withJobs({ farmer: 80 });
+    setAccidentRandom(() => 0);
+    tick(state, 1);
+    expect(state.log).toHaveLength(LOG_LIMIT);
   });
 });
