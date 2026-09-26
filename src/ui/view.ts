@@ -122,6 +122,26 @@ const RESET_WIPES: Record<WorldId, string> = {
   lab: 'buildings and techs',
 };
 
+type Tab = WorldId | 'shop';
+const TABS: Tab[] = [...WORLD_ORDER, 'shop'];
+const TAB_KEY = 'incremental-worlds-tab';
+
+function loadTab(): Tab {
+  try {
+    const saved = localStorage.getItem(TAB_KEY);
+    if (saved && (TABS as string[]).includes(saved)) return saved as Tab;
+  } catch {
+    // Storage can be blocked; fall back to the first tab.
+  }
+  return 'realm';
+}
+
+interface TabButton {
+  button: HTMLButtonElement;
+  label: HTMLElement;
+  note: HTMLElement;
+}
+
 const echoesLabel = (n: number) => `${formatNumber(n)} ${n === 1 ? 'Echo' : 'Echoes'}`;
 
 const escape = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -197,6 +217,8 @@ export class GameView {
   private treeBody = h('div', { class: 'tree-columns' });
   private shop: HTMLElement;
   private shopHint: HTMLElement;
+  private tabs = {} as Record<Tab, TabButton>;
+  private tab: Tab = loadTab();
 
   constructor(
     root: HTMLElement,
@@ -225,7 +247,11 @@ export class GameView {
     this.shopHint = h('p', { class: 'muted' }, 'Reset a world to earn Echoes, then spend them here on upgrades that survive every reset.');
     const shopGrid = h('div', { class: 'shop-grid' });
     for (const id of META_ORDER) shopGrid.append(this.buildMeta(id));
-    this.shop = h('section', { class: 'shop' }, h('h2', {}, 'Echo shop'), this.shopHint, shopGrid);
+    this.shop = h('section', { class: 'shop', role: 'tabpanel' }, h('h2', {}, 'Echo shop'), this.shopHint, shopGrid);
+    worldsEl.append(this.shop);
+
+    const nav = h('nav', { class: 'tabs', role: 'tablist' });
+    for (const tab of TABS) nav.append(this.buildTab(tab));
 
     const closeTree = h('button', { class: 'link-button tree-close', type: 'button' }, 'Close');
     closeTree.addEventListener('click', () => this.treeDialog.close());
@@ -239,7 +265,69 @@ export class GameView {
       this.treeBody,
     );
 
-    root.replaceChildren(header, worldsEl, this.shop, this.treeDialog);
+    root.replaceChildren(header, nav, worldsEl, this.treeDialog);
+    this.selectTab(this.tab);
+  }
+
+  private buildTab(tab: Tab): HTMLElement {
+    const label = h('span', { class: 'tab-label' }, tab === 'shop' ? 'Echo shop' : WORLDS[tab].name);
+    const note = h('span', { class: 'tab-note' });
+    const button = h('button', { class: `tab tab-${tab}`, type: 'button', role: 'tab' }, label, note);
+    button.addEventListener('click', () => this.selectTab(tab));
+    this.tabs[tab] = { button, label, note };
+    return button;
+  }
+
+  private tabPanel(tab: Tab): HTMLElement {
+    return tab === 'shop' ? this.shop : this.worlds[tab].panel;
+  }
+
+  private selectTab(tab: Tab) {
+    this.tab = tab;
+    for (const t of TABS) {
+      const on = t === tab;
+      setHidden(this.tabPanel(t), !on);
+      this.tabs[t].button.classList.toggle('active', on);
+      this.tabs[t].button.setAttribute('aria-selected', String(on));
+    }
+    try {
+      localStorage.setItem(TAB_KEY, tab);
+    } catch {
+      // Remembering the tab is only a convenience.
+    }
+  }
+
+  /** Tab labels carry a short status so you can tell when another world needs you. */
+  private renderTabs(mods: Modifiers) {
+    const state = this.state;
+    for (const world of WORLD_ORDER) {
+      const { button, note } = this.tabs[world];
+      const open = isWorldUnlocked(state, world);
+      let text: string;
+      let attention = false;
+      if (!open) text = '🔒';
+      else if (world === 'realm') {
+        const idle = idleWorkers(state);
+        text = `${Math.floor(state.population)} people`;
+        if (idle > 0) text += ` · ${idle} idle`;
+        attention = idle > 0 || arrivalBlocker(state, mods) === 'food';
+      } else if (world === 'lab') {
+        const id = state.researching;
+        const idleResearch = !id && netRate(state, mods, 'research') > 0;
+        text = id ? NODES[id].name : idleResearch ? 'nothing researched' : '';
+        attention = idleResearch;
+      } else {
+        const on = NODE_ORDER.filter((id) => NODES[id].world === world && NODES[id].spell && isSpellActive(state, id));
+        text = on.length ? on.map((id) => NODES[id].name).join(', ') : '';
+      }
+      setText(note, text);
+      button.classList.toggle('is-locked', !open);
+      button.classList.toggle('attention', attention);
+    }
+    const shop = this.tabs.shop;
+    const affordable = META_ORDER.some((id) => canBuyMeta(state, id));
+    setText(shop.note, `${formatNumber(state.echoes)} ✦`);
+    shop.button.classList.toggle('attention', affordable);
   }
 
   private buildWorld(world: WorldId): HTMLElement {
@@ -286,15 +374,21 @@ export class GameView {
       }
     });
 
-    const body = h(
-      'div',
-      { class: 'world-body' },
-      resList,
+    const side = h(
+      'aside',
+      { class: 'world-side' },
       ...(world === 'realm'
         ? [h('div', { class: 'deposits' }, this.landEl, ...DEPOSIT_ORDER.map((d) => this.deposits[d]))]
         : []),
       ...(populationEl ? [populationEl] : []),
       h('details', { class: 'link-box', open: '' }, h('summary', {}, 'Effects from other worlds'), incoming),
+      h('details', { class: 'link-box', open: '' }, h('summary', {}, 'Effects this world sends out'), outgoing),
+      h('div', { class: 'reset-box' }, resetButton, resetNote),
+    );
+
+    const main = h(
+      'div',
+      { class: 'world-main' },
       h('h3', {}, 'Buildings'),
       buildings,
       ...(techs.childElementCount
@@ -303,15 +397,14 @@ export class GameView {
       ...(spells.childElementCount
         ? [h('h3', {}, 'Spells'), h('p', { class: 'muted small' }, 'Learn a spell once, then click it to switch it on or off. It only costs upkeep while on. Only one spell can be on at a time (Multicast in the Echo shop adds more), so switching one on swaps out the oldest. Summon Demons is the exception: it takes no slot, but once cast it runs until the Realm is down to 2 survivors.'), spells]
         : []),
-      h('details', { class: 'link-box' }, h('summary', {}, 'Effects this world sends out'), outgoing),
-      h('div', { class: 'reset-box' }, resetButton, resetNote),
     );
+
+    const body = h('div', { class: 'world-body' }, resList, h('div', { class: 'world-columns' }, side, main));
 
     const panel = h(
       'section',
-      { class: `world world-${world}` },
-      h('h2', {}, def.name),
-      h('p', { class: 'tagline' }, def.tagline),
+      { class: `world world-${world}`, role: 'tabpanel' },
+      h('div', { class: 'world-head' }, h('h2', {}, def.name), h('p', { class: 'tagline' }, def.tagline)),
       locked,
       body,
     );
@@ -586,6 +679,7 @@ export class GameView {
     this.renderDeposits(mods);
     for (const id of NODE_ORDER) this.renderNode(id, mods);
     if (this.treeDialog.open) this.renderTree(mods);
+    this.renderTabs(mods);
 
     const anyGain = WORLD_ORDER.some((w) => isWorldUnlocked(state, w) && echoGain(state, w) > 0);
     setHidden(this.shopHint, state.totalEchoes > 0);
