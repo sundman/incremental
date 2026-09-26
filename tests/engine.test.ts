@@ -1290,7 +1290,7 @@ describe('mana storage', () => {
   });
 
   it('leaves resources without a cap unlimited', () => {
-    expect(resourceCap(computeModifiers(createInitialState()), 'wood')).toBe(Infinity);
+    expect(resourceCap(computeModifiers(createInitialState()), 'essence')).toBe(Infinity);
   });
 
   it('grows with Mana Cisterns, then Ley Vaults multiply the total', () => {
@@ -1389,5 +1389,30 @@ describe('chronicle', () => {
     setAccidentRandom(() => 0);
     tick(state, 1);
     expect(state.log).toHaveLength(LOG_LIMIT);
+  });
+});
+
+describe('realm storage', () => {
+  it('caps every Realm resource, and the forest is not cut past the cap', () => {
+    const state = withJobs({ woodcutter: 10 });
+    expect(resourceCap(computeModifiers(state), 'wood')).toBe(1000);
+    expect(resourceCap(computeModifiers(state), 'gold')).toBe(100);
+    state.resources.wood = 999;
+    tick(state, 10);
+    expect(state.resources.wood).toBeCloseTo(1000);
+    expect(state.deposits.wood.cut).toBeCloseTo(1); // only what fit was taken from the forest
+  });
+
+  it('adds a whole starting capacity of every Realm resource per Warehouse', () => {
+    const mods = computeModifiers(withNodes({ warehouse: 2 }));
+    expect(resourceCap(mods, 'wood')).toBe(3000);
+    expect(resourceCap(mods, 'steel')).toBe(600);
+    expect(resourceCap(mods, 'mana')).toBe(300); // Arcana has its own storage
+  });
+
+  it('asks for a Warehouse when a cost is more than can be stored', () => {
+    const state = withNodes({ hut: 4 }); // the 5th Hut costs 2,560 Wood
+    const mods = computeModifiers(state);
+    expect(costOverCap(nodeCost(state, 'hut', mods), mods)).toBe('wood');
   });
 });

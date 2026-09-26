@@ -37,6 +37,10 @@ export function describeEffect(effect: Effect, amount: number): string {
   if (effect.stat === 'deaths') {
     return effect.kind === 'add' ? `Kills ${formatPerHour(amount)} people` : `Deaths ${formatMultiplier(amount)}`;
   }
+  if (effect.stat.startsWith('storage:')) {
+    const world = WORLDS[effect.stat.slice('storage:'.length) as WorldId].name;
+    return effect.kind === 'add' ? `+${formatNumber(amount * 100)}% ${world} storage` : `${world} storage ${formatMultiplier(amount)}`;
+  }
   if (effect.stat.startsWith('speed:')) {
     return `${WORLDS[effect.stat.slice('speed:'.length) as WorldId].name} build speed ${formatMultiplier(amount)}`;
   }

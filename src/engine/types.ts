@@ -40,6 +40,7 @@ export type ResourceId =
  * - `deaths`           Realm people killed per hour
  * - `speed:<world>`    build speed multiplier in a world (higher is faster)
  * - `cap:<resource>`   how much of a resource can be stored (only for resources with a `baseCap`)
+ * - `storage:<world>`  more storage for every capped resource in a world: `add` 1 is one more `baseCap` of each
  */
 export type Stat =
   | `rate:${ResourceId}`
@@ -55,7 +56,8 @@ export type Stat =
   | `size:${DepositId}`
   | 'deaths'
   | `speed:${WorldId}`
-  | `cap:${ResourceId}`;
+  | `cap:${ResourceId}`
+  | `storage:${WorldId}`;
 
 export type Cost = Partial<Record<ResourceId, number>>;
 
@@ -185,6 +187,7 @@ export interface NodeDef {
 export type NodeId =
   // Realm
   | 'hut'
+  | 'warehouse'
   | 'farm'
   | 'lumberCamp'
   | 'quarry'

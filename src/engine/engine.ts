@@ -92,6 +92,7 @@ export function statWorld(stat: Stat): WorldId {
     return 'realm';
   }
   if (stat.startsWith('speed:')) return stat.slice('speed:'.length) as WorldId;
+  if (stat.startsWith('storage:')) return stat.slice('storage:'.length) as WorldId;
   const [type, target] = stat.split(':') as [string, string];
   if (type === 'rate' || type === 'yield' || type === 'cap') return RESOURCES[target as ResourceId].world;
   return target as WorldId;
@@ -299,9 +300,11 @@ export function grossRate(state: GameState, mods: Modifiers, resource: ResourceI
 
 /** How much of a resource can be stored; Infinity for resources without a storage limit. */
 export function resourceCap(mods: Modifiers, resource: ResourceId): number {
-  const base = RESOURCES[resource].baseCap;
+  const { baseCap: base, world } = RESOURCES[resource];
   if (base === undefined) return Infinity;
-  return Math.max(0, (base + getAdd(mods, `cap:${resource}`)) * getMul(mods, `cap:${resource}`));
+  const storage = `storage:${world}` as const;
+  const add = base * getAdd(mods, storage) + getAdd(mods, `cap:${resource}`);
+  return Math.max(0, (base + add) * getMul(mods, `cap:${resource}`) * getMul(mods, storage));
 }
 
 /** Whether a resource is at its storage limit, so any more made is lost. */
