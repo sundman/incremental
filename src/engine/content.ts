@@ -1228,6 +1228,21 @@ const nodeList: NodeDef[] = [
     effects: [],
   },
   {
+    id: 'basicMachinery',
+    world: 'lab',
+    kind: 'tech',
+    name: 'Basic Machinery',
+    description: 'Water wheels, saw frames and bellows: Sawmills and Kilns make twice as much from the same Wood and Clay.',
+    baseCost: { research: 150, planks: 40 },
+    costGrowth: 1,
+    tier: 2,
+    requires: ['scientificMethod'],
+    effects: [
+      { stat: 'rate:planks', kind: 'mul', amount: 2 },
+      { stat: 'rate:bricks', kind: 'mul', amount: 2 },
+    ],
+  },
+  {
     id: 'mining',
     world: 'lab',
     kind: 'tech',

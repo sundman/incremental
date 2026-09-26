@@ -266,6 +266,7 @@ export type NodeId =
   | 'scientificMethod'
   | 'engineering'
   | 'mining'
+  | 'basicMachinery'
   | 'warehousing'
   | 'geology'
   | 'optics'

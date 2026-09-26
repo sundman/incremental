@@ -1781,3 +1781,19 @@ describe('warehouse costs', () => {
     }
   });
 });
+
+describe('Basic Machinery', () => {
+  it('doubles what Sawmills and Kilns make, from the same Wood and Clay', () => {
+    const state = unlockAll(withNodes({ sawmill: 2, kiln: 1 }));
+    Object.assign(state.resources, { wood: 500, clay: 500 });
+    const before = computeModifiers(state);
+    const planks = grossRate(state, before, 'planks');
+    const bricks = grossRate(state, before, 'bricks');
+    state.nodes.basicMachinery = 1;
+    const after = computeModifiers(state);
+    expect(grossRate(state, after, 'planks')).toBeCloseTo(planks * 2);
+    expect(grossRate(state, after, 'bricks')).toBeCloseTo(bricks * 2);
+    expect(upkeepRate(state, 'wood')).toBeCloseTo(2 * 1 + 0.5); // the same Wood as before
+    expect(NODES.basicMachinery.requires).toEqual(['scientificMethod']);
+  });
+});
