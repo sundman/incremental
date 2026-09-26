@@ -276,7 +276,7 @@ const nodeList: NodeDef[] = [
     description:
       'Opens the Stonecutter job. Each Quarry opens up 5,000 Stone to cut and makes stonecutters faster, but clears woodland: the forest holds 500 less Wood.',
     baseCost: { wood: 35 },
-    costGrowth: 1.3,
+    costGrowth: 1.8,
     tier: 1,
     effects: [
       { stat: 'yield:stone', kind: 'add', amount: 0.15 },
@@ -292,7 +292,7 @@ const nodeList: NodeDef[] = [
     description:
       'Opens the Digger job. Each pit opens up 3,000 Clay to dig and makes diggers faster, but the digging clears woodland: the forest holds 300 less Wood.',
     baseCost: { wood: 40, stone: 20 },
-    costGrowth: 1.3,
+    costGrowth: 1.8,
     tier: 2,
     requires: ['quarry'],
     effects: [
