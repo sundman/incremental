@@ -230,7 +230,8 @@ export function jobCapacity(state: GameState, job: JobId): number {
 /** Buildings that consume resources every second can be switched off and on. */
 export function canSwitchOff(id: NodeId): boolean {
   const node = NODES[id];
-  return node.kind === 'building' && !node.spell && !!node.upkeep;
+  // Buildings run by workers (Sawmills, Kilns) are stopped by taking their workers off instead.
+  return node.kind === 'building' && !node.spell && !!node.upkeep && !STAFFED_BY[id];
 }
 
 export function isSwitchedOff(state: GameState, id: NodeId): boolean {

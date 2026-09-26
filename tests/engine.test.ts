@@ -1096,19 +1096,20 @@ describe('building list', () => {
 
 describe('switching buildings off', () => {
   it('stops a consuming building from using or making anything until it is switched back on', () => {
-    const state = withJobs({ sawyer: 1 }, withNodes({ sawmill: 1 }));
-    state.resources.wood = 100;
-    expect(canSwitchOff('sawmill')).toBe(true);
+    const state = withNodes({ glassworks: 1 });
+    Object.assign(state.resources, { stone: 100, coal: 100 });
+    expect(canSwitchOff('glassworks')).toBe(true);
     expect(canSwitchOff('hut')).toBe(false); // uses nothing
     expect(canSwitchOff('fertilityRite')).toBe(false); // spells have their own switch
-    expect(toggleBuilding(state, 'sawmill')).toBe(false);
+    expect(canSwitchOff('sawmill')).toBe(false); // stopped by taking its Sawyer off instead
+    expect(toggleBuilding(state, 'glassworks')).toBe(false);
     tick(state, 10);
-    expect(state.resources.wood).toBe(100);
-    expect(state.resources.planks).toBe(0);
-    expect(toggleBuilding(state, 'sawmill')).toBe(true);
+    expect(state.resources.stone).toBe(100);
+    expect(state.resources.glass).toBe(0);
+    expect(toggleBuilding(state, 'glassworks')).toBe(true);
     tick(state, 10);
-    expect(state.resources.wood).toBeCloseTo(90);
-    expect(state.resources.planks).toBeCloseTo(1);
+    expect(state.resources.stone).toBeCloseTo(80);
+    expect(state.resources.glass).toBeCloseTo(2);
   });
 
   it('forgets the switch when its world is reset', () => {

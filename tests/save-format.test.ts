@@ -13,10 +13,11 @@ describe('save', () => {
     tick(state, 5);
     state.construction.quarry = { done: 3, needed: 5 };
     state.activeSpells = ['haste'];
-    state.switchedOff = ['sawmill'];
+    state.switchedOff = ['glassworks'];
     const loaded = deserialize(serialize(state));
-    expect(loaded.switchedOff).toEqual(['sawmill']);
-    expect(deserialize(JSON.stringify({ switchedOff: ['hut', 'kiln', 'nope'] })).switchedOff).toEqual(['kiln']);
+    expect(loaded.switchedOff).toEqual(['glassworks']);
+    // A Hut has no switch, and a Kiln is stopped by taking its Brickmaker off instead.
+    expect(deserialize(JSON.stringify({ switchedOff: ['hut', 'kiln', 'glassworks', 'nope'] })).switchedOff).toEqual(['glassworks']);
     expect(deserialize('{}').switchedOff).toEqual([]);
     expect(loaded.construction).toEqual({ quarry: { done: 3, needed: 5 } });
     expect(loaded.activeSpells).toEqual(['haste']);
