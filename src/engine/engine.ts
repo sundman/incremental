@@ -797,8 +797,28 @@ export function isResearchListed(state: GameState, id: NodeId): boolean {
 
 /** Whether a building card is shown: only once everything it requires is unlocked (or you already have one). */
 export function isBuildingListed(state: GameState, id: NodeId): boolean {
-  if (NODES[id].kind !== 'building') return false;
-  return state.nodes[id] > 0 || !!state.construction[id] || isNodeAvailable(state, id);
+  const node = NODES[id];
+  if (node.kind !== 'building') return false;
+  if (state.nodes[id] > 0 || !!state.construction[id] || isNodeAvailable(state, id)) return true;
+  // A building gated by research from another world (a House needs Housing) stays listed once that
+  // research is done, even while its own world's buildings are still missing, e.g. after a reset:
+  // its card then says what else to build.
+  const researched = (node.requires ?? []).some((req) => NODES[req].world !== node.world);
+  return researched && isWorldUnlocked(state, node.world) && isReachable(state, id, new Map());
+}
+
+/** Whether a node could be built by building up its own world: everything it needs from other worlds is done. */
+function isReachable(state: GameState, id: NodeId, known: Map<NodeId, boolean>): boolean {
+  if (state.nodes[id] > 0) return true;
+  const cached = known.get(id);
+  if (cached !== undefined) return cached;
+  known.set(id, false); // guards against a requirement loop while this one is worked out
+  const node = NODES[id];
+  const reachable = (node.requires ?? []).every((req) =>
+    NODES[req].world === node.world ? isReachable(state, req, known) : state.nodes[req] > 0,
+  );
+  known.set(id, reachable);
+  return reachable;
 }
 
 /** Lab techs by column in the research tree: a tech sits one column right of its deepest Lab prerequisite. */

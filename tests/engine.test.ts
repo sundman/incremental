@@ -1066,6 +1066,15 @@ describe('building list', () => {
     expect(isBuildingListed(state, 'lumberCamp')).toBe(true);
     expect(isBuildingListed(state, 'scientificMethod')).toBe(false); // techs are listed separately
   });
+
+  it('keeps a researched building listed after a Realm reset, while its Realm needs are rebuilt', () => {
+    const state = unlockAll(withNodes({ homebuilding: 1 })); // Housing is done, but no Sawmill or Kiln yet
+    expect(isNodeAvailable(state, 'house')).toBe(false);
+    expect(isBuildingListed(state, 'house')).toBe(true);
+    expect(isBuildingListed(state, 'library')).toBe(false); // no research needed: still waits for its buildings
+    state.nodes.homebuilding = 0;
+    expect(isBuildingListed(state, 'house')).toBe(false);
+  });
 });
 
 describe('switching buildings off', () => {
