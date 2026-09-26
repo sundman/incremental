@@ -1672,3 +1672,37 @@ describe('I Can\'t See the Forest or All the Trees', () => {
     expect(state.deposits.wood.left).toBe(10000);
   });
 });
+
+describe('mines', () => {
+  it('open up Iron, Coal and Gold deposits, ready to work at once', () => {
+    const state = unlockAll(withNodes({ quarry: 1, mining: 1, sawmill: 1, geology: 1 }));
+    Object.assign(state.resources, { wood: 1000, stone: 1000, planks: 500 });
+    for (const id of ['mine', 'coalMine', 'goldMine'] as NodeId[]) {
+      expect(buyNode(state, id)).toBe(true);
+      tick(state, 600);
+    }
+    const mods = computeModifiers(state);
+    expect(depositMax(state, mods, 'iron')).toBe(3000);
+    expect(depositMax(state, mods, 'coal')).toBe(4000);
+    expect(depositMax(state, mods, 'gold')).toBe(500);
+    expect(state.deposits.iron.left).toBeCloseTo(3000);
+  });
+
+  it('clear 400 Wood of forest each, counting towards the forest achievement', () => {
+    const state = withNodes({ mine: 2, coalMine: 1, goldMine: 1 });
+    expect(depositMax(state, computeModifiers(state), 'wood')).toBe(8000 - 4 * 400);
+    withNodes({ quarry: 8, clayPit: 3 }, state); // 4,000 + 900 + 1,600 = 6,500
+    checkAchievements(state);
+    expect(state.achievements).not.toContain('deforested');
+    withNodes({ mine: 6 }, state); // 1,600 more: 8,100
+    checkAchievements(state);
+    expect(state.achievements).toContain('deforested');
+  });
+
+  it('dig nothing once their deposit is used up', () => {
+    const state = withJobs({ miner: 5 }, withNodes({ mine: 1 }));
+    state.deposits.iron.left = 2;
+    tick(state, 60);
+    expect(state.resources.iron).toBeCloseTo(2);
+  });
+});

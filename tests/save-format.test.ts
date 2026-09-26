@@ -178,3 +178,17 @@ describe('deposits from older saves', () => {
     expect(deserialize(serialize(loaded)).deposits.stone.max).toBe(1000); // only once
   });
 });
+
+describe('mine deposits from older saves', () => {
+  it('take the old fixed Coal size out, and fill Iron and Gold for mines already built', () => {
+    const old = {
+      version: 2,
+      nodes: { mine: 2, goldMine: 1 },
+      deposits: { coal: { left: 15000, max: 20500, cut: 5000 } },
+    };
+    const loaded = deserialize(JSON.stringify(old));
+    expect(loaded.deposits.coal.max).toBe(500);
+    expect(loaded.deposits.iron).toEqual({ left: 6000, max: 0, cut: 0 });
+    expect(loaded.deposits.gold).toEqual({ left: 500, max: 0, cut: 0 });
+  });
+});

@@ -54,8 +54,23 @@ function readDeposits(raw: Record<string, unknown>, fresh: GameState['deposits']
   const saved = (raw.deposits && typeof raw.deposits === 'object' ? raw.deposits : {}) as Record<string, unknown>;
   // Saves from before Stone, Clay and Coal ran out kept the forest in its own fields.
   const legacyWood = { left: raw.forest, max: raw.forestMax, cut: raw.forestCut };
-  // Before version 2, Stone and Clay deposits started at a fixed size instead of growing with each Quarry and Pit.
-  const oldStart: Partial<Record<DepositId, number>> = num(raw.version, 1) < 2 ? { stone: 50000, clay: 30000 } : {};
+  // Before version 2, Stone and Clay deposits started at a fixed size instead of growing with each Quarry and Pit;
+  // before version 3, so did Coal.
+  const version = num(raw.version, 1);
+  const oldStart: Partial<Record<DepositId, number>> = {
+    ...(version < 2 ? { stone: 50000, clay: 30000 } : {}),
+    ...(version < 3 ? { coal: 20000 } : {}),
+  };
+  // Iron and Gold only became deposits in version 3: mines already built open theirs up in full.
+  const owned = (raw.nodes && typeof raw.nodes === 'object' ? raw.nodes : {}) as Record<string, unknown>;
+  const opened = (id: DepositId) =>
+    NODE_ORDER.reduce((sum, n) => {
+      const e = NODES[n].effects.find((e) => e.stat === `size:${id}` && e.kind === 'add' && e.amount > 0);
+      return e ? sum + e.amount * Math.max(0, num(owned[n], 0)) : sum;
+    }, 0);
+  if (version < 3) {
+    for (const id of ['iron', 'gold'] as DepositId[]) if (!saved[id]) saved[id] = { left: opened(id), max: 0, cut: 0 };
+  }
   const out = {} as GameState['deposits'];
   for (const id of DEPOSIT_ORDER) {
     const d = (id === 'wood' && !saved.wood ? legacyWood : (saved[id] ?? {})) as Record<string, unknown>;

@@ -791,6 +791,14 @@ button {
   --fill: #6b6b6b;
 }
 
+.deposit-iron {
+  --fill: #a8745a;
+}
+
+.deposit-gold {
+  --fill: #d9b44a;
+}
+
 .deposit.attention {
   border-color: var(--bad);
 }

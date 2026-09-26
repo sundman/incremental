@@ -68,7 +68,7 @@ export type Stat =
 export type Cost = Partial<Record<ResourceId, number>>;
 
 /** Realm resources that come from a limited deposit: the forest, quarries, clay beds and coal seams. */
-export type DepositId = 'wood' | 'stone' | 'clay' | 'coal';
+export type DepositId = 'wood' | 'stone' | 'clay' | 'coal' | 'iron' | 'gold';
 
 export interface DepositDef {
   name: string;

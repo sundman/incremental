@@ -78,10 +78,12 @@ export const BUILD_TIME_GROWTH = 1.05;
  */
 export const DEPOSITS: Record<DepositId, DepositDef> = {
   wood: { name: 'Forest', icon: '🌲', start: 8000, baseRegrow: 0.25, pollutionSlows: true },
-  // Stone and Clay start empty: each Quarry or Clay Pit opens up more (see their size: effects).
+  // Everything but the forest starts empty: each Quarry, Clay Pit or mine opens up more (see their size: effects).
   stone: { name: 'Stone quarries', icon: '🪨', start: 0, baseRegrow: 0 },
   clay: { name: 'Clay beds', icon: '🟫', start: 0, baseRegrow: 0 },
-  coal: { name: 'Coal seams', icon: '⚫', start: 20000, baseRegrow: 0 },
+  coal: { name: 'Coal seams', icon: '⚫', start: 0, baseRegrow: 0 },
+  iron: { name: 'Iron veins', icon: '⛏️', start: 0, baseRegrow: 0 },
+  gold: { name: 'Gold seams', icon: '🪙', start: 0, baseRegrow: 0 },
 };
 export const DEPOSIT_ORDER = Object.keys(DEPOSITS) as DepositId[];
 /** Share of what was gathered in a run that each Rich Earth level adds to a deposit's size on a Realm reset. */
@@ -368,24 +370,34 @@ const nodeList: NodeDef[] = [
     kind: 'building',
     name: 'Mine',
     description:
-      'Opens the Miner job, and each Mine makes miners dig faster. Miners disturb the ley lines, and every Mine after the first makes each miner disturb them more. Needs Mining from the Lab.',
+      'Opens the Miner job. Each Mine opens up 3,000 Iron and makes miners dig faster, but clears 400 Wood of forest. Miners disturb the ley lines, and every Mine after the first makes each miner disturb them more. Needs Mining from the Lab.',
     baseCost: { wood: 60, stone: 80 },
     costGrowth: 1.35,
     tier: 2,
     requires: ['quarry', 'mining'],
-    effects: [{ stat: 'yield:iron', kind: 'add', amount: 0.05 }],
+    effects: [
+      { stat: 'yield:iron', kind: 'add', amount: 0.05 },
+      { stat: 'size:iron', kind: 'add', amount: 3000 },
+      { stat: 'size:wood', kind: 'add', amount: -400 },
+    ],
   },
   {
     id: 'coalMine',
     world: 'realm',
     kind: 'building',
     name: 'Coal Mine',
-    description: 'Opens the Collier job. Coal soot drifts into the magic and chokes the town.',
+    description:
+      'Opens the Collier job. Each Coal Mine opens up 4,000 Coal but clears 400 Wood of forest. Coal soot drifts into the magic and chokes the town.',
     baseCost: { planks: 60, stone: 100 },
     costGrowth: 1.35,
     tier: 3,
     requires: ['mine', 'sawmill'],
-    effects: [{ stat: 'yield:coal', kind: 'add', amount: 0.05 }, { stat: 'pollution', kind: 'add', amount: 2 }],
+    effects: [
+      { stat: 'yield:coal', kind: 'add', amount: 0.05 },
+      { stat: 'pollution', kind: 'add', amount: 2 },
+      { stat: 'size:coal', kind: 'add', amount: 4000 },
+      { stat: 'size:wood', kind: 'add', amount: -400 },
+    ],
   },
   {
     id: 'foundry',
@@ -558,12 +570,17 @@ const nodeList: NodeDef[] = [
     world: 'realm',
     kind: 'building',
     name: 'Gold Mine',
-    description: 'Opens the Prospector job. Scholars run off to join the gold rush. Needs Geology from the Lab.',
+    description:
+      'Opens the Prospector job. Each Gold Mine opens up 500 Gold but clears 400 Wood of forest. Scholars run off to join the gold rush. Needs Geology from the Lab.',
     baseCost: { stone: 300, planks: 150 },
     costGrowth: 1.4,
     tier: 4,
     requires: ['mine', 'geology'],
-    effects: [{ stat: 'yield:gold', kind: 'add', amount: 0.02 }],
+    effects: [
+      { stat: 'yield:gold', kind: 'add', amount: 0.02 },
+      { stat: 'size:gold', kind: 'add', amount: 500 },
+      { stat: 'size:wood', kind: 'add', amount: -400 },
+    ],
   },
   {
     id: 'printingPress',
@@ -1666,7 +1683,7 @@ const achievementList: AchievementDef[] = [
   {
     id: 'deforested',
     name: 'I Can\'t See the Forest or All the Trees',
-    goal: 'Clear the whole forest away with Quarries and Clay Pits, so it cannot hold a single tree.',
+    goal: 'Clear the whole forest away with Quarries, Clay Pits and mines, so it cannot hold a single tree.',
     reward: 'The forest is 2,000 Wood bigger, and every Realm run starts with it full.',
     progress: (state, mods) => {
       // How much the buildings have cleared, against the forest there was to clear.

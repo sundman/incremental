@@ -23,8 +23,11 @@ import {
 import { randomArrival, randomName } from './names';
 import type { Cost, DepositId, Effect, GameState, JobId, LogEntry, MetaId, NodeId, ResourceId, Stat, WorldId } from './types';
 
-/** 2: Stone and Clay deposits start empty and grow with each Quarry and Clay Pit. */
-export const SAVE_VERSION = 2;
+/**
+ * 2: Stone and Clay deposits start empty and grow with each Quarry and Clay Pit.
+ * 3: Coal does too, with each Coal Mine, and Iron and Gold become deposits opened by their mines.
+ */
+export const SAVE_VERSION = 3;
 
 /** How many chronicle lines are kept. */
 export const LOG_LIMIT = 50;
