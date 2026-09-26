@@ -269,7 +269,7 @@ const nodeList: NodeDef[] = [
     kind: 'building',
     name: 'Kiln',
     description: 'Fires Clay into Bricks, burning Wood. The smoke slows growth a little.',
-    baseCost: { stone: 60, planks: 30 },
+    baseCost: { stone: 120, planks: 15 },
     costGrowth: 1.35,
     tier: 2,
     requires: ['clayPit', 'sawmill'],
