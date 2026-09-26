@@ -1434,10 +1434,11 @@ describe('realm storage', () => {
     expect(resourceCap(mods, 'mana')).toBe(300); // Arcana has its own storage
   });
 
-  it('needs Logistics from the Lab before a Warehouse can be built', () => {
+  it('needs Warehousing from the Lab before a Warehouse can be built', () => {
     const state = withNodes({ quarry: 1 });
     expect(isNodeAvailable(state, 'warehouse')).toBe(false);
-    withNodes({ logistics: 1 }, state);
+    expect(NODES.warehousing.requires).toEqual(['scientificMethod']);
+    withNodes({ warehousing: 1 }, state);
     expect(isNodeAvailable(state, 'warehouse')).toBe(true);
   });
 

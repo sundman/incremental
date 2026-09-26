@@ -1044,9 +1044,9 @@ export class GameView {
       if (over) {
         const fix =
           RESOURCES[over].world === 'realm'
-            ? state.nodes.logistics > 0
+            ? state.nodes.warehousing > 0
               ? 'build a Warehouse'
-              : 'research Logistics in the Lab for Warehouses'
+              : 'research Warehousing in the Lab for Warehouses'
             : over === 'mana'
               ? 'build a Mana Cistern'
               : '';
