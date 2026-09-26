@@ -209,11 +209,12 @@ const nodeList: NodeDef[] = [
     world: 'realm',
     kind: 'building',
     name: 'Warehouse',
-    description: 'Sheds, bins and a granary. Each one stores as much of every Realm resource again as you start with.',
+    description:
+      'Sheds, bins and a granary. Each one stores as much of every Realm resource again as you start with. Needs Logistics from the Lab.',
     baseCost: { wood: 60, stone: 40 },
     costGrowth: 1.4,
     tier: 2,
-    requires: ['quarry'],
+    requires: ['logistics'],
     effects: [{ stat: 'storage:realm', kind: 'add', amount: 1 }],
   },
   {
@@ -1249,7 +1250,7 @@ const nodeList: NodeDef[] = [
     world: 'lab',
     kind: 'tech',
     name: 'Logistics',
-    description: 'Planned supply lines make Realm construction much faster.',
+    description: 'Planned supply lines make Realm construction much faster, and let the Realm build Warehouses.',
     baseCost: { research: 400, planks: 100 },
     costGrowth: 1,
     tier: 3,

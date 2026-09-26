@@ -1042,8 +1042,15 @@ export class GameView {
     if (!maxed && !building) {
       const over = costOverCap(research ? (progress === undefined ? researchUpfrontCost(state, id, mods) : {}) : nodeCost(state, id, mods), mods);
       if (over) {
-        const fix = RESOURCES[over].world === 'realm' ? 'a Warehouse' : over === 'mana' ? 'a Mana Cistern' : '';
-        needs.push(`more ${RESOURCES[over].name} storage (holds ${formatNumber(resourceCap(mods, over))}${fix ? `; build ${fix}` : ''})`);
+        const fix =
+          RESOURCES[over].world === 'realm'
+            ? state.nodes.logistics > 0
+              ? 'build a Warehouse'
+              : 'research Logistics in the Lab for Warehouses'
+            : over === 'mana'
+              ? 'build a Mana Cistern'
+              : '';
+        needs.push(`more ${RESOURCES[over].name} storage (holds ${formatNumber(resourceCap(mods, over))}${fix ? `; ${fix}` : ''})`);
       }
     }
     if (node.horde && level > 0 && !isSpellActive(state, id) && state.population <= DEMONS.survivors) {

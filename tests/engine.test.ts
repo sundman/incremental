@@ -1434,6 +1434,13 @@ describe('realm storage', () => {
     expect(resourceCap(mods, 'mana')).toBe(300); // Arcana has its own storage
   });
 
+  it('needs Logistics from the Lab before a Warehouse can be built', () => {
+    const state = withNodes({ quarry: 1 });
+    expect(isNodeAvailable(state, 'warehouse')).toBe(false);
+    withNodes({ logistics: 1 }, state);
+    expect(isNodeAvailable(state, 'warehouse')).toBe(true);
+  });
+
   it('asks for a Warehouse when a cost is more than can be stored', () => {
     const state = withNodes({ hut: 4 }); // the 5th Hut costs 2,560 Wood
     const mods = computeModifiers(state);
