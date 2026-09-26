@@ -130,6 +130,7 @@ export function deserialize(text: string): GameState {
     demons: activeSpells.some((id) => NODES[id].horde) ? Math.max(DEMONS.start, num(raw.demons, 0)) : 0,
     construction,
     efficiency: {},
+    overflow: {},
     ...research,
     hunger: Math.min(1, Math.max(0, num(raw.hunger, 0))),
     runDeaths: Math.max(0, Math.floor(num(raw.runDeaths, 0))),

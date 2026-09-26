@@ -1477,6 +1477,7 @@ describe('wasted workers', () => {
     const state = withJobs({ woodcutter: 2, farmer: 1 });
     expect(wastedWorkers(state, computeModifiers(state), 'woodcutter')).toBe(null);
     state.resources.wood = 1000;
+    tick(state, 1);
     expect(wastedWorkers(state, computeModifiers(state), 'woodcutter')).toBe('full');
     expect(wastedWorkers(state, computeModifiers(state), 'farmer')).toBe(null);
   });
@@ -1489,6 +1490,16 @@ describe('wasted workers', () => {
     expect(wastedWorkers(state, computeModifiers(state), 'woodcutter')).toBe('depleted');
     state.deposits.wood.left = 500;
     expect(wastedWorkers(state, computeModifiers(state), 'woodcutter')).toBe(null);
+  });
+
+  it('flags a full store even when Warehouse spoilage keeps it just under the cap', () => {
+    const state = withJobs({ woodcutter: 6 }, withNodes({ warehouse: 1, sawmill: 1 }));
+    state.population = 10;
+    state.resources.food = 500;
+    state.resources.wood = 2000;
+    tick(state, 5);
+    expect(state.resources.wood).toBeLessThan(2000); // a little always spoils
+    expect(wastedWorkers(state, computeModifiers(state), 'woodcutter')).toBe('full');
   });
 
   it('never flags a job with nobody in it', () => {

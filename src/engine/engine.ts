@@ -78,6 +78,7 @@ export function createInitialState(): GameState {
     demons: 0,
     construction: {},
     efficiency: {},
+    overflow: {},
     researching: null,
     researchProgress: {},
     achievements: [],
@@ -352,6 +353,11 @@ export function resourceCap(mods: Modifiers, resource: ResourceId): number {
   return Math.max(0, (base + add) * getMul(mods, `cap:${resource}`) * getMul(mods, storage));
 }
 
+/** Whether production was thrown away last tick because the resource's storage was full. */
+export function isOverflowing(state: GameState, resource: ResourceId): boolean {
+  return (state.overflow[resource] ?? 0) > 1e-9;
+}
+
 /** Whether a resource is at its storage limit, so any more made is lost. */
 export function isAtCap(state: GameState, mods: Modifiers, resource: ResourceId): boolean {
   return state.resources[resource] >= resourceCap(mods, resource) - 1e-9;
@@ -366,7 +372,8 @@ export function wastedWorkers(state: GameState, mods: Modifiers, job: JobId): 'f
   const workers = state.jobs[job];
   if (workers <= 0) return null;
   const resource = JOBS[job].resource;
-  if (isAtCap(state, mods, resource) && netRate(state, mods, resource) > 1e-9) return 'full';
+  // Judged by what was actually thrown away last tick: Warehouse spoilage keeps a full store a hair under its cap.
+  if (isOverflowing(state, resource)) return 'full';
   if (isDeposit(resource) && state.deposits[resource].left < 1) {
     const each = jobOutput(mods, job);
     const needed = each > 0 ? Math.ceil(depositRegrowth(mods, resource) / each - 1e-9) : 0;
@@ -1088,7 +1095,10 @@ function step(state: GameState, dt: number) {
   }
   for (const r of RESOURCE_ORDER) {
     if (!isWorldUnlocked(state, RESOURCES[r].world)) continue;
-    gain(state, mods, r, grossRate(state, mods, r) * dt);
+    const made = grossRate(state, mods, r) * dt;
+    const room = Math.max(0, resourceCap(mods, r) - state.resources[r]);
+    state.overflow[r] = made > room + 1e-9 ? (made - room) / dt : 0;
+    gain(state, mods, r, made);
     if (state.resources[r] < 0) state.resources[r] = 0;
     // Goods in Warehouses spoil; the rate is a share of what is there, so it never dips below the starting capacity.
     state.resources[r] -= decayRate(state, mods, r) * dt;

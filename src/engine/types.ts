@@ -380,6 +380,8 @@ export interface GameState {
   construction: Partial<Record<NodeId, { done: number; needed: number }>>;
   /** Fraction (0..1) of each upkeep node's effect that ran last tick. */
   efficiency: Partial<Record<NodeId, number>>;
+  /** Production per second lost last tick because storage was full. Not saved. */
+  overflow: Partial<Record<ResourceId, number>>;
   /** The Lab tech that Research streams into; Research never piles up. */
   researching: NodeId | null;
   /**

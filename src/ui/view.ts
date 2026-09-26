@@ -91,7 +91,7 @@ import {
   eatingRate,
   isStarving,
   starvationRate,
-  isAtCap,
+  isOverflowing,
   costOverCap,
 } from '../engine/engine';
 import { formatDuration, formatNumber, formatPerHour } from '../engine/format';
@@ -890,7 +890,7 @@ export class GameView {
       );
       const rate = netRate(state, mods, r);
       // At the cap, anything more made is lost, so the rate would only mislead.
-      const full = capped && rate > 0 && isAtCap(state, mods, r);
+      const full = capped && isOverflowing(state, r);
       setText(row.rate, full ? 'full' : rate === 0 ? '' : `${rate > 0 ? '+' : ''}${formatNumber(rate)}/s`);
       row.rate.classList.toggle('negative', rate < 0);
       row.rate.classList.toggle('full', full);
