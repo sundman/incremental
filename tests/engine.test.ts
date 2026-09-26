@@ -1372,6 +1372,11 @@ describe('work accidents', () => {
     expect(accidentChance(computeModifiers(state), 'miner')).toBeCloseTo(0.4 * 0.7 * 0.8);
   });
 
+  it('is cut 3% per Well', () => {
+    const state = withNodes({ well: 5 });
+    expect(accidentChance(computeModifiers(state), 'farmer')).toBeCloseTo(0.04 * 0.97 ** 5);
+  });
+
   it('is halved by Healing Light, like other deaths', () => {
     const state = unlockAll(withNodes({ healingLight: 1 }));
     state.activeSpells = ['healingLight'];

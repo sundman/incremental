@@ -416,13 +416,16 @@ const nodeList: NodeDef[] = [
     world: 'realm',
     kind: 'building',
     name: 'Well',
-    description: 'Clean water keeps families healthy, so the population grows faster.',
+    description: 'Clean water keeps families healthy, so the population grows faster and fewer workers die.',
     baseCost: { stone: 30, wood: 10 },
     costGrowth: 1.8,
     tier: 1,
     maxLevel: 5,
     requires: ['hut'],
-    effects: [{ stat: 'growth', kind: 'mul', amount: 1.1 }],
+    effects: [
+      { stat: 'growth', kind: 'mul', amount: 1.1 },
+      { stat: 'accidents', kind: 'mul', amount: 0.97 },
+    ],
   },
   {
     id: 'park',
