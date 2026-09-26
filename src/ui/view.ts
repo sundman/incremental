@@ -97,6 +97,7 @@ import {
 import { formatDuration, formatNumber, formatPerHour } from '../engine/format';
 import type { AchievementId, DepositId, GameState, JobId, MetaId, NodeId, ResourceId, WorldId } from '../engine/types';
 import { describeEffect } from './describe';
+import { gameGuide } from './guide';
 
 type Attrs = Record<string, string>;
 
@@ -134,9 +135,9 @@ const RESET_WIPES: Record<WorldId, string> = {
   lab: 'buildings and techs',
 };
 
-type Tab = WorldId | 'shop' | 'achievements';
-const TABS: Tab[] = [...WORLD_ORDER, 'shop', 'achievements'];
-const TAB_NAMES: Record<Exclude<Tab, WorldId>, string> = { shop: 'Echo shop', achievements: 'Achievements' };
+type Tab = WorldId | 'shop' | 'achievements' | 'guide';
+const TABS: Tab[] = [...WORLD_ORDER, 'shop', 'achievements', 'guide'];
+const TAB_NAMES: Record<Exclude<Tab, WorldId>, string> = { shop: 'Echo shop', achievements: 'Achievements', guide: 'Guide' };
 const TAB_KEY = 'incremental-worlds-tab';
 
 function loadTab(): Tab {
@@ -248,6 +249,7 @@ export class GameView {
   private tabs = {} as Record<Tab, TabButton>;
   private tab: Tab = loadTab();
   private achievementPanel!: HTMLElement;
+  private guidePanel!: HTMLElement;
   private achievementCards = {} as Record<AchievementId, { card: HTMLElement; status: HTMLElement; bar: HTMLElement }>;
   /** Per world: the on/off switches for buildings that consume resources, listed in the side column. */
   private switches = {} as Record<WorldId, HTMLElement>;
@@ -281,7 +283,7 @@ export class GameView {
     const shopGrid = h('div', { class: 'shop-grid' });
     for (const id of META_ORDER) shopGrid.append(this.buildMeta(id));
     this.shop = h('section', { class: 'shop', role: 'tabpanel' }, h('h2', {}, 'Echo shop'), this.shopHint, shopGrid);
-    worldsEl.append(this.shop, this.buildAchievements());
+    worldsEl.append(this.shop, this.buildAchievements(), this.buildGuide());
 
     const nav = h('nav', { class: 'tabs', role: 'tablist' });
     for (const tab of TABS) nav.append(this.buildTab(tab));
@@ -312,7 +314,10 @@ export class GameView {
   }
 
   private tabPanel(tab: Tab): HTMLElement {
-    return tab === 'shop' ? this.shop : tab === 'achievements' ? this.achievementPanel : this.worlds[tab].panel;
+    if (tab === 'shop') return this.shop;
+    if (tab === 'achievements') return this.achievementPanel;
+    if (tab === 'guide') return this.guidePanel;
+    return this.worlds[tab].panel;
   }
 
   private selectTab(tab: Tab) {
@@ -362,6 +367,52 @@ export class GameView {
     setText(shop.note, `${formatNumber(state.echoes)} ✦`);
     shop.button.classList.toggle('attention', affordable);
     setText(this.tabs.achievements.note, `${state.achievements.length} / ${ACHIEVEMENT_ORDER.length} reached`);
+  }
+
+  /** Every building, tech, job and rule, built once from the game content (the same source as GAME_CONTENT.md). */
+  private buildGuide(): HTMLElement {
+    const sections = gameGuide().map((s, i) => {
+      const body: HTMLElement[] = [];
+      if (s.intro) body.push(h('p', { class: 'muted' }, s.intro));
+      if (s.list) body.push(h('ul', { class: 'guide-list' }, ...s.list.map((l) => h('li', {}, l))));
+      if (s.table) {
+        const table = h(
+          'table',
+          { class: 'guide-table' },
+          h('thead', {}, h('tr', {}, ...s.table.columns.map((c) => h('th', {}, c)))),
+          h('tbody', {}, ...s.table.rows.map((row) => h('tr', {}, ...row.map((c) => h('td', {}, c))))),
+        );
+        body.push(h('div', { class: 'guide-scroll' }, table));
+      }
+      return h('details', { class: 'guide-section', ...(i < 2 ? { open: '' } : {}) }, h('summary', {}, s.title), ...body);
+    });
+
+    const search = h('input', { class: 'guide-search', type: 'search', placeholder: 'Search the guide, e.g. "Warehouse" or "pollution"' });
+    search.addEventListener('input', () => {
+      const q = search.value.trim().toLowerCase();
+      for (const section of sections) {
+        let hits = 0;
+        for (const row of section.querySelectorAll<HTMLElement>('tbody tr, .guide-list li')) {
+          const show = !q || (row.textContent ?? '').toLowerCase().includes(q);
+          row.hidden = !show;
+          if (show) hits++;
+        }
+        const titleHit = !!q && (section.querySelector('summary')?.textContent ?? '').toLowerCase().includes(q);
+        if (titleHit) for (const row of section.querySelectorAll<HTMLElement>('tbody tr, .guide-list li')) row.hidden = false;
+        section.hidden = !!q && hits === 0 && !titleHit;
+        if (q) section.open = true;
+      }
+    });
+
+    this.guidePanel = h(
+      'section',
+      { class: 'guide', role: 'tabpanel' },
+      h('h2', {}, 'Guide'),
+      h('p', { class: 'muted' }, 'Everything in the game, read straight from its content: costs, effects and what each thing needs.'),
+      search,
+      ...sections,
+    );
+    return this.guidePanel;
   }
 
   private buildAchievements(): HTMLElement {

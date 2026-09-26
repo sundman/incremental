@@ -590,6 +590,82 @@ button {
 }
 
 .tab-achievements { --accent: var(--good); }
+.tab-guide { --accent: var(--text); }
+
+/* Guide tab: every rule, building and tech, as tables. */
+.guide {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--muted);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.guide h2 {
+  margin: 0 0 6px;
+}
+
+.guide-search {
+  width: 100%;
+  max-width: 480px;
+  margin: 4px 0 10px;
+  padding: 6px 10px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+}
+
+.guide-section {
+  border-top: 1px solid var(--border);
+  padding: 6px 0;
+}
+
+.guide-section summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 2px 0;
+}
+
+.guide-section p {
+  margin: 4px 0;
+}
+
+.guide-list {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+
+.guide-scroll {
+  overflow-x: auto;
+}
+
+.guide-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+  margin: 4px 0 8px;
+}
+
+.guide-table th,
+.guide-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.guide-table th {
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.guide-table td:first-child {
+  font-weight: 600;
+  white-space: nowrap;
+}
 
 .shop h2 {
   margin: 0 0 6px;
