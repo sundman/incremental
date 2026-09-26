@@ -383,7 +383,7 @@ describe('deposits', () => {
     state.nodes.coalMine = 5; // 10 pollution
     expect(depositRegrowth(computeModifiers(state), 'wood')).toBeCloseTo(2 / 1.3);
     state.nodes.environmentalScience = 1;
-    expect(depositRegrowth(computeModifiers(state), 'wood')).toBeCloseTo(3 / (1 + 0.03 * 8));
+    expect(depositRegrowth(computeModifiers(state), 'wood')).toBeCloseTo(4 / (1 + 0.03 * 8));
   });
 
   it('refills Stone, Clay and Coal only by magic, whatever the pollution', () => {

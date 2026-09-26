@@ -1390,7 +1390,7 @@ const nodeList: NodeDef[] = [
     tier: 5,
     requires: ['forestry', 'filtration'],
     effects: [
-      { stat: 'regrow:wood', kind: 'mul', amount: 1.5 },
+      { stat: 'regrow:wood', kind: 'mul', amount: 2 },
       { stat: 'pollution', kind: 'mul', amount: 0.8 },
     ],
   },
