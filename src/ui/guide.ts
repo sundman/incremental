@@ -138,7 +138,7 @@ export function gameGuide(): GuideSection[] {
     title: 'Resources',
     table: {
       columns: ['Resource', 'World', 'Storage', 'Echo value', 'Appears with'],
-      rows: RESOURCE_ORDER.map((r) => {
+      rows: WORLD_ORDER.flatMap((w) => RESOURCE_ORDER.filter((r) => RESOURCES[r].world === w)).map((r) => {
         const d = RESOURCES[r];
         return [
           d.name,

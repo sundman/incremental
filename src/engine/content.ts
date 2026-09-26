@@ -42,7 +42,7 @@ export const WORLDS: Record<WorldId, WorldDef> = {
   },
 };
 
-export const WORLD_ORDER: WorldId[] = ['realm', 'arcana', 'lab'];
+export const WORLD_ORDER: WorldId[] = ['realm', 'lab', 'arcana']; // the order they usually open in
 
 export const RESOURCES: Record<ResourceId, ResourceDef> = {
   wood: { id: 'wood', name: 'Wood', world: 'realm', value: 1, baseCap: 1000 },

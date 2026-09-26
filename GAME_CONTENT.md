@@ -9,8 +9,8 @@ Three worlds that feed and hinder each other. Resetting a world earns Echoes to 
 | World | About | How it opens |
 | --- | --- | --- |
 | Realm | Feed your people, put them to work, and raise buildings. | Open from the start. |
-| Arcana | Draw on Mana and discover stranger magic. | Open the Lab and research Occultism, then build a Shrine in the Realm. |
 | Lab | Fund scholars and push the tech tree. | Build a Library in the Realm. It is made of Planks and Bricks, so it needs a Sawmill and a Kiln first. |
+| Arcana | Draw on Mana and discover stranger magic. | Open the Lab and research Occultism, then build a Shrine in the Realm. |
 
 ## Realm rules
 
@@ -40,6 +40,7 @@ Three worlds that feed and hinder each other. Resetting a world earns Echoes to 
 | Glass | Realm | 150 | 20 | Glassworks |
 | Gold | Realm | 100 | 60 | Gold Mine |
 | Runestone | Realm | 100 | 80 | Runesmith |
+| Research | Lab | Unlimited | 2 | — |
 | Mana | Arcana | 300 | 1.5 | — |
 | Essence | Arcana | Unlimited | 15 | Condenser |
 | Fire Essence | Arcana | Unlimited | 40 | Fire Altar |
@@ -47,7 +48,6 @@ Three worlds that feed and hinder each other. Resetting a world earns Echoes to 
 | Shadow Essence | Arcana | Unlimited | 60 | Shadow Well |
 | Time Essence | Arcana | Unlimited | 150 | Time Loom |
 | Aether | Arcana | Unlimited | 120 | Aether Rift |
-| Research | Lab | Unlimited | 2 | — |
 
 ## Deposits
 
@@ -113,6 +113,14 @@ Realm resources are dug from deposits that run out. Buildings open up more.
 | Ley Anchor | 30 Runestone, 100 Bricks | ×2 per level | 5m 00s (×1.05 per level) | 5 | Runesmith | Mana/s ×1.1 (Arcana) |
 | Golem Works | 200 Steel, 50 Runestone | ×1.8 per level | 10m 00s (×1.05 per level) | 10 | Blast Furnace, Runesmith, Animation (Arcana), Automation (Lab) | All Realm production ×1.15; Realm build speed ×1.1; Mana/s ×0.93 (Arcana) |
 
+## Lab buildings
+
+| Building | Cost | Cost growth | Build time | Max | Needs | Effects (each) |
+| --- | --- | --- | --- | --- | --- | --- |
+| Scholar | 500 Food | ×1.5 per level | 5s (×1.05 per level) | ∞ | — | +0.3 Research/s; Uses 0.2 Food/s; Takes 1 idle Realm person |
+| Laboratory | 30 Planks, 20 Iron | ×1.25 per level | 15s (×1.05 per level) | ∞ | Scholar | +1.5 Research/s; All Arcana production ×0.97 (Arcana) |
+| Lab Assistants | 25 Gold | ×1.6 per level | 15s (×1.05 per level) | 10 | Scholar | Research/s ×1.1; Uses 0.2 Food/s |
+
 ## Arcana buildings
 
 | Building | Cost | Cost growth | Build time | Max | Needs | Effects (each) |
@@ -129,14 +137,6 @@ Realm resources are dug from deposits that run out. Buildings open up more.
 | Life Spring | 300 Mana, 40 Essence | ×1.4 per level | 45s (×1.05 per level) | ∞ | Vitalism | +0.1 Life Essence/s; Uses 1 Essence/s |
 | Shadow Well | 800 Mana, 100 Essence | ×1.5 per level | 2m 00s (×1.05 per level) | ∞ | Umbramancy | +0.1 Shadow Essence/s; Uses 1 Essence/s |
 | Time Loom | 300 Essence, 20 Aether | ×1.6 per level | 5m 00s (×1.05 per level) | ∞ | Chronomancy | +0.05 Time Essence/s; Uses 1 Essence/s, 0.02 Aether/s |
-
-## Lab buildings
-
-| Building | Cost | Cost growth | Build time | Max | Needs | Effects (each) |
-| --- | --- | --- | --- | --- | --- | --- |
-| Scholar | 500 Food | ×1.5 per level | 5s (×1.05 per level) | ∞ | — | +0.3 Research/s; Uses 0.2 Food/s; Takes 1 idle Realm person |
-| Laboratory | 30 Planks, 20 Iron | ×1.25 per level | 15s (×1.05 per level) | ∞ | Scholar | +1.5 Research/s; All Arcana production ×0.97 (Arcana) |
-| Lab Assistants | 25 Gold | ×1.6 per level | 15s (×1.05 per level) | 10 | Scholar | Research/s ×1.1; Uses 0.2 Food/s |
 
 ## Lab research
 
