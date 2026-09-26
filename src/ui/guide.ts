@@ -2,6 +2,7 @@ import {
   ACHIEVEMENTS,
   ACHIEVEMENT_ORDER,
   AGES,
+  BUILDING_GROUPS,
   BUILD_TIME_GROWTH,
   DEMONS,
   DEPOSITS,
@@ -81,8 +82,8 @@ function costGrowthText(node: NodeDef): string {
   return `×${node.costGrowth} per level`;
 }
 
-function buildingTable(world: WorldId): GuideSection['table'] {
-  const ids = NODE_ORDER.filter((id) => NODES[id].world === world && NODES[id].kind === 'building');
+function buildingTable(world: WorldId, only?: NodeId[]): GuideSection['table'] {
+  const ids = only ?? NODE_ORDER.filter((id) => NODES[id].world === world && NODES[id].kind === 'building');
   return {
     columns: ['Building', 'Cost', 'Cost growth', 'Build time', 'Max', 'Needs', 'Effects (each)'],
     rows: ids.map((id) => {
@@ -197,7 +198,11 @@ export function gameGuide(): GuideSection[] {
   });
 
   for (const world of WORLD_ORDER) {
-    sections.push({ title: `${WORLDS[world].name} buildings`, table: buildingTable(world) });
+    if (world === 'realm') {
+      for (const group of BUILDING_GROUPS) sections.push({ title: `Realm buildings: ${group.name}`, table: buildingTable(world, group.ids) });
+    } else {
+      sections.push({ title: `${WORLDS[world].name} buildings`, table: buildingTable(world) });
+    }
   }
 
   AGES.forEach((name, i) => {

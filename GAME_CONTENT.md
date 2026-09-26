@@ -84,50 +84,75 @@ Realm resources are dug from deposits that run out. Buildings open up more.
 | Drillers | Oil | 0.2/s | 1.5 deaths/h (2.5%/min) | Oil Well | — |
 | Uranium Miners | Uranium | 0.02/s | 4 deaths/h (6.67%/min) | Uranium Mine | — |
 
-## Realm buildings
+## Realm buildings: Homes and health
 
 | Building | Cost | Cost growth | Build time | Max | Needs | Effects (each) |
 | --- | --- | --- | --- | --- | --- | --- |
 | Hut | 10 Wood, 10 Food | ×4 per level | 5s (×1.05 per level) | ∞ | — | +2 housing; +1 crowding (slows growth) |
-| Warehouse | 600 Wood, 600 Stone | Then: 1.5K Wood, 1K Stone, 400 Planks → 1.2K Planks, 800 Bricks → 1.5K Bricks, 600 Iron, 400 Glass → 900 Steel, 600 Glass → 1.2K Steel, 800 Glass, 300 Gold → 1.3K Steel, 400 Gold, 500 Runestone; ×1.1 per level after | 45s (×1.05 per level) | ∞ | Warehousing (Lab) | +100% Realm storage; Goods in Warehouses spoil +0.02%/s |
-| Machine Shop | 150 Steel, 300 Bricks | ×1.4 per level | 2m 00s (×1.05 per level) | ∞ | Blast Furnace, Precision Tools (Lab) | +0.1 Machine Parts/s; Uses 1 Steel/s, 0.2 Coal/s |
-| Oil Well | 200 Steel, 50 Machine Parts | ×1.5 per level | 2m 00s (×1.05 per level) | ∞ | Combustion Engine (Lab) | +0.05 Oil/s per worker; Oil fields holds +10K Oil; Forest holds −400 Wood |
-| Refinery | 300 Steel, 100 Machine Parts | ×1.5 per level | 5m 00s (×1.05 per level) | ∞ | Oil Well, Polymers (Lab) | +0.2 Plastics/s; +3 pollution (slows growth); Uses 2 Oil/s |
-| Uranium Mine | 500 Steel, 200 Machine Parts | ×1.6 per level | 5m 00s (×1.05 per level) | ∞ | Radioactivity (Lab) | +0.01 Uranium/s per worker; Uranium ore holds +1K Uranium; Forest holds −400 Wood |
-| Silicon Works | 500 Steel, 100 Plastics | ×1.5 per level | 5m 00s (×1.05 per level) | ∞ | Semiconductors (Lab) | +0.1 Silicon/s; +2 pollution (slows growth); Uses 2 Stone/s, 0.3 Coal/s |
-| Chip Fab | 800 Steel, 200 Plastics, 100 Silicon | ×1.6 per level | 10m 00s (×1.05 per level) | ∞ | Silicon Works, Refinery, Transistors (Lab) | +0.05 Electronics/s; Uses 0.5 Silicon/s, 0.1 Plastics/s, 0.05 Gold/s |
+| House | 30 Planks, 20 Bricks | ×1.35 per level | 45s (×1.05 per level) | ∞ | Sawmill, Kiln, Housing (Lab) | +5 housing; +2 crowding (slows growth) |
+| Well | 30 Stone, 10 Wood | ×1.8 per level | 5s (×1.05 per level) | 5 | Hut | Population growth ×1.1; Work accidents −3%; Starvation −20% |
+| Aqueduct | 150 Stone, 60 Bricks | ×1.6 per level | 2m 00s (×1.05 per level) | 5 | Well, Aqueducts (Lab) | Crowding −15% |
+| Park | 60 Wood, 40 Stone, 40 Food | ×1.6 per level | 15s (×1.05 per level) | 5 | Well, Environmental Science (Lab) | Pollution −10% |
+| Tavern | 40 Planks, 100 Food | ×1.5 per level | 45s (×1.05 per level) | ∞ | House | +1.2 people/min growth; Uses 0.02 Gold/s |
+
+## Realm buildings: Food and forest
+
+| Building | Cost | Cost growth | Build time | Max | Needs | Effects (each) |
+| --- | --- | --- | --- | --- | --- | --- |
 | Farm | 20 Wood | ×1.3 per level | 5s (×1.05 per level) | ∞ | Agriculture (Lab) | +0.3 Food/s per worker |
+| Irrigation | 50 Planks, 80 Stone | ×1.35 per level | 2m 00s (×1.05 per level) | ∞ | Farm, Engineering (Lab) | +0.4 Food/s per worker |
 | Lumber Camp | 25 Wood, 10 Iron | ×1.3 per level | 5s (×1.05 per level) | ∞ | Forestry (Lab) | +0.2 Wood/s per worker |
 | Forester's Lodge | 50 Wood, 30 Stone | ×1.5 per level | 15s (×1.05 per level) | 10 | Lumber Camp | Forest regrows +0.25 Wood/s |
+
+## Realm buildings: Quarries and mines
+
+| Building | Cost | Cost growth | Build time | Max | Needs | Effects (each) |
+| --- | --- | --- | --- | --- | --- | --- |
 | Quarry | 35 Wood | ×1.8 per level | 5s (×1.05 per level) | ∞ | — | +0.15 Stone/s per worker; Stone quarries holds +5K Stone; Forest holds −500 Wood |
 | Clay Pit | 40 Wood, 20 Stone | ×1.8 per level | 15s (×1.05 per level) | ∞ | Quarry | +0.1 Clay/s per worker; Clay beds holds +3K Clay; Forest holds −300 Wood |
+| Mine | 60 Wood, 80 Stone | ×1.35 per level | 15s (×1.05 per level) | ∞ | Quarry, Mining (Lab) | +0.05 Iron/s per worker; Iron veins holds +3K Iron; Forest holds −400 Wood |
+| Coal Mine | 60 Planks, 100 Stone | ×1.35 per level | 45s (×1.05 per level) | ∞ | Mine, Sawmill | +0.05 Coal/s per worker; +2 pollution (slows growth); Coal seams holds +4K Coal; Forest holds −400 Wood |
+| Gold Mine | 300 Stone, 150 Planks | ×1.4 per level | 2m 00s (×1.05 per level) | ∞ | Mine, Geology (Lab) | +0.02 Gold/s per worker; Gold seams holds +500 Gold; Forest holds −400 Wood |
+| Oil Well | 200 Steel, 50 Machine Parts | ×1.5 per level | 2m 00s (×1.05 per level) | ∞ | Combustion Engine (Lab) | +0.05 Oil/s per worker; Oil fields holds +10K Oil; Forest holds −400 Wood |
+| Uranium Mine | 500 Steel, 200 Machine Parts | ×1.6 per level | 5m 00s (×1.05 per level) | ∞ | Radioactivity (Lab) | +0.01 Uranium/s per worker; Uranium ore holds +1K Uranium; Forest holds −400 Wood |
+
+## Realm buildings: Workshops and industry
+
+| Building | Cost | Cost growth | Build time | Max | Needs | Effects (each) |
+| --- | --- | --- | --- | --- | --- | --- |
 | Workshop | 40 Wood, 25 Stone | ×2.5 per level | 15s (×1.05 per level) | 10 | Quarry | Wood/s ×1.15; Stone/s ×1.15; Clay/s ×1.15; Iron/s ×1.15; Woodcutters' accidents +10%; Stonecutters' accidents +10%; Diggers' accidents +10%; Miners' accidents +10% |
 | Sawmill | 80 Wood, 30 Stone | ×1.35 per level | 15s (×1.05 per level) | ∞ | Workshop | +0.1 Planks/s; Uses 1 Wood/s |
 | Kiln | 120 Stone, 15 Planks | ×1.35 per level | 15s (×1.05 per level) | ∞ | Clay Pit, Sawmill | +0.1 Bricks/s; +1 pollution (slows growth); Uses 1 Clay/s, 0.5 Wood/s |
-| House | 30 Planks, 20 Bricks | ×1.35 per level | 45s (×1.05 per level) | ∞ | Sawmill, Kiln, Housing (Lab) | +5 housing; +2 crowding (slows growth) |
-| Mine | 60 Wood, 80 Stone | ×1.35 per level | 15s (×1.05 per level) | ∞ | Quarry, Mining (Lab) | +0.05 Iron/s per worker; Iron veins holds +3K Iron; Forest holds −400 Wood |
-| Coal Mine | 60 Planks, 100 Stone | ×1.35 per level | 45s (×1.05 per level) | ∞ | Mine, Sawmill | +0.05 Coal/s per worker; +2 pollution (slows growth); Coal seams holds +4K Coal; Forest holds −400 Wood |
 | Foundry | 150 Bricks, 40 Iron | ×3 per level | 2m 00s (×1.05 per level) | 10 | Mine, Kiln | All Realm production ×1.2; +2 pollution (slows growth) |
-| Market | 100 Planks, 60 Bricks | ×1.8 per level | 45s (×1.05 per level) | 5 | House, Currency (Lab) | Realm costs ×0.95 |
-| Builders' Guild | 60 Planks, 40 Bricks | ×1.6 per level | 45s (×1.05 per level) | 10 | Sawmill, Kiln | Realm build speed ×1.15 |
-| Well | 30 Stone, 10 Wood | ×1.8 per level | 5s (×1.05 per level) | 5 | Hut | Population growth ×1.1; Work accidents −3%; Starvation −20% |
-| Park | 60 Wood, 40 Stone, 40 Food | ×1.6 per level | 15s (×1.05 per level) | 5 | Well, Environmental Science (Lab) | Pollution −10% |
-| Tavern | 40 Planks, 100 Food | ×1.5 per level | 45s (×1.05 per level) | ∞ | House | +1.2 people/min growth; Uses 0.02 Gold/s |
-| Library | 60 Planks, 40 Bricks | ×1.6 per level | 45s (×1.05 per level) | ∞ | Sawmill, Kiln | +0.5 Research/s (Lab); Opens Lab; Kept for good; the tech resets, so each run can add more |
-| Shrine | 120 Wood, 150 Stone | ×1.3 per level | 45s (×1.05 per level) | ∞ | Workshop, Occultism (Lab) | +0.3 Mana/s (Arcana); Opens Arcana |
-| Irrigation | 50 Planks, 80 Stone | ×1.35 per level | 2m 00s (×1.05 per level) | ∞ | Farm, Engineering (Lab) | +0.4 Food/s per worker |
-| Aqueduct | 150 Stone, 60 Bricks | ×1.6 per level | 2m 00s (×1.05 per level) | 5 | Well, Aqueducts (Lab) | Crowding −15% |
 | Blast Furnace | 200 Bricks, 100 Iron | ×1.4 per level | 2m 00s (×1.05 per level) | ∞ | Coal Mine, Metallurgy (Lab) | +0.25 Steel/s; +3 pollution (slows growth); Uses 2.5 Iron/s, 0.5 Coal/s |
 | Glassworks | 150 Bricks, 50 Coal | ×1.4 per level | 2m 00s (×1.05 per level) | ∞ | Kiln, Coal Mine, Optics (Lab) | +0.2 Glass/s; +2 pollution (slows growth); Uses 2 Stone/s, 0.3 Coal/s |
-| Gold Mine | 300 Stone, 150 Planks | ×1.4 per level | 2m 00s (×1.05 per level) | ∞ | Mine, Geology (Lab) | +0.02 Gold/s per worker; Gold seams holds +500 Gold; Forest holds −400 Wood |
-| Printing Press | 150 Planks, 30 Steel | ×1.4 per level | 2m 00s (×1.05 per level) | ∞ | Printing (Lab) | +1 Research/s (Lab); -0.9 Mana/s (Arcana) |
-| Church | 120 Bricks, 40 Glass | ×1.4 per level | 2m 00s (×1.05 per level) | ∞ | Shrine | +1 Mana/s (Arcana); -0.9 Research/s (Lab) |
-| Observatory | 40 Glass, 100 Bricks | ×1.5 per level | 5m 00s (×1.05 per level) | 10 | Optics (Lab) | +1.5 Research/s (Lab); Aether/s ×1.05 (Arcana) |
-| University | 300 Bricks, 50 Glass, 20 Gold | ×1.6 per level | 5m 00s (×1.05 per level) | 10 | Library, Universities (Lab) | All Lab production ×1.15 (Lab); Mana/s ×0.95 (Arcana) |
-| Cathedral | 400 Bricks, 80 Glass, 40 Gold | ×1.8 per level | 10m 00s (×1.05 per level) | 5 | Shrine, Glassworks | All Arcana production ×1.2 (Arcana); Research/s ×0.95 (Lab) |
 | Runesmith | 200 Stone, 100 Planks | ×1.4 per level | 5m 00s (×1.05 per level) | ∞ | Rune Lore (Arcana) | +0.05 Runestone/s; Uses 1 Stone/s, 0.1 Essence/s |
-| Ley Anchor | 30 Runestone, 100 Bricks | ×2 per level | 5m 00s (×1.05 per level) | 5 | Runesmith | Mana/s ×1.1 (Arcana) |
+| Machine Shop | 150 Steel, 300 Bricks | ×1.4 per level | 2m 00s (×1.05 per level) | ∞ | Blast Furnace, Precision Tools (Lab) | +0.1 Machine Parts/s; Uses 1 Steel/s, 0.2 Coal/s |
+| Refinery | 300 Steel, 100 Machine Parts | ×1.5 per level | 5m 00s (×1.05 per level) | ∞ | Oil Well, Polymers (Lab) | +0.2 Plastics/s; +3 pollution (slows growth); Uses 2 Oil/s |
+| Silicon Works | 500 Steel, 100 Plastics | ×1.5 per level | 5m 00s (×1.05 per level) | ∞ | Semiconductors (Lab) | +0.1 Silicon/s; +2 pollution (slows growth); Uses 2 Stone/s, 0.3 Coal/s |
+| Chip Fab | 800 Steel, 200 Plastics, 100 Silicon | ×1.6 per level | 10m 00s (×1.05 per level) | ∞ | Silicon Works, Refinery, Transistors (Lab) | +0.05 Electronics/s; Uses 0.5 Silicon/s, 0.1 Plastics/s, 0.05 Gold/s |
 | Golem Works | 200 Steel, 50 Runestone | ×1.8 per level | 10m 00s (×1.05 per level) | 10 | Blast Furnace, Runesmith, Animation (Arcana), Steam Power (Lab) | All Realm production ×1.15; Realm build speed ×1.1; Mana/s ×0.93 (Arcana) |
+
+## Realm buildings: Town
+
+| Building | Cost | Cost growth | Build time | Max | Needs | Effects (each) |
+| --- | --- | --- | --- | --- | --- | --- |
+| Warehouse | 600 Wood, 600 Stone | Then: 1.5K Wood, 1K Stone, 400 Planks → 1.2K Planks, 800 Bricks → 1.5K Bricks, 600 Iron, 400 Glass → 900 Steel, 600 Glass → 1.2K Steel, 800 Glass, 300 Gold → 1.3K Steel, 400 Gold, 500 Runestone; ×1.1 per level after | 45s (×1.05 per level) | ∞ | Warehousing (Lab) | +100% Realm storage; Goods in Warehouses spoil +0.02%/s |
+| Market | 100 Planks, 60 Bricks | ×1.8 per level | 45s (×1.05 per level) | 5 | House, Currency (Lab) | Realm costs ×0.95 |
+| Builders' Guild | 60 Planks, 40 Bricks | ×1.6 per level | 45s (×1.05 per level) | 10 | Sawmill, Kiln | Realm build speed ×1.15 |
+
+## Realm buildings: Learning and faith
+
+| Building | Cost | Cost growth | Build time | Max | Needs | Effects (each) |
+| --- | --- | --- | --- | --- | --- | --- |
+| Library | 60 Planks, 40 Bricks | ×1.6 per level | 45s (×1.05 per level) | ∞ | Sawmill, Kiln | +0.5 Research/s (Lab); Opens Lab; Kept for good; the tech resets, so each run can add more |
+| Printing Press | 150 Planks, 30 Steel | ×1.4 per level | 2m 00s (×1.05 per level) | ∞ | Printing (Lab) | +1 Research/s (Lab); -0.9 Mana/s (Arcana) |
+| University | 300 Bricks, 50 Glass, 20 Gold | ×1.6 per level | 5m 00s (×1.05 per level) | 10 | Library, Universities (Lab) | All Lab production ×1.15 (Lab); Mana/s ×0.95 (Arcana) |
+| Observatory | 40 Glass, 100 Bricks | ×1.5 per level | 5m 00s (×1.05 per level) | 10 | Optics (Lab) | +1.5 Research/s (Lab); Aether/s ×1.05 (Arcana) |
+| Shrine | 120 Wood, 150 Stone | ×1.3 per level | 45s (×1.05 per level) | ∞ | Workshop, Occultism (Lab) | +0.3 Mana/s (Arcana); Opens Arcana |
+| Church | 120 Bricks, 40 Glass | ×1.4 per level | 2m 00s (×1.05 per level) | ∞ | Shrine | +1 Mana/s (Arcana); -0.9 Research/s (Lab) |
+| Cathedral | 400 Bricks, 80 Glass, 40 Gold | ×1.8 per level | 10m 00s (×1.05 per level) | 5 | Shrine, Glassworks | All Arcana production ×1.2 (Arcana); Research/s ×0.95 (Lab) |
+| Ley Anchor | 30 Runestone, 100 Bricks | ×2 per level | 5m 00s (×1.05 per level) | 5 | Runesmith | Mana/s ×1.1 (Arcana) |
 
 ## Lab buildings
 

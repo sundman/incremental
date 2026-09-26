@@ -67,7 +67,7 @@ import {
   costOverCap,
   isAtCap,
 } from '../src/engine/engine';
-import { DEPOSITS, NODES, NODE_ORDER, RESOURCES, ageCost } from '../src/engine/content';
+import { BUILDING_GROUPS, DEPOSITS, NODES, NODE_ORDER, RESOURCES, ageCost } from '../src/engine/content';
 import type { GameState, JobId, NodeId, ResourceId } from '../src/engine/types';
 
 // Work accidents are random; keep them off unless a test turns them on.
@@ -1939,5 +1939,13 @@ describe('late-age industry', () => {
     const spoil = decayRate(state, computeModifiers(state), 'wood');
     withNodes({ railways: 1 }, state);
     expect(decayRate(state, computeModifiers(state), 'wood')).toBeCloseTo(spoil / 2);
+  });
+});
+
+describe('building groups', () => {
+  it('put every Realm building in exactly one group', () => {
+    const grouped = BUILDING_GROUPS.flatMap((g) => g.ids);
+    const realm = NODE_ORDER.filter((id) => NODES[id].world === 'realm' && NODES[id].kind === 'building');
+    expect([...grouped].sort()).toEqual([...realm].sort());
   });
 });

@@ -2,6 +2,7 @@ import {
   ACHIEVEMENTS,
   ACHIEVEMENT_ORDER,
   AGES,
+  BUILDING_GROUPS,
   DEMONS,
   DEPOSITS,
   DEPOSIT_ORDER,
@@ -249,6 +250,8 @@ export class GameView {
   private treeDialog = h('dialog', { class: 'tech-tree' });
   private researchStatus = h('p', { class: 'research-status' });
   private ageStatus = h('p', { class: 'age-status' });
+  /** The Realm's building groups, hidden while none of their buildings are listed. */
+  private buildingGroups: { section: HTMLElement; ids: NodeId[] }[] = [];
   private treeBody = h('div', { class: 'tree-columns' });
   private shop: HTMLElement;
   private shopHint: HTMLElement;
@@ -487,13 +490,25 @@ export class GameView {
       switchList,
     );
 
-    const buildings = h('div', { class: 'nodes' });
+    const buildings = h('div', { class: world === 'realm' ? 'building-groups' : 'nodes' });
     const techs = h('div', { class: 'nodes' });
     const spells = h('div', { class: 'nodes' });
+    // The Realm has many buildings: they are shown in groups, each with its own heading.
+    const groupOf = new Map<NodeId, HTMLElement>();
+    if (world === 'realm') {
+      for (const group of BUILDING_GROUPS) {
+        const grid = h('div', { class: 'nodes' });
+        const section = h('div', { class: 'building-group' }, h('h4', {}, group.name), grid);
+        buildings.append(section);
+        this.buildingGroups.push({ section, ids: group.ids });
+        for (const id of group.ids) groupOf.set(id, grid);
+      }
+    }
     for (const id of NODE_ORDER) {
       const node = NODES[id];
       if (node.world !== world) continue;
-      (node.spell ? spells : node.kind === 'tech' ? techs : buildings).append(this.buildNode(id, switchList));
+      const home = node.spell ? spells : node.kind === 'tech' ? techs : (groupOf.get(id) ?? buildings);
+      home.append(this.buildNode(id, switchList));
     }
 
     const incoming = h('ul', { class: 'links' });
@@ -870,6 +885,7 @@ export class GameView {
     if (this.treeDialog.open) this.renderTree(mods);
     this.renderTabs(mods);
     this.renderSwitches();
+    for (const g of this.buildingGroups) setHidden(g.section, g.ids.every((id) => this.nodes[id].card.hidden));
     this.renderLog();
     this.renderAchievements(mods);
 

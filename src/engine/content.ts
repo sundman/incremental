@@ -1609,6 +1609,35 @@ const nodeList: NodeDef[] = [
 ];
 
 export const NODES = Object.fromEntries(nodeList.map((n) => [n.id, n])) as Record<NodeId, NodeDef>;
+
+/** How the Realm's buildings are grouped on screen and in the Guide, so they are easier to find. */
+export const BUILDING_GROUPS: { name: string; ids: NodeId[] }[] = [
+  { name: 'Homes and health', ids: ['hut', 'house', 'well', 'aqueduct', 'park', 'tavern'] },
+  { name: 'Food and forest', ids: ['farm', 'irrigation', 'lumberCamp', 'foresterLodge'] },
+  { name: 'Quarries and mines', ids: ['quarry', 'clayPit', 'mine', 'coalMine', 'goldMine', 'oilWell', 'uraniumMine'] },
+  {
+    name: 'Workshops and industry',
+    ids: [
+      'workshop',
+      'sawmill',
+      'kiln',
+      'foundry',
+      'blastFurnace',
+      'glassworks',
+      'runesmith',
+      'machineShop',
+      'refinery',
+      'siliconWorks',
+      'chipFab',
+      'golemWorks',
+    ],
+  },
+  { name: 'Town', ids: ['warehouse', 'market', 'buildersGuild'] },
+  {
+    name: 'Learning and faith',
+    ids: ['library', 'printingPress', 'university', 'observatory', 'shrine', 'church', 'cathedral', 'leyAnchor'],
+  },
+];
 export const NODE_ORDER: NodeId[] = nodeList.map((n) => n.id);
 
 const metaList: MetaDef[] = [
