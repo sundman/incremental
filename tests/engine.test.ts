@@ -1648,3 +1648,27 @@ describe('quarries and clay pits', () => {
     expect(depositMax(state, computeModifiers(state), 'stone')).toBe(0);
   });
 });
+
+describe('I Can\'t See the Forest or All the Trees', () => {
+  it('is reached once Quarries and Clay Pits leave the forest no room at all', () => {
+    const state = withNodes({ quarry: 15 }); // 7,500 of 8,000 cleared
+    checkAchievements(state);
+    expect(state.achievements).not.toContain('deforested');
+    state.nodes.clayPit = 2; // 600 more: nothing left
+    checkAchievements(state);
+    expect(state.achievements).toContain('deforested');
+  });
+
+  it('makes the forest 2,000 Wood bigger at once, and full after every Realm reset', () => {
+    const state = withNodes({ quarry: 16 }); // exactly 8,000 cleared
+    state.deposits.wood.left = 0;
+    checkAchievements(state);
+    expect(state.achievements).toContain('deforested');
+    expect(state.deposits.wood.left).toBe(2000);
+    expect(depositMax(state, computeModifiers(state), 'wood')).toBe(2000); // the Quarries still clear 8,000
+    state.runEarned.realm = 1e6;
+    resetWorld(state, 'realm');
+    expect(depositMax(state, computeModifiers(state), 'wood')).toBe(10000);
+    expect(state.deposits.wood.left).toBe(10000);
+  });
+});

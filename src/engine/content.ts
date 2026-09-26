@@ -1663,6 +1663,22 @@ const achievementList: AchievementDef[] = [
     progress: (state) => [Math.floor(state.population), 10],
     startPeople: 2,
   },
+  {
+    id: 'deforested',
+    name: 'I Can\'t See the Forest or All the Trees',
+    goal: 'Clear the whole forest away with Quarries and Clay Pits, so it cannot hold a single tree.',
+    reward: 'The forest is 2,000 Wood bigger, and every Realm run starts with it full.',
+    progress: (state, mods) => {
+      // How much the buildings have cleared, against the forest there was to clear.
+      const cleared = nodeList.reduce((sum, n) => {
+        const cut = n.effects.find((e) => e.stat === 'size:wood' && e.kind === 'add' && e.amount < 0);
+        return cut ? sum - cut.amount * state.nodes[n.id] : sum;
+      }, 0);
+      const left = Math.max(0, state.deposits.wood.max + (mods.get('size:wood')?.add ?? 0));
+      return [cleared, cleared + left];
+    },
+    effects: [{ stat: 'size:wood', kind: 'add', amount: 2000 }],
+  },
 ];
 
 export const ACHIEVEMENTS = Object.fromEntries(achievementList.map((a) => [a.id, a])) as Record<AchievementId, AchievementDef>;

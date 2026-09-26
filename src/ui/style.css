@@ -560,6 +560,7 @@ button {
 .achievement-status {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .achievement.done .achievement-status {

@@ -317,7 +317,10 @@ export interface MetaDef {
   effects?: Effect[];
 }
 
-export type AchievementId = 'village';
+export type AchievementId = 'village' | 'deforested';
+
+/** Combined effects on each stat: every `add` summed, every `mul` multiplied. */
+export type StatTotals = ReadonlyMap<Stat, { add: number; mul: number }>;
 
 /** A goal that, once reached, stays reached through every reset and gives a lasting reward. */
 export interface AchievementDef {
@@ -328,9 +331,11 @@ export interface AchievementDef {
   /** The reward, in words. */
   reward: string;
   /** Where you are now and where the goal is, e.g. [7, 10] people. */
-  progress: (state: GameState) => [current: number, target: number];
+  progress: (state: GameState, mods: StatTotals) => [current: number, target: number];
   /** People every Realm run starts with on top of the usual. */
   startPeople?: number;
+  /** Lasting effects once reached, like a building's (e.g. a bigger forest). */
+  effects?: Effect[];
 }
 
 /** A line in the chronicle, e.g. who died and how. */

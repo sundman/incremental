@@ -391,12 +391,12 @@ export class GameView {
     return this.achievementPanel;
   }
 
-  private renderAchievements() {
+  private renderAchievements(mods: Modifiers) {
     const state = this.state;
     for (const id of ACHIEVEMENT_ORDER) {
       const { card, status, bar } = this.achievementCards[id];
       const done = state.achievements.includes(id);
-      const [current, target] = ACHIEVEMENTS[id].progress(state);
+      const [current, target] = ACHIEVEMENTS[id].progress(state, mods);
       card.classList.toggle('done', done);
       setText(status, done ? '✓ Reached' : `${formatNumber(Math.min(current, target))} / ${formatNumber(target)}`);
       bar.style.setProperty('--progress', `${done ? 100 : Math.min(100, (current / target) * 100).toFixed(1)}%`);
@@ -805,7 +805,7 @@ export class GameView {
     this.renderTabs(mods);
     this.renderSwitches();
     this.renderLog();
-    this.renderAchievements();
+    this.renderAchievements(mods);
 
     const anyGain = WORLD_ORDER.some((w) => isWorldUnlocked(state, w) && echoGain(state, w) > 0);
     setHidden(this.shopHint, state.totalEchoes > 0);

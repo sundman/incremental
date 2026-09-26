@@ -85,11 +85,13 @@ export function startPopulation(state: GameState): number {
 
 /** Marks every achievement whose goal is met, once, and writes it in the chronicle. */
 export function checkAchievements(state: GameState) {
+  const mods = computeModifiers(state);
   for (const id of ACHIEVEMENT_ORDER) {
     if (state.achievements.includes(id)) continue;
-    const [current, target] = ACHIEVEMENTS[id].progress(state);
-    if (current < target) continue;
+    const [current, target] = ACHIEVEMENTS[id].progress(state, mods);
+    if (target <= 0 || current < target) continue;
     state.achievements.push(id);
+    growDeposits(state, ACHIEVEMENTS[id].effects ?? []);
     addLog(state, `Achievement: ${ACHIEVEMENTS[id].name}! ${ACHIEVEMENTS[id].reward}`, 'achievement');
   }
 }
@@ -295,6 +297,9 @@ export function computeModifiers(state: GameState): Modifiers {
     const effects = META[id].effects;
     if (level <= 0 || !effects) continue;
     for (const effect of effects) bump(mods, effect, effect.amount, level);
+  }
+  for (const id of state.achievements) {
+    for (const effect of ACHIEVEMENTS[id].effects ?? []) bump(mods, effect, effect.amount, 1);
   }
   return mods;
 }
@@ -967,14 +972,18 @@ export function completeConstruction(state: GameState, id: NodeId) {
   finishLevel(state, id);
 }
 
-function finishLevel(state: GameState, id: NodeId) {
-  state.nodes[id] += 1;
-  // A new Quarry or Clay Pit opens up fresh ground: its extra deposit size is there to be worked at once.
-  for (const effect of NODES[id].effects) {
+/** New deposit size (a Quarry's fresh ground, a bigger forest) is there to be worked at once. */
+function growDeposits(state: GameState, effects: Effect[]) {
+  for (const effect of effects) {
     if (effect.kind === 'add' && effect.amount > 0 && effect.stat.startsWith('size:')) {
       state.deposits[effect.stat.slice('size:'.length) as DepositId].left += effect.amount;
     }
   }
+}
+
+function finishLevel(state: GameState, id: NodeId) {
+  state.nodes[id] += 1;
+  growDeposits(state, NODES[id].effects);
   const opens = NODES[id].unlocksWorld;
   if (opens && !isWorldUnlocked(state, opens)) {
     state.unlockedWorlds.push(opens);
@@ -1200,10 +1209,13 @@ export function resetWorld(state: GameState, world: WorldId): number {
     // Only the survivors are left, so a demon horde has nothing more to eat.
     endHorde(state);
     // Deposits come back full and bigger, the more of them was gathered this run.
+    // Full means their whole size, achievement bonuses included (the Realm's buildings are gone by now).
     for (const id of DEPOSIT_ORDER) {
       const max = nextDepositMax(state, id);
       state.deposits[id] = { left: max, max, cut: 0 };
     }
+    const fresh = computeModifiers(state);
+    for (const id of DEPOSIT_ORDER) state.deposits[id].left = depositMax(state, fresh, id);
     state.population = startPopulation(state);
     state.resources.food = POPULATION.startFood;
     state.hunger = 0;
