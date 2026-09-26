@@ -87,7 +87,8 @@ export function statWorld(stat: Stat): WorldId {
     stat === 'pollution' ||
     stat.startsWith('regrow:') ||
     stat.startsWith('size:') ||
-    stat === 'deaths'
+    stat === 'deaths' ||
+    stat === 'accidents'
   ) {
     return 'realm';
   }
@@ -103,6 +104,7 @@ export function isHelpful(effect: Effect): boolean {
   const lowerIsBetter =
     effect.stat.startsWith('cost:') ||
     effect.stat === 'deaths' ||
+    effect.stat === 'accidents' ||
     effect.stat === 'crowding' ||
     effect.stat === 'pollution';
   const increases = effect.kind === 'add' ? effect.amount > 0 : effect.amount > 1;
@@ -545,9 +547,9 @@ export function setAccidentRandom(source: () => number): () => number {
   return previous;
 }
 
-/** Chance per hour that one worker in a job dies in an accident; Healing Light and other `deaths` multipliers lower it. */
+/** Chance per hour that one worker in a job dies in an accident; Medicine and Healing Light lower it. */
 export function accidentChance(mods: Modifiers, job: JobId): number {
-  return JOBS[job].accidentsPerHour * getMul(mods, 'deaths');
+  return JOBS[job].accidentsPerHour * getMul(mods, 'deaths') * getMul(mods, 'accidents');
 }
 
 /** Workers expected to die in accidents per hour, across every job. */

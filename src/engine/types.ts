@@ -38,6 +38,7 @@ export type ResourceId =
  * - `regrow:<deposit>`  how fast one of the Realm's deposits (forest, quarries...) refills per second
  * - `size:<deposit>`    how much one of the Realm's deposits can hold this run
  * - `deaths`           Realm people killed per hour
+ * - `accidents`        chance of Realm workers dying at work (only `mul` is used)
  * - `speed:<world>`    build speed multiplier in a world (higher is faster)
  * - `cap:<resource>`   how much of a resource can be stored (only for resources with a `baseCap`)
  * - `storage:<world>`  more storage for every capped resource in a world: `add` 1 is one more `baseCap` of each
@@ -55,6 +56,7 @@ export type Stat =
   | `regrow:${DepositId}`
   | `size:${DepositId}`
   | 'deaths'
+  | 'accidents'
   | `speed:${WorldId}`
   | `cap:${ResourceId}`
   | `storage:${WorldId}`;

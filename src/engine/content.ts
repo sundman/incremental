@@ -1219,12 +1219,15 @@ const nodeList: NodeDef[] = [
     world: 'lab',
     kind: 'tech',
     name: 'Medicine',
-    description: 'Fewer people die young in crowded homes, so crowding slows growth less.',
+    description: 'Fewer people die young in crowded homes, so crowding slows growth less, and injured workers are patched up.',
     baseCost: { research: 300, food: 200 },
     costGrowth: 1,
     tier: 2,
     requires: ['scientificMethod'],
-    effects: [{ stat: 'crowding', kind: 'mul', amount: 0.7 }],
+    effects: [
+      { stat: 'crowding', kind: 'mul', amount: 0.7 },
+      { stat: 'accidents', kind: 'mul', amount: 0.7 },
+    ],
   },
   {
     id: 'sanitation',
