@@ -1234,12 +1234,15 @@ const nodeList: NodeDef[] = [
     world: 'lab',
     kind: 'tech',
     name: 'Sanitation',
-    description: 'Sewers and clean streets. Crowding slows growth far less.',
+    description: 'Sewers and clean streets. Crowding slows growth far less, and fewer workers die of infected wounds.',
     baseCost: { research: 900, bricks: 150 },
     costGrowth: 1,
     tier: 3,
     requires: ['medicine', 'engineering'],
-    effects: [{ stat: 'crowding', kind: 'mul', amount: 0.6 }],
+    effects: [
+      { stat: 'crowding', kind: 'mul', amount: 0.6 },
+      { stat: 'accidents', kind: 'mul', amount: 0.8 },
+    ],
   },
   {
     id: 'logistics',

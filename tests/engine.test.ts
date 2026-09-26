@@ -1366,6 +1366,11 @@ describe('work accidents', () => {
     expect(mods.get('deaths')).toBeUndefined();
   });
 
+  it('is cut another 20% by Sanitation, on top of Medicine', () => {
+    const state = unlockAll(withNodes({ medicine: 1, sanitation: 1 }));
+    expect(accidentChance(computeModifiers(state), 'miner')).toBeCloseTo(0.4 * 0.7 * 0.8);
+  });
+
   it('is halved by Healing Light, like other deaths', () => {
     const state = unlockAll(withNodes({ healingLight: 1 }));
     state.activeSpells = ['healingLight'];
