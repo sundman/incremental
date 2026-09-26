@@ -168,3 +168,13 @@ describe('achievements in saves', () => {
     expect(deserialize('{}').achievements).toEqual([]);
   });
 });
+
+describe('deposits from older saves', () => {
+  it('take the old fixed Stone and Clay sizes out, keeping what Rich Earth added', () => {
+    const old = { version: 1, deposits: { stone: { left: 45000, max: 51000, cut: 6000 }, clay: { left: 30000, max: 30000, cut: 0 } } };
+    const loaded = deserialize(JSON.stringify(old));
+    expect(loaded.deposits.stone.max).toBe(1000);
+    expect(loaded.deposits.clay.max).toBe(0);
+    expect(deserialize(serialize(loaded)).deposits.stone.max).toBe(1000); // only once
+  });
+});

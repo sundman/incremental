@@ -1,5 +1,5 @@
 import { canSwitchOff, createInitialState, isResearch, LOG_LIMIT, SAVE_VERSION } from './engine';
-import type { GameState, LogEntry } from './types';
+import type { DepositId, GameState, LogEntry } from './types';
 import { ACHIEVEMENT_ORDER, DEMONS, DEPOSIT_ORDER, NODES, NODE_ORDER, WORLD_ORDER } from './content';
 
 export const SAVE_KEY = 'incremental-worlds-save';
@@ -54,11 +54,14 @@ function readDeposits(raw: Record<string, unknown>, fresh: GameState['deposits']
   const saved = (raw.deposits && typeof raw.deposits === 'object' ? raw.deposits : {}) as Record<string, unknown>;
   // Saves from before Stone, Clay and Coal ran out kept the forest in its own fields.
   const legacyWood = { left: raw.forest, max: raw.forestMax, cut: raw.forestCut };
+  // Before version 2, Stone and Clay deposits started at a fixed size instead of growing with each Quarry and Pit.
+  const oldStart: Partial<Record<DepositId, number>> = num(raw.version, 1) < 2 ? { stone: 50000, clay: 30000 } : {};
   const out = {} as GameState['deposits'];
   for (const id of DEPOSIT_ORDER) {
     const d = (id === 'wood' && !saved.wood ? legacyWood : (saved[id] ?? {})) as Record<string, unknown>;
-    const max = Math.max(1, num(d.max, fresh[id].max));
-    out[id] = { left: Math.min(max, Math.max(0, num(d.left, max))), max, cut: Math.max(0, num(d.cut, 0)) };
+    const max = Math.max(0, num(d.max, fresh[id].max) - (oldStart[id] ?? 0));
+    // What is left can be more than the base size (Quarries add to it); each tick keeps it within the real size.
+    out[id] = { left: Math.max(0, num(d.left, max)), max, cut: Math.max(0, num(d.cut, 0)) };
   }
   return out;
 }

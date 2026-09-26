@@ -378,7 +378,7 @@ describe('deposits', () => {
     state.deposits.stone.left = 5;
     tick(state, 60);
     expect(state.resources.stone).toBeCloseTo(5);
-    expect(DEPOSITS.stone.start).toBeGreaterThan(DEPOSITS.wood.start);
+    expect(DEPOSITS.stone.start).toBe(0); // Quarries open up all the Stone there is
   });
 
   it('shrinks the forest by 500 Wood for every Quarry, and gives it back on a Realm reset', () => {
@@ -1616,5 +1616,35 @@ describe('eating and starvation', () => {
 
   it('is slowed 20% by each Well', () => {
     expect(starvationRate(computeModifiers(withNodes({ well: 2 })))).toBeCloseTo((1 / 30) * 0.8 ** 2);
+  });
+});
+
+describe('quarries and clay pits', () => {
+  it('open up 5,000 Stone per Quarry and 3,000 Clay per Clay Pit, ready to work at once', () => {
+    const state = createInitialState();
+    Object.assign(state.resources, { wood: 1000, stone: 1000 });
+    expect(depositMax(state, computeModifiers(state), 'stone')).toBe(0);
+    buyNode(state, 'quarry');
+    tick(state, 60);
+    expect(depositMax(state, computeModifiers(state), 'stone')).toBe(5000);
+    expect(state.deposits.stone.left).toBeCloseTo(5000);
+    buyNode(state, 'clayPit');
+    tick(state, 60);
+    expect(depositMax(state, computeModifiers(state), 'clay')).toBe(3000);
+    expect(state.deposits.clay.left).toBeCloseTo(3000);
+  });
+
+  it('shrink the forest: 500 Wood per Quarry and 300 per Clay Pit', () => {
+    const state = withNodes({ quarry: 2, clayPit: 3 });
+    expect(depositMax(state, computeModifiers(state), 'wood')).toBe(8000 - 2 * 500 - 3 * 300);
+  });
+
+  it('are back to empty ground after a Realm reset', () => {
+    const state = withNodes({ quarry: 2 });
+    state.deposits.stone.left = 10000;
+    state.runEarned.realm = 1e6;
+    resetWorld(state, 'realm');
+    expect(state.deposits.stone.left).toBe(0);
+    expect(depositMax(state, computeModifiers(state), 'stone')).toBe(0);
   });
 });

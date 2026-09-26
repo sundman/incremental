@@ -623,6 +623,17 @@ export class GameView {
       el.style.setProperty('--left', `${((max > 0 ? Math.min(1, d.left / max) : 0) * 100).toFixed(1)}%`);
       const refill = depositRegrowth(mods, id);
       const name = RESOURCES[id].name;
+      if (max <= 0) {
+        // Stone and Clay only exist once a Quarry or Clay Pit opens them up.
+        const opener = NODE_ORDER.map((n) => ({ n, e: NODES[n].effects.find((e) => e.stat === `size:${id}` && e.amount > 0) })).find((o) => o.e);
+        setText(
+          el,
+          `${def.icon} ${def.name}: none yet` +
+            (opener ? ` · each ${NODES[opener.n].name} opens up ${formatNumber(opener.e!.amount)} ${name}` : ''),
+        );
+        el.classList.remove('attention');
+        continue;
+      }
       let text = `${def.icon} ${def.name}: ${formatNumber(Math.min(d.left, max))} / ${formatNumber(max)} ${name}`;
       if (refill > 0) {
         text += ` · ${id === 'wood' ? 'regrows' : 'refills'} ${formatNumber(refill)}/s`;

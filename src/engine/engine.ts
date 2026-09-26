@@ -23,7 +23,8 @@ import {
 import { randomArrival, randomName } from './names';
 import type { Cost, DepositId, Effect, GameState, JobId, LogEntry, MetaId, NodeId, ResourceId, Stat, WorldId } from './types';
 
-export const SAVE_VERSION = 1;
+/** 2: Stone and Clay deposits start empty and grow with each Quarry and Clay Pit. */
+export const SAVE_VERSION = 2;
 
 /** How many chronicle lines are kept. */
 export const LOG_LIMIT = 50;
@@ -968,6 +969,12 @@ export function completeConstruction(state: GameState, id: NodeId) {
 
 function finishLevel(state: GameState, id: NodeId) {
   state.nodes[id] += 1;
+  // A new Quarry or Clay Pit opens up fresh ground: its extra deposit size is there to be worked at once.
+  for (const effect of NODES[id].effects) {
+    if (effect.kind === 'add' && effect.amount > 0 && effect.stat.startsWith('size:')) {
+      state.deposits[effect.stat.slice('size:'.length) as DepositId].left += effect.amount;
+    }
+  }
   const opens = NODES[id].unlocksWorld;
   if (opens && !isWorldUnlocked(state, opens)) {
     state.unlockedWorlds.push(opens);

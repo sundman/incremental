@@ -78,8 +78,9 @@ export const BUILD_TIME_GROWTH = 1.05;
  */
 export const DEPOSITS: Record<DepositId, DepositDef> = {
   wood: { name: 'Forest', icon: '🌲', start: 8000, baseRegrow: 0.25, pollutionSlows: true },
-  stone: { name: 'Stone quarries', icon: '🪨', start: 50000, baseRegrow: 0 },
-  clay: { name: 'Clay beds', icon: '🟫', start: 30000, baseRegrow: 0 },
+  // Stone and Clay start empty: each Quarry or Clay Pit opens up more (see their size: effects).
+  stone: { name: 'Stone quarries', icon: '🪨', start: 0, baseRegrow: 0 },
+  clay: { name: 'Clay beds', icon: '🟫', start: 0, baseRegrow: 0 },
   coal: { name: 'Coal seams', icon: '⚫', start: 20000, baseRegrow: 0 },
 };
 export const DEPOSIT_ORDER = Object.keys(DEPOSITS) as DepositId[];
@@ -272,12 +273,14 @@ const nodeList: NodeDef[] = [
     world: 'realm',
     kind: 'building',
     name: 'Quarry',
-    description: 'Opens the Stonecutter job. Each Quarry makes stonecutters faster, but clears woodland: the forest holds 500 less Wood.',
+    description:
+      'Opens the Stonecutter job. Each Quarry opens up 5,000 Stone to cut and makes stonecutters faster, but clears woodland: the forest holds 500 less Wood.',
     baseCost: { wood: 35 },
     costGrowth: 1.3,
     tier: 1,
     effects: [
       { stat: 'yield:stone', kind: 'add', amount: 0.15 },
+      { stat: 'size:stone', kind: 'add', amount: 5000 },
       { stat: 'size:wood', kind: 'add', amount: -500 },
     ],
   },
@@ -286,12 +289,17 @@ const nodeList: NodeDef[] = [
     world: 'realm',
     kind: 'building',
     name: 'Clay Pit',
-    description: 'Opens the Digger job. Each pit makes diggers faster.',
+    description:
+      'Opens the Digger job. Each pit opens up 3,000 Clay to dig and makes diggers faster, but the digging clears woodland: the forest holds 300 less Wood.',
     baseCost: { wood: 40, stone: 20 },
     costGrowth: 1.3,
     tier: 2,
     requires: ['quarry'],
-    effects: [{ stat: 'yield:clay', kind: 'add', amount: 0.1 }],
+    effects: [
+      { stat: 'yield:clay', kind: 'add', amount: 0.1 },
+      { stat: 'size:clay', kind: 'add', amount: 3000 },
+      { stat: 'size:wood', kind: 'add', amount: -300 },
+    ],
   },
   {
     id: 'workshop',
