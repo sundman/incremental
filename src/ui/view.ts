@@ -82,6 +82,8 @@ import {
   researchUpfrontCost,
   researchSecondsLeft,
   resourceCap,
+  accidentChance,
+  accidentRate,
   isAtCap,
   costOverCap,
 } from '../engine/engine';
@@ -606,6 +608,8 @@ export class GameView {
       const horde = state.demons > 0 ? `${formatNumber(Math.floor(state.demons))} demons` : 'demons';
       text += ` · ${horde} kill ${formatPerHour(deaths)}`;
     }
+    const accidents = accidentRate(state, mods);
+    if (accidents > 0) text += ` · work accidents kill ~${formatPerHour(accidents)}`;
     setText(summary, text);
     summary.classList.toggle('attention', blocker === 'food');
     const { idle: idleBox, idleCount, idleHint } = this.population;
@@ -622,6 +626,7 @@ export class GameView {
       setText(row.count, String(state.jobs[id]));
       const parts = [
         `<span>+${formatNumber(jobOutput(mods, id))} ${RESOURCES[job.resource].name}/s each</span>`,
+        `<span class="risk" title="Chance per hour that each worker in this job dies in an accident">☠ ${formatNumber(accidentChance(mods, id) * 100)}%/h</span>`,
         ...(job.effects ?? []).map((e) => {
           const to = statWorld(e.stat);
           const amount = effectiveAmount(state, e, 'realm');

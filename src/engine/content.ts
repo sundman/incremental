@@ -113,16 +113,18 @@ export const POPULATION = {
   pollutionPenalty: 0.03,
 };
 
+// Every job has a small chance of killing its workers. Farming is safest, mining the most dangerous.
 const jobList: JobDef[] = [
-  { id: 'woodcutter', name: 'Woodcutters', resource: 'wood', baseYield: 0.5 },
-  { id: 'stonecutter', name: 'Stonecutters', resource: 'stone', baseYield: 0.4, requires: ['quarry'] },
-  { id: 'farmer', name: 'Farmers', resource: 'food', baseYield: 0.6 },
-  { id: 'digger', name: 'Diggers', resource: 'clay', baseYield: 0.3, requires: ['clayPit'] },
+  { id: 'woodcutter', name: 'Woodcutters', resource: 'wood', baseYield: 0.5, accidentsPerHour: 0.1 },
+  { id: 'stonecutter', name: 'Stonecutters', resource: 'stone', baseYield: 0.4, accidentsPerHour: 0.2, requires: ['quarry'] },
+  { id: 'farmer', name: 'Farmers', resource: 'food', baseYield: 0.6, accidentsPerHour: 0.04 },
+  { id: 'digger', name: 'Diggers', resource: 'clay', baseYield: 0.3, accidentsPerHour: 0.1, requires: ['clayPit'] },
   {
     id: 'miner',
     name: 'Miners',
     resource: 'iron',
     baseYield: 0.2,
+    accidentsPerHour: 0.4,
     requires: ['mine'],
     // 2% per miner with one Mine, 1% more for each Mine after that.
     effects: [{ stat: 'rate:mana', kind: 'mul', amount: 0.98, scaleBy: { node: 'mine', perLevel: 0.5 } }],
@@ -132,6 +134,7 @@ const jobList: JobDef[] = [
     name: 'Colliers',
     resource: 'coal',
     baseYield: 0.25,
+    accidentsPerHour: 0.4,
     requires: ['coalMine'],
     effects: [{ stat: 'rate:essence', kind: 'mul', amount: 0.99 }],
   },
@@ -140,6 +143,7 @@ const jobList: JobDef[] = [
     name: 'Prospectors',
     resource: 'gold',
     baseYield: 0.05,
+    accidentsPerHour: 0.2,
     requires: ['goldMine'],
     effects: [{ stat: 'rate:research', kind: 'mul', amount: 0.99 }],
   },

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   activeLinks,
   runningLevel,
@@ -50,12 +50,24 @@ import {
   researchNeeded,
   researchUpfrontCost,
   researchSecondsLeft,
+  setAccidentRandom,
+  accidentChance,
+  accidentRate,
   resourceCap,
   costOverCap,
   isAtCap,
 } from '../src/engine/engine';
 import { DEPOSITS, NODES, RESOURCES } from '../src/engine/content';
 import type { GameState, JobId, NodeId, ResourceId } from '../src/engine/types';
+
+// Work accidents are random; keep them off unless a test turns them on.
+let restoreAccidents: () => number;
+beforeEach(() => {
+  restoreAccidents = setAccidentRandom(() => 1);
+});
+afterEach(() => {
+  setAccidentRandom(restoreAccidents);
+});
 
 /** Streams `amount` Research into the current target, as if the Lab had just made it. */
 function pour(state: GameState, amount: number) {
@@ -1314,5 +1326,40 @@ describe('mining', () => {
     expect(NODES.mining.requires).toEqual(['scientificMethod']);
     expect(NODES.geology.requires).toEqual(['mining']);
     expect(isResearchListed(unlockAll(withNodes({ scientificMethod: 1 })), 'mining')).toBe(true);
+  });
+});
+
+describe('work accidents', () => {
+  it('gives every job a small chance per hour of killing each worker, mining the worst', () => {
+    const mods = computeModifiers(createInitialState());
+    expect(accidentChance(mods, 'farmer')).toBeCloseTo(0.04);
+    expect(accidentChance(mods, 'miner')).toBeCloseTo(0.4);
+    const state = withJobs({ farmer: 10, woodcutter: 5 });
+    expect(accidentRate(state, computeModifiers(state))).toBeCloseTo(10 * 0.04 + 5 * 0.1);
+  });
+
+  it('kills a worker when the dice roll under the chance, taking them off their job', () => {
+    const state = withJobs({ woodcutter: 3 });
+    state.population = 5;
+    const rolls = [0, 1, 1]; // the first woodcutter is unlucky
+    setAccidentRandom(() => rolls.shift() ?? 1);
+    tick(state, 1);
+    expect(state.jobs.woodcutter).toBe(2);
+    expect(Math.floor(state.population)).toBe(4);
+  });
+
+  it('spares the idle, and nobody dies on a lucky roll', () => {
+    const state = withJobs({ farmer: 2 });
+    state.population = 6;
+    setAccidentRandom(() => 0.5);
+    tick(state, 10);
+    expect(state.jobs.farmer).toBe(2);
+    expect(Math.floor(state.population)).toBeGreaterThanOrEqual(6);
+  });
+
+  it('is halved by Healing Light, like other deaths', () => {
+    const state = unlockAll(withNodes({ healingLight: 1 }));
+    state.activeSpells = ['healingLight'];
+    expect(accidentChance(computeModifiers(state), 'miner')).toBeCloseTo(0.2);
   });
 });

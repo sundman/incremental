@@ -516,6 +516,41 @@ export function setRandom(source: () => number): () => number {
   return previous;
 }
 
+/** Work accidents roll their own dice, so tests can switch them off without upsetting other picks. */
+let accidentRandom: () => number = Math.random;
+
+/** Replaces the random source for work accidents (for tests). Returns the previous one. */
+export function setAccidentRandom(source: () => number): () => number {
+  const previous = accidentRandom;
+  accidentRandom = source;
+  return previous;
+}
+
+/** Chance per hour that one worker in a job dies in an accident; Healing Light and other `deaths` multipliers lower it. */
+export function accidentChance(mods: Modifiers, job: JobId): number {
+  return JOBS[job].accidentsPerHour * getMul(mods, 'deaths');
+}
+
+/** Workers expected to die in accidents per hour, across every job. */
+export function accidentRate(state: GameState, mods: Modifiers): number {
+  return JOB_ORDER.reduce((sum, id) => sum + state.jobs[id] * accidentChance(mods, id), 0);
+}
+
+/** Each worker has a small chance of dying at work this step. Returns how many died. */
+function workAccidents(state: GameState, mods: Modifiers, dt: number): number {
+  let died = 0;
+  for (const id of JOB_ORDER) {
+    const chance = (accidentChance(mods, id) / 3600) * dt;
+    if (chance <= 0) continue;
+    let dead = 0;
+    for (let i = 0; i < state.jobs[id]; i++) if (accidentRandom() < chance) dead++;
+    state.jobs[id] -= dead;
+    died += dead;
+  }
+  state.population = Math.max(0, state.population - died);
+  return died;
+}
+
 /**
  * Lowers the population. While anyone is idle, an idle person steps into the dead
  * one's job, so the idle pool shrinks first. After that each death is a random worker.
@@ -903,6 +938,7 @@ function step(state: GameState, dt: number) {
 
   // 4. Deaths, then new people move into free housing, eating Food as they arrive.
   //    A demon horde feeds until only the survivors are left, then vanishes.
+  workAccidents(state, mods, dt);
   const dying = deathRate(mods) * dt;
   if (dying > 0) {
     if (isHordeActive(state) && state.population - dying <= DEMONS.survivors) {

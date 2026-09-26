@@ -127,6 +127,11 @@ export interface JobDef {
   name: string;
   resource: ResourceId;
   baseYield: number;
+  /**
+   * Chance per hour that each worker in this job dies in an accident, before `deaths` multipliers.
+   * Rolled every second, so 0.1 is about a 1 in 36,000 chance per worker per second.
+   */
+  accidentsPerHour: number;
   /** Nodes that must be owned before anyone can take this job. */
   requires?: NodeId[];
   /** Extra effects per assigned worker, e.g. miners disturbing the ley lines. */

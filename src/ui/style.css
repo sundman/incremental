@@ -568,6 +568,11 @@ button {
   gap: 2px 8px;
 }
 
+/* Work accident risk per worker. */
+.job-info .risk {
+  color: color-mix(in srgb, var(--bad) 70%, var(--muted));
+}
+
 .job-count {
   text-align: center;
   font-weight: 600;
