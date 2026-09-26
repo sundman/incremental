@@ -493,7 +493,7 @@ const nodeList: NodeDef[] = [
     name: 'Library',
     description: 'A place to study, built from Planks and Bricks. The first one opens the Lab.',
     baseCost: { planks: 60, bricks: 40 },
-    costGrowth: 1.25,
+    costGrowth: 1.6,
     tier: 3,
     requires: ['sawmill', 'kiln'],
     unlocksWorld: 'lab',
