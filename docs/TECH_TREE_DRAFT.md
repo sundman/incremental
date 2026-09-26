@@ -7,6 +7,8 @@ _Status: proposal for review. Nothing here is in the game yet. Existing techs ar
 - **×10 per age.** Each age starts at 10 times the cost of the one before, so there are real gaps between the eras. Research speed will come from many sources, including permanent upgrades, so the jumps are there to be climbed.
 - **Finish an age to leave it.** An age's capstone can only be researched once **every other tech of that age is done** (repeatable techs count once they have their first level). The capstone then opens the next age.
 - **New resources come from the Realm.** The late ages need Machine Parts, Oil, Plastics, Uranium, Silicon and Electronics, each made by a new Realm building that one of the age's techs unlocks.
+- **Lab research does not survive resets.** A Lab reset sends the Lab back to Age I, and every age has to be researched again.
+- **Achievements make ages easier next time.** Researching every tech of an age once earns that age's achievement, with a lasting bonus (mostly to research speed). Each run climbs the early ages faster than the last.
 
 ## Cost formula
 
@@ -160,7 +162,25 @@ Costs grow ×10 per age. Research speed has to grow too, from each age's own res
 | 2 | Space Flight _(new)_ repeatable | 16B (first level) | 500 Electronics, 2K Steel | Satellites | +25 land per level (kept) |
 | 3 | Machine Learning _(new)_ | 20B | 500 Electronics | The Internet | Research ×3 |
 | 4 | Quantum Computing _(new)_ | 24B | 800 Electronics | Machine Learning | All Lab production ×2 |
-| 5 | **Artificial Intelligence** _(new)_ capstone | 31B | 1K Electronics | **every other Age IX tech** | All production in every world ×3; achievement "Singularity" |
+| 5 | **Artificial Intelligence** _(new)_ capstone | 31B | 1K Electronics | **every other Age IX tech** | All production in every world ×3 |
+
+## Age achievements
+
+Reached the first time every tech of an age is researched in one run, capstone included (repeatable techs need one level). Like all achievements they are kept for good, through every reset, and their bonuses stack.
+
+| Age | Achievement | Lasting reward |
+| --- | --- | --- |
+| I | Out of the Stone Age | Research ×1.25; every Realm run starts with 1 more person |
+| II | Classical Education | Research ×1.25; Scholars cost 25% less |
+| III | Keepers of Knowledge | Research ×1.5; materials for Lab techs cost 20% less |
+| IV | Age of Discovery | Research ×1.5; +5 squares of land |
+| V | Industrial Revolution | Research ×1.5; all Realm production ×1.25 |
+| VI | Let There Be Light | Research ×2 |
+| VII | Splitting the Atom | Research ×2; Realm costs ×0.9 |
+| VIII | Information Superhighway | Research ×2; all Lab production ×1.5 |
+| IX | Singularity | All production in every world ×2 |
+
+Once all are earned, the research bonuses multiply Research/s by about ×42 (×1.25 × 1.25 × 1.5 × 1.5 × 1.5 × 2 × 2 × 2), or about ×63 counting Information Superhighway's extra ×1.5 to all Lab production. They are the main permanent source of research speed in this draft, alongside Echo-shop upgrades still to be designed. Because they only count for later runs, the first climb through the ages is the slow one.
 
 ## New Realm resources
 
@@ -187,7 +207,6 @@ Electronics sits at the end of the longest production chain in the game: Silicon
 
 ## Still open
 
-1. **Research speed sources:** which new research buildings and permanent upgrades, and in which ages. The pacing table gives the targets.
-2. **Resets:** should reaching an age be kept through Lab resets, like Cartography and Expeditions, so a reset doesn't send you back to the Stone Age? One option is to keep capstones (and so the age) but not the other techs, which then need researching again before the next capstone.
-3. **Achievements:** one per age reached, for example "Industrial Revolution" for opening Age V.
-4. **Tuning:** the building numbers for the new resources are first guesses.
+1. **Land techs and resets:** Cartography and Expedition are kept through Lab resets today, so explored land isn't lost. The draft adds three more land techs (Globalization, Satellites, Space Flight). Should those five stay the exception, or be reset like everything else, with land perhaps moved into achievements instead?
+2. **Research speed sources:** which new research buildings and Echo-shop upgrades, and in which ages. The pacing table gives the targets.
+3. **Tuning:** the achievement rewards and the new buildings' numbers are first guesses.
