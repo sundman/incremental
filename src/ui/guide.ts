@@ -1,6 +1,7 @@
 import {
   ACHIEVEMENTS,
   ACHIEVEMENT_ORDER,
+  AGES,
   BUILD_TIME_GROWTH,
   DEMONS,
   DEPOSITS,
@@ -22,7 +23,9 @@ import {
 } from '../engine/content';
 import { statWorld } from '../engine/engine';
 import { formatDuration, formatNumber } from '../engine/format';
-import type { Cost, Effect, NodeDef, NodeId, ResourceId, WorldId } from '../engine/types';
+import type { AchievementId, Cost, Effect, NodeDef, NodeId, ResourceId, WorldId } from '../engine/types';
+
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
 import { describeEffect } from './describe';
 
 /**
@@ -49,6 +52,7 @@ function worldNote(effect: Effect, owner: WorldId): string {
 }
 
 const requiresText = (node: NodeDef) => {
+  if (node.capstone) return `Every other Age ${ROMAN[(node.age ?? 1) - 1]} tech`;
   const reqs = (node.requires ?? []).map((id) => NODES[id].name + (NODES[id].world !== node.world ? ` (${WORLDS[NODES[id].world].name})` : ''));
   if (node.requiresBuildings) reqs.push(`${node.requiresBuildings} ${WORLDS[node.world].name} buildings`);
   return reqs.join(', ') || '—';
@@ -196,11 +200,19 @@ export function gameGuide(): GuideSection[] {
     sections.push({ title: `${WORLDS[world].name} buildings`, table: buildingTable(world) });
   }
 
-  const labTechs = NODE_ORDER.filter((id) => NODES[id].world === 'lab' && NODES[id].kind === 'tech');
-  sections.push({
-    title: 'Lab research',
-    intro: 'Research streams into the tech you pick. Other costs are paid once when a tech is first started.',
-    table: techTable(labTechs, true),
+  AGES.forEach((name, i) => {
+    const age = i + 1;
+    sections.push({
+      title: `Lab research: Age ${ROMAN[i]}, ${name}`,
+      intro:
+        (age === 1
+          ? 'Research streams into the tech you pick; other costs are paid once, when a tech is first started. Research is split into nine ages, each costing about 10 times the one before (100 × 10^(age − 1) × 1.25^step). The last tech of an age needs all the others and opens the next age. Lab research resets with the Lab. '
+          : '') + `Researching every tech of this age once earns the achievement ${ACHIEVEMENTS[`age${age}` as AchievementId].name}.`,
+      table: techTable(
+        NODE_ORDER.filter((id) => NODES[id].age === age),
+        true,
+      ),
+    });
   });
   const arcanaTechs = NODE_ORDER.filter((id) => NODES[id].world === 'arcana' && NODES[id].kind === 'tech');
   sections.push({

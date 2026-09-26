@@ -1,5 +1,7 @@
 import type {
   AchievementDef,
+  Cost,
+  Effect,
   AchievementId,
   DepositDef,
   DepositId,
@@ -57,6 +59,13 @@ export const RESOURCES: Record<ResourceId, ResourceDef> = {
   glass: { id: 'glass', name: 'Glass', world: 'realm', value: 20, revealedBy: 'glassworks', baseCap: 150 },
   gold: { id: 'gold', name: 'Gold', world: 'realm', value: 60, revealedBy: 'goldMine', baseCap: 100 },
   runestone: { id: 'runestone', name: 'Runestone', world: 'realm', value: 80, revealedBy: 'runesmith', baseCap: 100 },
+  // Late-age materials, each made by a building a Lab tech unlocks.
+  machineParts: { id: 'machineParts', name: 'Machine Parts', world: 'realm', value: 40, revealedBy: 'machineShop', baseCap: 200 },
+  oil: { id: 'oil', name: 'Oil', world: 'realm', value: 30, revealedBy: 'oilWell', baseCap: 500 },
+  plastics: { id: 'plastics', name: 'Plastics', world: 'realm', value: 60, revealedBy: 'refinery', baseCap: 300 },
+  uranium: { id: 'uranium', name: 'Uranium', world: 'realm', value: 200, revealedBy: 'uraniumMine', baseCap: 100 },
+  silicon: { id: 'silicon', name: 'Silicon', world: 'realm', value: 80, revealedBy: 'siliconWorks', baseCap: 300 },
+  electronics: { id: 'electronics', name: 'Electronics', world: 'realm', value: 400, revealedBy: 'chipFab', baseCap: 100 },
   mana: { id: 'mana', name: 'Mana', world: 'arcana', value: 1.5, baseCap: 300 },
   essence: { id: 'essence', name: 'Essence', world: 'arcana', value: 15, revealedBy: 'condenser' },
   fireEssence: { id: 'fireEssence', name: 'Fire Essence', world: 'arcana', value: 40, revealedBy: 'fireAltar' },
@@ -84,6 +93,8 @@ export const DEPOSITS: Record<DepositId, DepositDef> = {
   coal: { name: 'Coal seams', icon: '⚫', start: 0, baseRegrow: 0 },
   iron: { name: 'Iron veins', icon: '⛏️', start: 0, baseRegrow: 0 },
   gold: { name: 'Gold seams', icon: '🪙', start: 0, baseRegrow: 0 },
+  oil: { name: 'Oil fields', icon: '🛢️', start: 0, baseRegrow: 0 },
+  uranium: { name: 'Uranium ore', icon: '☢️', start: 0, baseRegrow: 0 },
 };
 export const DEPOSIT_ORDER = Object.keys(DEPOSITS) as DepositId[];
 /** Share of what was gathered in a run that each Rich Earth level adds to a deposit's size on a Realm reset. */
@@ -193,12 +204,81 @@ const jobList: JobDef[] = [
     requires: ['goldMine'],
     effects: [{ stat: 'rate:research', kind: 'mul', amount: 0.99 }],
   },
+  {
+    id: 'driller',
+    name: 'Drillers',
+    resource: 'oil',
+    baseYield: 0.2,
+    accidentsPerHour: 1.5,
+    accidentText: 'was killed in a blowout at the oil well',
+    requires: ['oilWell'],
+  },
+  {
+    id: 'uraniumMiner',
+    name: 'Uranium Miners',
+    resource: 'uranium',
+    baseYield: 0.02,
+    accidentsPerHour: 4,
+    accidentText: 'died of radiation sickness',
+    requires: ['uraniumMine'],
+  },
 ];
 
 export const JOBS = Object.fromEntries(jobList.map((j) => [j.id, j])) as Record<JobId, JobDef>;
 export const JOB_ORDER: JobId[] = jobList.map((j) => j.id);
 
 export const RESOURCE_ORDER = Object.keys(RESOURCES) as ResourceId[];
+
+/** The Lab's ages, in order: research is split into them, and each must be finished to open the next. */
+export const AGES = [
+  'Foundations',
+  'Classical',
+  'Medieval',
+  'Renaissance',
+  'Industrial',
+  'Electric',
+  'Atomic',
+  'Information',
+  'Current Age',
+] as const;
+
+/**
+ * Research cost of a tech: 100 × 10^(age − 1) × 1.25^step, rounded to two significant digits.
+ * Each age starts at 10 times the one before; `step` is the tech's place within its age.
+ */
+export function ageCost(age: number, step: number): number {
+  const raw = 100 * 10 ** (age - 1) * 1.25 ** step;
+  const unit = 10 ** (Math.floor(Math.log10(raw)) - 1);
+  return Math.round(raw / unit) * unit;
+}
+
+/** A Lab tech of an age. Materials (Planks, Glass...) are paid once, when it is first started. */
+function tech(
+  age: number,
+  step: number,
+  id: NodeId,
+  name: string,
+  description: string,
+  materials: Cost,
+  requires: NodeId[],
+  effects: Effect[],
+  extra: Partial<NodeDef> = {},
+): NodeDef {
+  return {
+    id,
+    world: 'lab',
+    kind: 'tech',
+    name,
+    description,
+    baseCost: { research: ageCost(age, step), ...materials },
+    costGrowth: 1,
+    tier: 1,
+    age,
+    ...(requires.length ? { requires } : {}),
+    effects,
+    ...extra,
+  };
+}
 
 const nodeList: NodeDef[] = [
   // ---------------------------------------------------------------- Realm
@@ -241,6 +321,99 @@ const nodeList: NodeDef[] = [
       { stat: 'storage:realm', kind: 'add', amount: 1 },
       { stat: 'decay:realm', kind: 'add', amount: 0.0002 },
     ],
+  },
+  // Late-age industry: each is unlocked by a Lab tech of the age that first needs its product.
+  {
+    id: 'machineShop',
+    world: 'realm',
+    kind: 'building',
+    name: 'Machine Shop',
+    description: 'Turns Steel and Coal into Machine Parts. Needs Precision Tools from the Lab.',
+    baseCost: { steel: 150, bricks: 300 },
+    costGrowth: 1.4,
+    tier: 4,
+    requires: ['blastFurnace', 'precisionTools'],
+    upkeep: { steel: 1, coal: 0.2 },
+    effects: [{ stat: 'rate:machineParts', kind: 'add', amount: 0.1 }],
+  },
+  {
+    id: 'oilWell',
+    world: 'realm',
+    kind: 'building',
+    name: 'Oil Well',
+    description:
+      'Opens the Driller job. Each Oil Well opens up 10,000 Oil and makes drillers faster, but clears 400 Wood of forest. Needs Combustion Engine from the Lab.',
+    baseCost: { steel: 200, machineParts: 50 },
+    costGrowth: 1.5,
+    tier: 4,
+    requires: ['combustionEngine'],
+    effects: [
+      { stat: 'yield:oil', kind: 'add', amount: 0.05 },
+      { stat: 'size:oil', kind: 'add', amount: 10000 },
+      { stat: 'size:wood', kind: 'add', amount: -400 },
+    ],
+  },
+  {
+    id: 'refinery',
+    world: 'realm',
+    kind: 'building',
+    name: 'Refinery',
+    description: 'Cracks Oil into Plastics, with a lot of smoke. Needs Polymers from the Lab.',
+    baseCost: { steel: 300, machineParts: 100 },
+    costGrowth: 1.5,
+    tier: 5,
+    requires: ['oilWell', 'polymers'],
+    upkeep: { oil: 2 },
+    effects: [
+      { stat: 'rate:plastics', kind: 'add', amount: 0.2 },
+      { stat: 'pollution', kind: 'add', amount: 3 },
+    ],
+  },
+  {
+    id: 'uraniumMine',
+    world: 'realm',
+    kind: 'building',
+    name: 'Uranium Mine',
+    description:
+      'Opens the Uranium Miner job, the most dangerous work in the Realm. Each mine opens up 1,000 Uranium but clears 400 Wood of forest. Needs Radioactivity from the Lab.',
+    baseCost: { steel: 500, machineParts: 200 },
+    costGrowth: 1.6,
+    tier: 5,
+    requires: ['radioactivity'],
+    effects: [
+      { stat: 'yield:uranium', kind: 'add', amount: 0.01 },
+      { stat: 'size:uranium', kind: 'add', amount: 1000 },
+      { stat: 'size:wood', kind: 'add', amount: -400 },
+    ],
+  },
+  {
+    id: 'siliconWorks',
+    world: 'realm',
+    kind: 'building',
+    name: 'Silicon Works',
+    description: 'Refines Stone into Silicon over a coal fire. Needs Semiconductors from the Lab.',
+    baseCost: { steel: 500, plastics: 100 },
+    costGrowth: 1.5,
+    tier: 5,
+    requires: ['semiconductors'],
+    upkeep: { stone: 2, coal: 0.3 },
+    effects: [
+      { stat: 'rate:silicon', kind: 'add', amount: 0.1 },
+      { stat: 'pollution', kind: 'add', amount: 2 },
+    ],
+  },
+  {
+    id: 'chipFab',
+    world: 'realm',
+    kind: 'building',
+    name: 'Chip Fab',
+    description: 'Builds Electronics from Silicon, Plastics and Gold. Needs Transistors from the Lab.',
+    baseCost: { steel: 800, plastics: 200, silicon: 100 },
+    costGrowth: 1.6,
+    tier: 6,
+    requires: ['siliconWorks', 'refinery', 'transistors'],
+    upkeep: { silicon: 0.5, plastics: 0.1, gold: 0.05 },
+    effects: [{ stat: 'rate:electronics', kind: 'add', amount: 0.05 }],
   },
   {
     id: 'farm',
@@ -542,12 +715,12 @@ const nodeList: NodeDef[] = [
     world: 'realm',
     kind: 'building',
     name: 'Aqueduct',
-    description: 'Fresh water for a crowded town, so crowding slows growth less. Needs Engineering from the Lab.',
+    description: 'Fresh water for a crowded town, so crowding slows growth less. Needs Aqueducts from the Lab.',
     baseCost: { stone: 150, bricks: 60 },
     costGrowth: 1.6,
     tier: 4,
     maxLevel: 5,
-    requires: ['well', 'engineering'],
+    requires: ['well', 'aqueducts'],
     effects: [{ stat: 'crowding', kind: 'mul', amount: 0.85 }],
   },
   {
@@ -644,12 +817,12 @@ const nodeList: NodeDef[] = [
     world: 'realm',
     kind: 'building',
     name: 'University',
-    description: 'Science flourishes. Educated skeptics weaken magic. Needs Printing from the Lab.',
+    description: 'Science flourishes. Educated skeptics weaken magic. Needs Universities from the Lab.',
     baseCost: { bricks: 300, glass: 50, gold: 20 },
     costGrowth: 1.6,
     tier: 5,
     maxLevel: 10,
-    requires: ['library', 'printing'],
+    requires: ['library', 'universities'],
     effects: [
       { stat: 'prod:lab', kind: 'mul', amount: 1.15 },
       { stat: 'rate:mana', kind: 'mul', amount: 0.95 },
@@ -705,12 +878,12 @@ const nodeList: NodeDef[] = [
     kind: 'building',
     name: 'Golem Works',
     description:
-      'Steel golems with rune hearts do the heavy lifting, and they draw on Mana. Needs Animation from Arcana and Automation from the Lab.',
+      'Steel golems with rune hearts do the heavy lifting, and they draw on Mana. Needs Animation from Arcana and Steam Power from the Lab.',
     baseCost: { steel: 200, runestone: 50 },
     costGrowth: 1.8,
     tier: 6,
     maxLevel: 10,
-    requires: ['blastFurnace', 'runesmith', 'animation', 'automation'],
+    requires: ['blastFurnace', 'runesmith', 'animation', 'steamPower'],
     effects: [
       { stat: 'prod:realm', kind: 'mul', amount: 1.15 },
       { stat: 'speed:realm', kind: 'mul', amount: 1.1 },
@@ -1191,384 +1364,244 @@ const nodeList: NodeDef[] = [
     upkeep: { food: 0.2 },
     effects: [{ stat: 'rate:research', kind: 'mul', amount: 1.1 }],
   },
-  {
-    id: 'scientificMethod',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Scientific Method',
-    description: 'Research is done properly now.',
-    baseCost: { research: 50 },
-    costGrowth: 1,
-    tier: 1,
-    effects: [{ stat: 'rate:research', kind: 'mul', amount: 1.25 }],
-  },
-  {
-    id: 'engineering',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Engineering',
-    description: 'Better planks and bricks. Lets the Realm build Irrigation and Aqueducts.',
-    baseCost: { research: 200, planks: 50 },
-    costGrowth: 1,
-    tier: 2,
-    requires: ['geology', 'metallurgy'],
-    effects: [
-      { stat: 'rate:planks', kind: 'mul', amount: 1.25 },
-      { stat: 'rate:bricks', kind: 'mul', amount: 1.25 },
-    ],
-  },
-  {
-    id: 'warehousing',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Warehousing',
-    description: 'Ledgers, crates and dry storerooms. Lets the Realm build Warehouses to store more of everything.',
-    baseCost: { research: 150, wood: 100 },
-    costGrowth: 1,
-    tier: 2,
-    requires: ['scientificMethod'],
-    effects: [],
-  },
-  {
-    id: 'basicMachinery',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Basic Machinery',
-    description: 'Water wheels, saw frames and bellows: Sawmills and Kilns make twice as much from the same Wood and Clay.',
-    baseCost: { research: 150, planks: 40 },
-    costGrowth: 1,
-    tier: 2,
-    requires: ['scientificMethod'],
-    effects: [
-      { stat: 'rate:planks', kind: 'mul', amount: 2 },
-      { stat: 'rate:bricks', kind: 'mul', amount: 2 },
-    ],
-  },
-  {
-    id: 'mining',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Mining',
-    description: 'Shafts, pit props and ore sorting. Lets the Realm dig Mines for Iron.',
-    baseCost: { research: 120, stone: 60 },
-    costGrowth: 1,
-    tier: 2,
-    requires: ['scientificMethod'],
-    effects: [],
-  },
-  {
-    id: 'geology',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Geology',
-    description: 'Knowing where to dig. Lets the Realm build a Gold Mine.',
-    baseCost: { research: 250, stone: 100 },
-    costGrowth: 1,
-    tier: 2,
-    requires: ['mining'],
-    effects: [
-      { stat: 'rate:stone', kind: 'mul', amount: 1.2 },
-      { stat: 'yield:iron', kind: 'add', amount: 0.05 },
-    ],
-  },
-  {
-    id: 'optics',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Optics',
-    description: 'Lenses and light. Lets the Realm build a Glassworks and an Observatory.',
-    baseCost: { research: 500, bricks: 20 },
-    costGrowth: 1,
-    tier: 3,
-    requires: ['engineering'],
-    effects: [{ stat: 'prod:lab', kind: 'mul', amount: 1.1 }],
-  },
-  {
-    id: 'printing',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Printing',
-    description: 'Knowledge spreads. Lets the Realm build a Printing Press and a University.',
-    baseCost: { research: 800, planks: 100 },
-    costGrowth: 1,
-    tier: 4,
-    requires: ['optics'],
-    effects: [{ stat: 'rate:research', kind: 'mul', amount: 1.2 }],
-  },
-  {
-    id: 'medicine',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Medicine',
-    description: 'Fewer people die young in crowded homes, so crowding slows growth less, and injured workers are patched up.',
-    baseCost: { research: 300, food: 200 },
-    costGrowth: 1,
-    tier: 2,
-    requires: ['scientificMethod'],
-    effects: [
-      { stat: 'crowding', kind: 'mul', amount: 0.7 },
-      { stat: 'accidents', kind: 'mul', amount: 0.7 },
-    ],
-  },
-  {
-    id: 'sanitation',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Sanitation',
-    description: 'Sewers and clean streets. Crowding slows growth far less, and fewer workers die of infected wounds.',
-    baseCost: { research: 900, bricks: 150 },
-    costGrowth: 1,
-    tier: 3,
-    requires: ['medicine', 'engineering'],
-    effects: [
-      { stat: 'crowding', kind: 'mul', amount: 0.6 },
-      { stat: 'accidents', kind: 'mul', amount: 0.8 },
-    ],
-  },
-  {
-    id: 'logistics',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Logistics',
-    description: 'Planned supply lines make Realm construction much faster.',
-    baseCost: { research: 400, planks: 100 },
-    costGrowth: 1,
-    tier: 3,
-    requires: ['engineering'],
-    effects: [{ stat: 'speed:realm', kind: 'mul', amount: 1.3 }],
-  },
-  {
-    id: 'metallurgy',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Metallurgy',
-    description: 'Better smelting in the Realm. Lets the Realm build a Blast Furnace.',
-    baseCost: { research: 150 },
-    costGrowth: 1,
-    tier: 2,
-    requires: ['scientificMethod'],
-    effects: [{ stat: 'rate:iron', kind: 'mul', amount: 1.5 }],
-  },
-  {
-    id: 'rationalism',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Rationalism',
-    description: 'Faster research. Widespread disbelief weakens magic. Repeatable.',
-    baseCost: { research: 300 },
-    costGrowth: 1.6,
-    tier: 3,
-    maxLevel: 10,
-    requires: ['scientificMethod'],
-    effects: [
-      { stat: 'rate:research', kind: 'mul', amount: 1.3 },
-      { stat: 'rate:mana', kind: 'mul', amount: 0.8 },
-    ],
-  },
-  {
-    id: 'settlements',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Settlements',
-    description: 'How villages grow into towns. The root of Agriculture, Housing and Currency, and newcomers settle in a little faster.',
-    baseCost: { research: 50 },
-    costGrowth: 1,
-    tier: 1,
-    effects: [{ stat: 'growth', kind: 'mul', amount: 1.1 }],
-  },
-  {
-    id: 'homebuilding',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Housing',
-    description: 'Timber frames and brick walls: lets the Realm build Houses, laid out so they crowd the village a little less.',
-    baseCost: { research: 150 },
-    costGrowth: 1,
-    tier: 2,
-    requires: ['settlements'],
-    effects: [{ stat: 'crowding', kind: 'mul', amount: 0.9 }],
-  },
-  {
-    id: 'agriculture',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Agriculture',
-    description: 'Crop rotation and ploughs. Lets the Realm lay out Farms, and every field yields twice as much.',
-    baseCost: { research: 100 },
-    costGrowth: 1,
-    tier: 1,
-    requires: ['settlements'],
-    effects: [{ stat: 'rate:food', kind: 'mul', amount: 2 }],
-  },
-  {
-    id: 'currency',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Currency',
-    description: 'Minted coins instead of barter. Lets the Realm build Markets, and makes Gold worth digging for.',
-    baseCost: { research: 200 },
-    costGrowth: 1,
-    tier: 2,
-    requires: ['settlements'],
-    effects: [{ stat: 'rate:gold', kind: 'mul', amount: 1.15 }],
-  },
-  {
-    id: 'occultism',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Occultism',
-    description: 'Candles, old books and whispered rites. Lets the Realm raise a Shrine, which opens Arcana, and leads to Arcane Theory.',
-    baseCost: { research: 10000 },
-    costGrowth: 1,
-    tier: 4,
-    effects: [{ stat: 'rate:mana', kind: 'mul', amount: 1.1 }],
-  },
-  {
-    id: 'arcaneTheory',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Arcane Theory',
-    description: 'Studying magic instead of dismissing it.',
-    baseCost: { research: 400, essence: 30 },
-    costGrowth: 1,
-    tier: 3,
-    requires: ['occultism'],
-    effects: [{ stat: 'rate:essence', kind: 'mul', amount: 1.3 }],
-  },
-  {
-    id: 'industrialization',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Industrialization',
-    description: 'Cheaper Realm buildings. The smog chokes Essence and the Realm\'s growth.',
-    baseCost: { research: 600, iron: 100 },
-    costGrowth: 1,
-    tier: 4,
-    requires: ['metallurgy'],
-    effects: [
-      { stat: 'cost:realm', kind: 'mul', amount: 0.85 },
-      { stat: 'rate:essence', kind: 'mul', amount: 0.85 },
-      { stat: 'pollution', kind: 'add', amount: 8 },
-    ],
-  },
-  {
-    id: 'cartography',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Cartography',
-    description: 'Map the lands around the Realm: 1 more square of land to build on, for good. Repeatable up to 10 times per Lab run, each costing twice as much; a Lab reset lets you map again for more. Leads to Sailing.',
-    baseCost: { research: 120 },
-    costGrowth: 2,
-    tier: 2,
-    maxLevel: 10,
-    requires: ['scientificMethod'],
-    lasting: true,
-    effects: [{ stat: 'land', kind: 'add', amount: 1 }],
-  },
-  {
-    id: 'sailing',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Sailing',
-    description: 'Boats built from Planks. Fishing boats bring in more Food, and the coast opens up to explorers.',
-    baseCost: { research: 500, planks: 150 },
-    costGrowth: 1,
-    tier: 3,
-    requires: ['cartography', 'engineering'],
-    effects: [{ stat: 'rate:food', kind: 'mul', amount: 1.15 }],
-  },
-  {
-    id: 'navigation',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Navigation',
-    description: 'Charts, lenses and the stars: ships can cross open sea. Trade brings in more Gold, and Expeditions can set out.',
-    baseCost: { research: 1000, glass: 20 },
-    costGrowth: 1,
-    tier: 4,
-    requires: ['sailing', 'optics'],
-    effects: [{ stat: 'rate:gold', kind: 'mul', amount: 1.25 }],
-  },
-  {
-    id: 'expedition',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Expedition',
-    description: 'Sail beyond the maps. Each expedition finds 5 more squares of land for the Realm, for good. Repeatable; a Lab reset lets you sail again for more. Needs Navigation.',
-    baseCost: { research: 1000, food: 500 },
-    costGrowth: 1.3,
-    tier: 4,
-    maxLevel: 30,
-    requires: ['navigation'],
-    lasting: true,
-    effects: [{ stat: 'land', kind: 'add', amount: 5 }],
-  },
-  {
-    id: 'forestry',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Forestry',
-    description: 'Managed woodland: the Realm\'s forest regrows twice as fast.',
-    baseCost: { research: 250, wood: 200 },
-    costGrowth: 1,
-    tier: 2,
-    requires: ['scientificMethod'],
-    effects: [{ stat: 'regrow:wood', kind: 'mul', amount: 2 }],
-  },
-  {
-    id: 'environmentalScience',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Environmental Science',
-    description: 'Understanding how the land heals: faster regrowth, less pollution, and the Realm can plant Parks.',
-    baseCost: { research: 1200, glass: 40 },
-    costGrowth: 1,
-    tier: 5,
-    requires: ['forestry', 'filtration'],
-    effects: [
-      { stat: 'regrow:wood', kind: 'mul', amount: 2 },
-      { stat: 'pollution', kind: 'mul', amount: 0.8 },
-    ],
-  },
-  {
-    id: 'filtration',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Filtration',
-    description: 'Filters on every chimney. Pollution slows the Realm\'s growth far less.',
-    baseCost: { research: 800, iron: 80 },
-    costGrowth: 1,
-    tier: 4,
-    requires: ['metallurgy', 'medicine'],
-    effects: [{ stat: 'pollution', kind: 'mul', amount: 0.5 }],
-  },
-  {
-    id: 'automation',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Automation',
-    description: 'Machines take over the Realm\'s busywork. Needed for Golem Works.',
-    baseCost: { research: 1500, iron: 200 },
-    costGrowth: 1,
-    tier: 5,
-    requires: ['industrialization'],
-    effects: [{ stat: 'prod:realm', kind: 'mul', amount: 1.5 }],
-  },
-  {
-    id: 'thaumicPhysics',
-    world: 'lab',
-    kind: 'tech',
-    name: 'Thaumic Physics',
-    description: 'Science and magic agree on something at last.',
-    baseCost: { research: 2000, aether: 5 },
-    costGrowth: 1,
-    tier: 6,
-    requires: ['rationalism', 'arcaneTheory'],
-    effects: [
-      { stat: 'rate:aether', kind: 'mul', amount: 2 },
-      { stat: 'prod:lab', kind: 'mul', amount: 1.5 },
-    ],
-  },
+  // Lab research, in nine ages. Each age's capstone needs every other tech of that age and opens the next;
+  // costs follow ageCost(age, step), so every age costs 10 times the one before.
+  // Age I: Foundations
+  tech(1, 0, 'settlements', 'Settlements', 'How villages grow into towns. Newcomers settle in a little faster.', {}, [], [
+    { stat: 'growth', kind: 'mul', amount: 1.1 },
+  ]),
+  tech(1, 1, 'scientificMethod', 'Scientific Method', 'Research is done properly now.', {}, [], [
+    { stat: 'rate:research', kind: 'mul', amount: 1.25 },
+  ]),
+  tech(1, 2, 'agriculture', 'Agriculture', 'Crop rotation and ploughs. Lets the Realm lay out Farms, and every field yields twice as much.', {}, ['settlements'], [
+    { stat: 'rate:food', kind: 'mul', amount: 2 },
+  ]),
+  tech(1, 3, 'pottery', 'Pottery', 'Wheels and glazes: the Realm digs and fires Clay better.', { clay: 50 }, ['settlements'], [
+    { stat: 'rate:clay', kind: 'mul', amount: 1.25 },
+    { stat: 'rate:bricks', kind: 'mul', amount: 1.1 },
+  ]),
+  tech(1, 4, 'mining', 'Mining', 'Shafts, pit props and ore sorting. Lets the Realm dig Mines for Iron.', { stone: 60 }, ['scientificMethod'], []),
+  tech(1, 5, 'homebuilding', 'Housing', 'Timber frames and brick walls: lets the Realm build Houses, laid out so they crowd the village a little less.', {}, ['settlements'], [
+    { stat: 'crowding', kind: 'mul', amount: 0.9 },
+  ]),
+  tech(1, 6, 'warehousing', 'Warehousing', 'Ledgers, crates and dry storerooms. Lets the Realm build Warehouses to store more of everything.', { wood: 100 }, ['scientificMethod'], []),
+  tech(1, 7, 'basicMachinery', 'Basic Machinery', 'Water wheels, saw frames and bellows: Sawmills and Kilns make twice as much from the same Wood and Clay.', { planks: 40 }, ['scientificMethod'], [
+    { stat: 'rate:planks', kind: 'mul', amount: 2 },
+    { stat: 'rate:bricks', kind: 'mul', amount: 2 },
+  ]),
+  tech(1, 8, 'forestry', 'Forestry', 'Managed woodland: the Realm\'s forest regrows twice as fast, and Lumber Camps can be built.', { wood: 200 }, ['scientificMethod'], [
+    { stat: 'regrow:wood', kind: 'mul', amount: 2 },
+  ]),
+  tech(1, 9, 'writing', 'Writing', 'Knowledge outlives the people who found it. Needs every other Foundations tech; opens the Classical age.', { planks: 100 }, [], [
+    { stat: 'rate:research', kind: 'mul', amount: 1.5 },
+  ], { capstone: true }),
+
+  // Age II: Classical
+  tech(2, 0, 'metallurgy', 'Metallurgy', 'Better smelting in the Realm. Lets the Realm build a Blast Furnace.', { iron: 50 }, ['writing'], [
+    { stat: 'rate:iron', kind: 'mul', amount: 1.5 },
+  ]),
+  tech(2, 1, 'currency', 'Currency', 'Minted coins instead of barter. Lets the Realm build Markets, and makes Gold worth digging for.', { gold: 50 }, ['writing'], [
+    { stat: 'rate:gold', kind: 'mul', amount: 1.15 },
+  ]),
+  tech(2, 2, 'geology', 'Geology', 'Knowing where to dig. Lets the Realm build a Gold Mine.', { stone: 200 }, ['mining', 'writing'], [
+    { stat: 'rate:stone', kind: 'mul', amount: 1.2 },
+    { stat: 'yield:iron', kind: 'add', amount: 0.05 },
+  ]),
+  tech(2, 3, 'medicine', 'Medicine', 'Fewer people die young in crowded homes, so crowding slows growth less, and injured workers are patched up.', { food: 300 }, ['writing'], [
+    { stat: 'crowding', kind: 'mul', amount: 0.7 },
+    { stat: 'accidents', kind: 'mul', amount: 0.7 },
+  ]),
+  tech(2, 4, 'cartography', 'Cartography', 'Map the lands around the Realm: 1 more square of land to build on, for good. Repeatable up to 10 times per Lab run, each costing twice as much; a Lab reset lets you map again for more.', {}, ['writing'], [
+    { stat: 'land', kind: 'add', amount: 1 },
+  ], { costGrowth: 2, maxLevel: 10, lasting: true }),
+  tech(2, 5, 'rationalism', 'Rationalism', 'Faster research. Widespread disbelief weakens magic. Repeatable.', {}, ['writing'], [
+    { stat: 'rate:research', kind: 'mul', amount: 1.3 },
+    { stat: 'rate:mana', kind: 'mul', amount: 0.8 },
+  ], { costGrowth: 1.6, maxLevel: 10 }),
+  tech(2, 6, 'aqueducts', 'Aqueducts', 'Water carried from far away. Lets the Realm build Aqueducts, and the hungry hold out longer.', { bricks: 150 }, ['medicine'], [
+    { stat: 'starvation', kind: 'mul', amount: 0.75 },
+  ]),
+  tech(2, 7, 'mathematics', 'Mathematics', 'Numbers for everything: research runs much faster.', {}, ['writing'], [
+    { stat: 'rate:research', kind: 'mul', amount: 1.5 },
+  ]),
+  tech(2, 8, 'engineering', 'Engineering', 'Better planks and bricks, and Irrigation. Needs every other Classical tech; opens the Medieval age.', { planks: 200 }, [], [
+    { stat: 'rate:planks', kind: 'mul', amount: 1.25 },
+    { stat: 'rate:bricks', kind: 'mul', amount: 1.25 },
+  ], { capstone: true }),
+
+  // Age III: Medieval
+  tech(3, 0, 'logistics', 'Logistics', 'Planned supply lines make Realm construction much faster.', { planks: 300 }, ['engineering'], [
+    { stat: 'speed:realm', kind: 'mul', amount: 1.3 },
+  ]),
+  tech(3, 1, 'occultism', 'Occultism', 'Candles, old books and whispered rites. Lets the Realm raise a Shrine, which opens Arcana.', {}, ['engineering'], [
+    { stat: 'rate:mana', kind: 'mul', amount: 1.1 },
+  ]),
+  tech(3, 2, 'optics', 'Optics', 'Lenses and light. Lets the Realm build a Glassworks and an Observatory.', { bricks: 100 }, ['engineering'], [
+    { stat: 'prod:lab', kind: 'mul', amount: 1.1 },
+  ]),
+  tech(3, 3, 'guilds', 'Guilds', 'Masters and apprentices: Realm buildings are cheaper and go up faster.', { gold: 200 }, ['engineering'], [
+    { stat: 'cost:realm', kind: 'mul', amount: 0.9 },
+    { stat: 'speed:realm', kind: 'mul', amount: 1.1 },
+  ]),
+  tech(3, 4, 'sanitation', 'Sanitation', 'Sewers and clean streets. Crowding slows growth far less, and fewer workers die of infected wounds.', { bricks: 300 }, ['medicine', 'engineering'], [
+    { stat: 'crowding', kind: 'mul', amount: 0.6 },
+    { stat: 'accidents', kind: 'mul', amount: 0.8 },
+  ]),
+  tech(3, 5, 'sailing', 'Sailing', 'Boats built from Planks. Fishing boats bring in more Food, and the coast opens up to explorers.', { planks: 400 }, ['cartography', 'engineering'], [
+    { stat: 'rate:food', kind: 'mul', amount: 1.15 },
+  ]),
+  tech(3, 6, 'arcaneTheory', 'Arcane Theory', 'Studying magic instead of dismissing it.', { essence: 60 }, ['occultism'], [
+    { stat: 'rate:essence', kind: 'mul', amount: 1.3 },
+  ]),
+  tech(3, 7, 'universities', 'Universities', 'Places of learning. Lets the Realm found a University, and research runs faster.', { bricks: 200 }, ['optics'], [
+    { stat: 'rate:research', kind: 'mul', amount: 1.5 },
+  ]),
+  tech(3, 8, 'printing', 'Printing', 'Knowledge spreads. Lets the Realm build a Printing Press. Needs every other Medieval tech; opens the Renaissance.', { planks: 300 }, [], [
+    { stat: 'rate:research', kind: 'mul', amount: 1.5 },
+  ], { capstone: true }),
+
+  // Age IV: Renaissance
+  tech(4, 0, 'navigation', 'Navigation', 'Charts, lenses and the stars: ships can cross open sea. Trade brings in more Gold, and Expeditions can set out.', { glass: 60 }, ['sailing', 'printing'], [
+    { stat: 'rate:gold', kind: 'mul', amount: 1.25 },
+  ]),
+  tech(4, 1, 'banking', 'Banking', 'Letters of credit and counting houses: much more Gold.', { gold: 300 }, ['currency', 'printing'], [
+    { stat: 'rate:gold', kind: 'mul', amount: 1.5 },
+  ]),
+  tech(4, 2, 'scientificInstruments', 'Scientific Instruments', 'Telescopes, microscopes and clocks: research runs faster.', { glass: 150 }, ['optics', 'printing'], [
+    { stat: 'rate:research', kind: 'mul', amount: 1.5 },
+  ]),
+  tech(4, 3, 'expedition', 'Expedition', 'Sail beyond the maps. Each expedition finds 5 more squares of land for the Realm, for good. Repeatable; a Lab reset lets you sail again for more.', { food: 1000 }, ['navigation'], [
+    { stat: 'land', kind: 'add', amount: 5 },
+  ], { costGrowth: 1.3, maxLevel: 30, lasting: true }),
+  tech(4, 4, 'chemistry', 'Chemistry', 'Elements instead of humours: Coal and Glass are made far better.', { glass: 100, coal: 200 }, ['printing'], [
+    { stat: 'rate:coal', kind: 'mul', amount: 1.5 },
+    { stat: 'rate:glass', kind: 'mul', amount: 1.25 },
+  ]),
+  tech(4, 5, 'anatomy', 'Anatomy', 'Knowing how bodies work: fewer deaths at work and from hunger.', { food: 500 }, ['medicine', 'printing'], [
+    { stat: 'accidents', kind: 'mul', amount: 0.75 },
+    { stat: 'starvation', kind: 'mul', amount: 0.75 },
+  ]),
+  tech(4, 6, 'enlightenment', 'Enlightenment', 'Reason above all: research doubles, and magic fades a little. Needs every other Renaissance tech; opens the Industrial age.', { gold: 200 }, [], [
+    { stat: 'rate:research', kind: 'mul', amount: 2 },
+    { stat: 'rate:mana', kind: 'mul', amount: 0.9 },
+  ], { capstone: true }),
+
+  // Age V: Industrial
+  tech(5, 0, 'industrialization', 'Industrialization', 'Cheaper Realm buildings. The smog chokes Essence and the Realm\'s growth.', { iron: 300 }, ['enlightenment'], [
+    { stat: 'cost:realm', kind: 'mul', amount: 0.85 },
+    { stat: 'rate:essence', kind: 'mul', amount: 0.85 },
+    { stat: 'pollution', kind: 'add', amount: 8 },
+  ]),
+  tech(5, 1, 'steamPower', 'Steam Power', 'Engines drive the Realm\'s works: much more of everything, and more smoke. Needed for Golem Works.', { steel: 200 }, ['industrialization'], [
+    { stat: 'prod:realm', kind: 'mul', amount: 1.5 },
+    { stat: 'pollution', kind: 'add', amount: 4 },
+  ]),
+  tech(5, 2, 'filtration', 'Filtration', 'Filters on every chimney. Pollution slows the Realm\'s growth far less.', { iron: 300 }, ['industrialization', 'medicine'], [
+    { stat: 'pollution', kind: 'mul', amount: 0.5 },
+  ]),
+  tech(5, 3, 'railways', 'Railways', 'Goods move fast: Realm construction speeds up, and less spoils in Warehouses.', { steel: 400 }, ['steamPower'], [
+    { stat: 'speed:realm', kind: 'mul', amount: 1.5 },
+    { stat: 'decay:realm', kind: 'mul', amount: 0.5 },
+  ]),
+  tech(5, 4, 'environmentalScience', 'Environmental Science', 'Understanding how the land heals: faster regrowth, less pollution, and the Realm can plant Parks.', { glass: 150 }, ['forestry', 'filtration'], [
+    { stat: 'regrow:wood', kind: 'mul', amount: 2 },
+    { stat: 'pollution', kind: 'mul', amount: 0.8 },
+  ]),
+  tech(5, 5, 'precisionTools', 'Precision Tools', 'Lathes and gauges: the Realm makes more, and can build Machine Shops for Machine Parts.', { steel: 300 }, ['steamPower'], [
+    { stat: 'prod:realm', kind: 'mul', amount: 1.2 },
+  ]),
+  tech(5, 6, 'electricity', 'Electricity', 'Power down a wire: research doubles. Needs every other Industrial tech; opens the Electric age.', { steel: 500, machineParts: 100 }, [], [
+    { stat: 'rate:research', kind: 'mul', amount: 2 },
+  ], { capstone: true }),
+
+  // Age VI: Electric
+  tech(6, 0, 'telegraph', 'Telegraph', 'Messages at the speed of light: all Lab production is faster.', { machineParts: 200 }, ['electricity'], [
+    { stat: 'prod:lab', kind: 'mul', amount: 1.5 },
+  ]),
+  tech(6, 1, 'fertilizers', 'Fertilizers', 'Chemistry in the fields: twice the Food, and runoff pollution.', { coal: 1000 }, ['electricity', 'chemistry'], [
+    { stat: 'rate:food', kind: 'mul', amount: 2 },
+    { stat: 'pollution', kind: 'add', amount: 3 },
+  ]),
+  tech(6, 2, 'thaumicPhysics', 'Thaumic Physics', 'Science and magic agree on something at last.', { aether: 20 }, ['rationalism', 'arcaneTheory', 'electricity'], [
+    { stat: 'rate:aether', kind: 'mul', amount: 2 },
+    { stat: 'prod:lab', kind: 'mul', amount: 1.5 },
+  ]),
+  tech(6, 3, 'vaccines', 'Vaccines', 'Diseases stopped before they start: far fewer deaths at work and from hunger.', { food: 1000 }, ['anatomy', 'electricity'], [
+    { stat: 'accidents', kind: 'mul', amount: 0.5 },
+    { stat: 'starvation', kind: 'mul', amount: 0.5 },
+  ]),
+  tech(6, 4, 'combustionEngine', 'Combustion Engine', 'Engines that burn Oil: much more production, more pollution, and the Realm can drill Oil Wells.', { machineParts: 300 }, ['electricity'], [
+    { stat: 'prod:realm', kind: 'mul', amount: 1.5 },
+    { stat: 'pollution', kind: 'add', amount: 6 },
+  ]),
+  tech(6, 5, 'massProduction', 'Mass Production', 'Assembly lines: Realm buildings cost far less, and magic fades. Needs every other Electric tech; opens the Atomic age.', { machineParts: 500, oil: 500 }, [], [
+    { stat: 'cost:realm', kind: 'mul', amount: 0.7 },
+    { stat: 'rate:mana', kind: 'mul', amount: 0.9 },
+  ], { capstone: true }),
+
+  // Age VII: Atomic
+  tech(7, 0, 'automation', 'Automation', 'Machines take over the Realm\'s busywork.', { machineParts: 500 }, ['massProduction'], [
+    { stat: 'prod:realm', kind: 'mul', amount: 1.5 },
+  ]),
+  tech(7, 1, 'radio', 'Radio', 'Voices through the air: research runs faster.', { glass: 500, machineParts: 200 }, ['massProduction'], [
+    { stat: 'rate:research', kind: 'mul', amount: 1.5 },
+  ]),
+  tech(7, 2, 'greenRevolution', 'Green Revolution', 'New crops and machines: three times the Food.', { food: 2000 }, ['fertilizers', 'massProduction'], [
+    { stat: 'rate:food', kind: 'mul', amount: 3 },
+  ]),
+  tech(7, 3, 'polymers', 'Polymers', 'Long molecules from Oil. Lets the Realm build Refineries for Plastics.', { oil: 1000 }, ['massProduction'], []),
+  tech(7, 4, 'antibiotics', 'Antibiotics', 'Infections cured: half as many deaths at work.', { plastics: 200 }, ['vaccines'], [
+    { stat: 'accidents', kind: 'mul', amount: 0.5 },
+  ]),
+  tech(7, 5, 'radioactivity', 'Radioactivity', 'Rocks that glow. Lets the Realm dig Uranium Mines.', { machineParts: 300 }, ['massProduction'], []),
+  tech(7, 6, 'nuclearPhysics', 'Nuclear Physics', 'Splitting the atom: research doubles, and magic fades. Needs every other Atomic tech; opens the Information age.', { uranium: 100 }, [], [
+    { stat: 'rate:research', kind: 'mul', amount: 2 },
+    { stat: 'rate:mana', kind: 'mul', amount: 0.8 },
+  ], { capstone: true }),
+
+  // Age VIII: Information
+  tech(8, 0, 'semiconductors', 'Semiconductors', 'Materials that half conduct. Lets the Realm build Silicon Works.', { plastics: 500 }, ['nuclearPhysics'], []),
+  tech(8, 1, 'transistors', 'Transistors', 'Tiny switches. Lets the Realm build Chip Fabs for Electronics.', { silicon: 200 }, ['semiconductors'], []),
+  tech(8, 2, 'globalization', 'Globalization', 'Trade around the whole world: twice the Gold.', { gold: 2000 }, ['nuclearPhysics'], [
+    { stat: 'rate:gold', kind: 'mul', amount: 2 },
+  ]),
+  tech(8, 3, 'computers', 'Computers', 'Machines that think in numbers: research doubles.', { electronics: 100 }, ['transistors'], [
+    { stat: 'rate:research', kind: 'mul', amount: 2 },
+  ]),
+  tech(8, 4, 'genetics', 'Genetics', 'Reading life\'s code: families grow twice as fast, and half as many die at work.', { electronics: 100 }, ['computers', 'antibiotics'], [
+    { stat: 'growth', kind: 'mul', amount: 2 },
+    { stat: 'accidents', kind: 'mul', amount: 0.5 },
+  ]),
+  tech(8, 5, 'satellites', 'Satellites', 'Eyes in orbit map every corner: 20 more squares of land, for good. A Lab reset lets you launch again for more.', { electronics: 150, steel: 1000 }, ['computers'], [
+    { stat: 'land', kind: 'add', amount: 20 },
+  ], { lasting: true }),
+  tech(8, 6, 'internet', 'The Internet', 'Everyone connected: all Lab production doubles, and magic fades. Needs every other Information tech; opens the Current Age.', { electronics: 300 }, [], [
+    { stat: 'prod:lab', kind: 'mul', amount: 2 },
+    { stat: 'rate:mana', kind: 'mul', amount: 0.8 },
+  ], { capstone: true }),
+
+  // Age IX: Current Age
+  tech(9, 0, 'renewableEnergy', 'Renewable Energy', 'Sun and wind instead of smoke: pollution almost gone.', { electronics: 300, steel: 2000 }, ['internet'], [
+    { stat: 'pollution', kind: 'mul', amount: 0.1 },
+  ]),
+  tech(9, 1, 'geneEditing', 'Gene Editing', 'Rewriting life\'s code: families grow twice as fast, and hunger barely kills.', { electronics: 300 }, ['genetics'], [
+    { stat: 'growth', kind: 'mul', amount: 2 },
+    { stat: 'starvation', kind: 'mul', amount: 0.25 },
+  ]),
+  tech(9, 2, 'spaceFlight', 'Space Flight', 'Settle beyond the sky: 25 more squares of land each time, for good. Repeatable; a Lab reset lets you launch again for more.', { electronics: 500, steel: 2000 }, ['satellites'], [
+    { stat: 'land', kind: 'add', amount: 25 },
+  ], { costGrowth: 1.5, maxLevel: 20, lasting: true }),
+  tech(9, 3, 'machineLearning', 'Machine Learning', 'Machines that learn: research triples.', { electronics: 500 }, ['internet'], [
+    { stat: 'rate:research', kind: 'mul', amount: 3 },
+  ]),
+  tech(9, 4, 'quantumComputing', 'Quantum Computing', 'Computing with uncertainty: all Lab production doubles.', { electronics: 800 }, ['machineLearning'], [
+    { stat: 'prod:lab', kind: 'mul', amount: 2 },
+  ]),
+  tech(9, 5, 'artificialIntelligence', 'Artificial Intelligence', 'Minds of our own making: all production in every world triples. Needs every other tech of the Current Age.', { electronics: 1000 }, [], [
+    { stat: 'prod:realm', kind: 'mul', amount: 3 },
+    { stat: 'prod:lab', kind: 'mul', amount: 3 },
+    { stat: 'prod:arcana', kind: 'mul', amount: 3 },
+  ], { capstone: true }),
 ];
 
 export const NODES = Object.fromEntries(nodeList.map((n) => [n.id, n])) as Record<NodeId, NodeDef>;
@@ -1744,6 +1777,36 @@ const achievementList: AchievementDef[] = [
     progress: (state) => [state.runDeaths, 100],
     effects: [{ stat: 'growth', kind: 'mul', amount: 1.1 }],
   },
+  // One per Lab age: research every tech of the age once, in any run.
+  ...(
+    [
+      ['Out of the Stone Age', 'Research ×1.25; every Realm run starts with 1 more person.', 1.25, [], 1],
+      ['Classical Education', 'Research ×1.25; the Realm\'s population grows 10% faster.', 1.25, [{ stat: 'growth', kind: 'mul', amount: 1.1 }]],
+      ['Keepers of Knowledge', 'Research ×1.5; Realm buildings go up 10% faster.', 1.5, [{ stat: 'speed:realm', kind: 'mul', amount: 1.1 }]],
+      ['Age of Discovery', 'Research ×1.5; 5 more squares of land.', 1.5, [{ stat: 'land', kind: 'add', amount: 5 }]],
+      ['Industrial Revolution', 'Research ×1.5; all Realm production ×1.25.', 1.5, [{ stat: 'prod:realm', kind: 'mul', amount: 1.25 }]],
+      ['Let There Be Light', 'Research ×2.', 2, []],
+      ['Splitting the Atom', 'Research ×2; Realm costs ×0.9.', 2, [{ stat: 'cost:realm', kind: 'mul', amount: 0.9 }]],
+      ['Information Superhighway', 'Research ×2; all Lab production ×1.5.', 2, [{ stat: 'prod:lab', kind: 'mul', amount: 1.5 }]],
+      ['Singularity', 'All production in every world ×2.', 1, [
+        { stat: 'prod:realm', kind: 'mul', amount: 2 },
+        { stat: 'prod:lab', kind: 'mul', amount: 2 },
+        { stat: 'prod:arcana', kind: 'mul', amount: 2 },
+      ]],
+    ] as [string, string, number, Effect[], number?][]
+  ).map(([name, reward, research, effects, startPeople], i): AchievementDef => {
+    const age = i + 1;
+    const techs = () => nodeList.filter((n) => n.age === age);
+    return {
+      id: `age${age}` as AchievementId,
+      name,
+      goal: `Research every tech of the ${AGES[i]} age (Age ${age}) in one run.`,
+      reward,
+      progress: (state) => [techs().filter((n) => state.nodes[n.id] > 0).length, techs().length],
+      effects: [...(research > 1 ? [{ stat: 'rate:research', kind: 'mul', amount: research } as Effect] : []), ...effects],
+      ...(startPeople ? { startPeople } : {}),
+    };
+  }),
 ];
 
 export const ACHIEVEMENTS = Object.fromEntries(achievementList.map((a) => [a.id, a])) as Record<AchievementId, AchievementDef>;

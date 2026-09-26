@@ -1,5 +1,6 @@
 import {
   ACHIEVEMENTS,
+  AGES,
   ACHIEVEMENT_ORDER,
   BUILD_TIME_GROWTH,
   DEMONS,
@@ -467,7 +468,7 @@ export function isStarving(state: GameState, mods: Modifiers): boolean {
 export function decayRate(state: GameState, mods: Modifiers, resource: ResourceId): number {
   const { baseCap, world } = RESOURCES[resource];
   if (baseCap === undefined) return 0;
-  const share = getAdd(mods, `decay:${world}`);
+  const share = getAdd(mods, `decay:${world}`) * getMul(mods, `decay:${world}`);
   return share > 0 ? Math.max(0, state.resources[resource] - baseCap) * share : 0;
 }
 
@@ -791,7 +792,27 @@ export function isNodeAvailable(state: GameState, id: NodeId): boolean {
   const node = NODES[id];
   if (!isWorldUnlocked(state, node.world)) return false;
   if (node.requiresBuildings && buildingCount(state, node.world) < node.requiresBuildings) return false;
+  if (node.capstone && ageTechsLeft(state, node.age ?? 0).some((t) => t !== id)) return false;
   return (node.requires ?? []).every((req) => state.nodes[req] > 0);
+}
+
+/** Every Lab tech of an age, capstone last. */
+export function ageTechs(age: number): NodeId[] {
+  return NODE_ORDER.filter((id) => NODES[id].age === age);
+}
+
+/** The techs of an age not yet researched in this run. */
+export function ageTechsLeft(state: GameState, age: number): NodeId[] {
+  return ageTechs(age).filter((id) => state.nodes[id] <= 0);
+}
+
+/** The Lab's current age: the first whose capstone is not yet researched (or the last age, once all are). */
+export function currentAge(state: GameState): number {
+  for (let age = 1; age <= AGES.length; age++) {
+    const capstone = ageTechs(age).find((id) => NODES[id].capstone);
+    if (!capstone || state.nodes[capstone] <= 0) return age;
+  }
+  return AGES.length;
 }
 
 /**
@@ -803,6 +824,8 @@ export function isResearchListed(state: GameState, id: NodeId): boolean {
   if (node.kind !== 'tech' || node.world !== 'lab' || !isWorldUnlocked(state, 'lab')) return false;
   if (state.researching === id) return true;
   if (state.nodes[id] >= maxLevel(id)) return false;
+  // A capstone shows as the goal of its age as soon as the age opens; its Needs line says what is left.
+  if (node.capstone) return (node.age ?? 1) <= currentAge(state);
   return (node.requires ?? []).every((req) => NODES[req].kind !== 'tech' || state.nodes[req] > 0);
 }
 
@@ -833,23 +856,9 @@ function isReachable(state: GameState, id: NodeId, known: Map<NodeId, boolean>):
 }
 
 /** Lab techs by column in the research tree: a tech sits one column right of its deepest Lab prerequisite. */
+/** The research tree, one column per age, each capstone last. */
 export function researchTreeColumns(): NodeId[][] {
-  const depth = new Map<NodeId, number>();
-  const depthOf = (id: NodeId): number => {
-    const known = depth.get(id);
-    if (known !== undefined) return known;
-    const reqs = (NODES[id].requires ?? []).filter((r) => NODES[r].world === 'lab' && NODES[r].kind === 'tech');
-    const d = reqs.length ? 1 + Math.max(...reqs.map(depthOf)) : 0;
-    depth.set(id, d);
-    return d;
-  };
-  const columns: NodeId[][] = [];
-  for (const id of NODE_ORDER) {
-    const node = NODES[id];
-    if (node.world !== 'lab' || node.kind !== 'tech') continue;
-    (columns[depthOf(id)] ??= []).push(id);
-  }
-  return columns;
+  return AGES.map((_, i) => ageTechs(i + 1));
 }
 
 export function canAfford(state: GameState, cost: Cost): boolean {

@@ -1,6 +1,7 @@
 import {
   ACHIEVEMENTS,
   ACHIEVEMENT_ORDER,
+  AGES,
   DEMONS,
   DEPOSITS,
   DEPOSIT_ORDER,
@@ -86,6 +87,9 @@ import {
   accidentChance,
   accidentRate,
   wastedWorkers,
+  ageTechs,
+  ageTechsLeft,
+  currentAge,
   decayRate,
   eatingRate,
   isStarving,
@@ -127,6 +131,8 @@ function setHtml(el: HTMLElement, html: string) {
   lastHtml.set(el, html);
   el.innerHTML = html;
 }
+
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
 
 const RESET_WIPES: Record<WorldId, string> = {
   realm: 'buildings, people and jobs',
@@ -242,6 +248,7 @@ export class GameView {
   private echoes: HTMLElement;
   private treeDialog = h('dialog', { class: 'tech-tree' });
   private researchStatus = h('p', { class: 'research-status' });
+  private ageStatus = h('p', { class: 'age-status' });
   private treeBody = h('div', { class: 'tree-columns' });
   private shop: HTMLElement;
   private shopHint: HTMLElement;
@@ -295,7 +302,7 @@ export class GameView {
     });
     this.treeDialog.append(
       h('div', { class: 'tree-head' }, h('h2', {}, 'Research tree'), closeTree),
-      h('p', { class: 'muted small' }, 'Every Lab tech. Each column builds on the ones to its left.'),
+      h('p', { class: 'muted small' }, 'Every Lab tech, one column per age. The last tech of an age needs all the others, and opens the next age.'),
       this.treeBody,
     );
 
@@ -527,7 +534,7 @@ export class GameView {
       h('h3', {}, 'Buildings'),
       buildings,
       ...(techs.childElementCount
-        ? [h('h3', {}, world === 'arcana' ? 'Discoveries' : 'Research'), ...(world === 'lab' ? [this.researchStatus, this.treeButton()] : []), techs]
+        ? [h('h3', {}, world === 'arcana' ? 'Discoveries' : 'Research'), ...(world === 'lab' ? [this.ageStatus, this.researchStatus, this.treeButton()] : []), techs]
         : []),
       ...(spells.childElementCount
         ? [h('h3', {}, 'Spells'), h('p', { class: 'muted small' }, 'Learn a spell once, then click it to switch it on or off. It only costs upkeep while on. Only one spell can be on at a time (Multicast in the Echo shop adds more), so switching one on swaps out the oldest. Summon Demons is the exception: it takes no slot, but once cast it runs until the Realm is down to 2 survivors.'), spells]
@@ -558,7 +565,13 @@ export class GameView {
 
   private renderTree(mods: Modifiers) {
     const state = this.state;
-    const cols = researchTreeColumns().map((ids) => {
+    const now = currentAge(state);
+    const cols = researchTreeColumns().map((ids, col) => {
+      const age = col + 1;
+      const done = ids.filter((id) => state.nodes[id] > 0).length;
+      const head =
+        `<div class="tree-age${age === now ? ' tree-age-now' : age > now ? ' tree-age-later' : ''}">` +
+        `<span>Age ${ROMAN[col]}: ${escape(AGES[col]!)}</span><span>${done} / ${ids.length}</span></div>`;
       const items = ids.map((id) => {
         const node = NODES[id];
         const level = state.nodes[id];
@@ -593,13 +606,15 @@ export class GameView {
             return `<li class="${isHelpful({ ...e, amount }) ? '' : 'bad'}">${tag}${escape(describeEffect(e, amount))}</li>`;
           })
           .join('');
-        const needs = (node.requires ?? [])
-          .map((req) => {
-            const w = NODES[req].world;
-            const tag = w !== 'lab' ? `<span class="tag tag-${w}">${WORLDS[w].name}</span> ` : '';
-            return `<span class="${state.nodes[req] > 0 ? 'met' : 'unmet'}">${tag}${escape(NODES[req].name)}</span>`;
-          })
-          .join(', ');
+        const needs = node.capstone
+          ? `<span class="${ageTechsLeft(state, age).filter((t) => t !== id).length ? 'unmet' : 'met'}">every other ${escape(AGES[col]!)} tech</span>`
+          : (node.requires ?? [])
+              .map((req) => {
+                const w = NODES[req].world;
+                const tag = w !== 'lab' ? `<span class="tag tag-${w}">${WORLDS[w].name}</span> ` : '';
+                return `<span class="${state.nodes[req] > 0 ? 'met' : 'unmet'}">${tag}${escape(NODES[req].name)}</span>`;
+              })
+              .join(', ');
         return (
           `<div class="tree-node tree-${cls}">` +
           `<div class="tree-title"><span class="tree-name">${escape(node.name)}</span><span class="tree-status">${status}</span></div>` +
@@ -609,7 +624,7 @@ export class GameView {
           `</div>`
         );
       });
-      return `<div class="tree-column">${items.join('')}</div>`;
+      return `<div class="tree-column">${head}${items.join('')}</div>`;
     });
     setHtml(this.treeBody, cols.join(''));
   }
@@ -997,6 +1012,14 @@ export class GameView {
 
   private renderResearchStatus(mods: Modifiers) {
     const state = this.state;
+    const age = currentAge(state);
+    const techs = ageTechs(age);
+    const done = techs.filter((t) => state.nodes[t] > 0).length;
+    setText(
+      this.ageStatus,
+      `Age ${ROMAN[age - 1]}: ${AGES[age - 1]} · ${done} of ${techs.length} techs researched` +
+        (done === techs.length ? ' · every age is done' : ''),
+    );
     const id = state.researching;
     const rate = netRate(state, mods, 'research');
     if (id) {
@@ -1151,6 +1174,10 @@ export class GameView {
       const w = NODES[req].world;
       const tag = w !== node.world ? `<span class="tag tag-${w}">${WORLDS[w].name}</span> ` : '';
       needs.push(tag + escape(NODES[req].name));
+    }
+    if (node.capstone && level <= 0) {
+      const left = ageTechsLeft(state, node.age ?? 1).filter((t) => t !== id);
+      if (left.length) needs.push(`the rest of the ${AGES[(node.age ?? 1) - 1]} age: ${left.map((t) => escape(NODES[t].name)).join(', ')}`);
     }
     if (node.requiresBuildings) {
       const have = buildingCount(state, node.world);

@@ -14,6 +14,12 @@ export type ResourceId =
   | 'glass'
   | 'gold'
   | 'runestone'
+  | 'machineParts'
+  | 'oil'
+  | 'plastics'
+  | 'uranium'
+  | 'silicon'
+  | 'electronics'
   // Arcana
   | 'mana'
   | 'essence'
@@ -68,7 +74,7 @@ export type Stat =
 export type Cost = Partial<Record<ResourceId, number>>;
 
 /** Realm resources that come from a limited deposit: the forest, quarries, clay beds and coal seams. */
-export type DepositId = 'wood' | 'stone' | 'clay' | 'coal' | 'iron' | 'gold';
+export type DepositId = 'wood' | 'stone' | 'clay' | 'coal' | 'iron' | 'gold' | 'oil' | 'uranium';
 
 export interface DepositDef {
   name: string;
@@ -127,7 +133,16 @@ export interface ResourceDef {
   baseCap?: number;
 }
 
-export type JobId = 'woodcutter' | 'stonecutter' | 'farmer' | 'digger' | 'miner' | 'collier' | 'prospector';
+export type JobId =
+  | 'woodcutter'
+  | 'stonecutter'
+  | 'farmer'
+  | 'digger'
+  | 'miner'
+  | 'collier'
+  | 'prospector'
+  | 'driller'
+  | 'uraniumMiner';
 
 /** A Realm job. Each assigned person produces `baseYield` (plus `yield:` bonuses) of `resource` per second. */
 export interface JobDef {
@@ -196,12 +211,22 @@ export interface NodeDef {
   lasting?: boolean;
   /** Owning at least one level opens this world for good. */
   unlocksWorld?: WorldId;
+  /** For Lab techs: the age (1 to 9) it belongs to. */
+  age?: number;
+  /** The last tech of its age: it needs every other tech of the age, and opens the next age. */
+  capstone?: boolean;
 }
 
 export type NodeId =
   // Realm
   | 'hut'
   | 'warehouse'
+  | 'machineShop'
+  | 'oilWell'
+  | 'refinery'
+  | 'uraniumMine'
+  | 'siliconWorks'
+  | 'chipFab'
   | 'farm'
   | 'lumberCamp'
   | 'quarry'
@@ -269,6 +294,45 @@ export type NodeId =
   | 'scientificMethod'
   | 'engineering'
   | 'mining'
+  | 'pottery'
+  | 'writing'
+  | 'aqueducts'
+  | 'mathematics'
+  | 'guilds'
+  | 'universities'
+  | 'banking'
+  | 'scientificInstruments'
+  | 'chemistry'
+  | 'anatomy'
+  | 'enlightenment'
+  | 'steamPower'
+  | 'railways'
+  | 'precisionTools'
+  | 'electricity'
+  | 'telegraph'
+  | 'fertilizers'
+  | 'vaccines'
+  | 'combustionEngine'
+  | 'massProduction'
+  | 'radio'
+  | 'greenRevolution'
+  | 'polymers'
+  | 'antibiotics'
+  | 'radioactivity'
+  | 'nuclearPhysics'
+  | 'semiconductors'
+  | 'transistors'
+  | 'globalization'
+  | 'computers'
+  | 'genetics'
+  | 'satellites'
+  | 'internet'
+  | 'renewableEnergy'
+  | 'geneEditing'
+  | 'spaceFlight'
+  | 'machineLearning'
+  | 'quantumComputing'
+  | 'artificialIntelligence'
   | 'basicMachinery'
   | 'warehousing'
   | 'geology'
@@ -326,7 +390,20 @@ export interface MetaDef {
   effects?: Effect[];
 }
 
-export type AchievementId = 'village' | 'deforested' | 'crowdedLand' | 'hundredGraves';
+export type AchievementId =
+  | 'village'
+  | 'deforested'
+  | 'crowdedLand'
+  | 'hundredGraves'
+  | 'age1'
+  | 'age2'
+  | 'age3'
+  | 'age4'
+  | 'age5'
+  | 'age6'
+  | 'age7'
+  | 'age8'
+  | 'age9';
 
 /** Combined effects on each stat: every `add` summed, every `mul` multiplied. */
 export type StatTotals = ReadonlyMap<Stat, { add: number; mul: number }>;

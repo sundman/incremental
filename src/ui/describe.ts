@@ -48,7 +48,9 @@ export function describeEffect(effect: Effect, amount: number): string {
     return effect.kind === 'add' ? `+${formatNumber(amount * 100)}% ${world} storage` : `${world} storage ${formatMultiplier(amount)}`;
   }
   if (effect.stat.startsWith('decay:')) {
-    return `Goods in Warehouses spoil ${amount >= 0 ? '+' : '−'}${formatNumber(Math.abs(amount) * 100)}%/s`;
+    return effect.kind === 'add'
+      ? `Goods in Warehouses spoil ${amount >= 0 ? '+' : '−'}${formatNumber(Math.abs(amount) * 100)}%/s`
+      : `Warehouse spoilage −${formatNumber((1 - amount) * 100)}%`;
   }
   if (effect.stat.startsWith('speed:')) {
     return `${WORLDS[effect.stat.slice('speed:'.length) as WorldId].name} build speed ${formatMultiplier(amount)}`;

@@ -1,6 +1,30 @@
 # Draft: a tech tree through the ages
 
-_Status: proposal for review. Nothing here is in the game yet. Existing techs are marked **(existing)**; their effects stay as they are unless noted. The live content is in `GAME_CONTENT.md`. Tables are generated from the formula below, so the numbers are consistent with it._
+_Status: **implemented** in the game. `GAME_CONTENT.md` (and the in-game Guide) is the source of truth for the live numbers; this document keeps the design and reasoning. Where the game differs from the tables below, it is listed under "Differences in the game"._
+
+## Differences in the game
+
+A few effects needed mechanics the game doesn't have yet ("X is twice as strong"), so they were swapped for close equivalents:
+
+| Tech or achievement | Draft | In the game |
+| --- | --- | --- |
+| Pottery | Kilns use 25% less Wood | Clay ×1.25, Bricks ×1.1 |
+| Guilds | Builders' Guilds twice as strong | Realm costs ×0.9, Realm build speed ×1.1 |
+| Banking | Markets twice as strong | Gold ×1.5 only |
+| Scientific Instruments | Observatories twice as strong | Research ×1.5 only |
+| Precision Tools | Workshops and Foundries ×1.5 as strong | All Realm production ×1.2 |
+| Antibiotics | Healing Light twice as strong | Work accidents −50% only |
+| Globalization | Gold ×2 and +10 land | Gold ×2 only (land techs bank everything they give, so land stays with Satellites and Space Flight) |
+| Satellites | +20 land and Observatories twice as strong | +20 land only |
+| Classical Education | Scholars cost 25% less | Population growth ×1.1 |
+| Keepers of Knowledge | Lab tech materials −20% | Realm build speed ×1.1 |
+
+Other changes that came with it:
+
+- **Buildings follow the techs:** Aqueducts need the Aqueducts tech (was Engineering), the University needs Universities (was Printing), and Golem Works need Steam Power (was Automation, now far later).
+- **Arcana opens later:** Occultism is now a Medieval tech, so Arcana can only open in Age III. Arcane Theory (which needs Essence) is part of the Medieval age, so finishing that age means opening Arcana.
+- **Converters keep the game's 10:1 rule:** Machine Shops burn 1 Steel/s and 0.2 Coal/s, and Refineries 2 Oil/s, for their 0.1 Parts/s and 0.2 Plastics/s.
+- **Rounding:** costs are rounded to two significant digits, so Scientific Method costs 130 rather than 120.
 
 ## Decisions so far
 

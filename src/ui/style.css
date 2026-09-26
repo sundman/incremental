@@ -943,6 +943,34 @@ button {
   flex: 1 0 210px;
 }
 
+/* Lab: which age the research is in. */
+.age-status {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: var(--lab);
+}
+
+.tree-age {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--card);
+}
+
+.tree-age-now {
+  color: var(--lab);
+  outline: 1px solid var(--lab);
+}
+
+.tree-age-later {
+  opacity: 0.6;
+}
+
 .tree-node {
   background: var(--card);
   border: 1px solid var(--border);

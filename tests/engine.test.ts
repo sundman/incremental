@@ -51,6 +51,8 @@ import {
   researchUpfrontCost,
   researchSecondsLeft,
   setAccidentRandom,
+  currentAge,
+  ageTechs,
   startPopulation,
   eatingRate,
   isStarving,
@@ -65,7 +67,7 @@ import {
   costOverCap,
   isAtCap,
 } from '../src/engine/engine';
-import { DEPOSITS, NODES, RESOURCES } from '../src/engine/content';
+import { DEPOSITS, NODES, NODE_ORDER, RESOURCES, ageCost } from '../src/engine/content';
 import type { GameState, JobId, NodeId, ResourceId } from '../src/engine/types';
 
 // Work accidents are random; keep them off unless a test turns them on.
@@ -179,16 +181,17 @@ describe('worlds and techs', () => {
 
   it('techs need their prerequisites and cap at one level', () => {
     const state = unlockAll(createInitialState());
-    expect(startResearch(state, 'metallurgy')).toBe(false);
+    state.resources.stone = 100;
+    expect(startResearch(state, 'mining')).toBe(false);
     expect(buyNode(state, 'scientificMethod')).toBe(false); // techs are researched, not built
     expect(startResearch(state, 'scientificMethod')).toBe(true);
     expect(startResearch(state, 'scientificMethod')).toBe(false); // already being researched
-    expect(startResearch(state, 'metallurgy')).toBe(false); // not finished yet
+    expect(startResearch(state, 'mining')).toBe(false); // not finished yet
     pour(state, 10_000);
     expect(state.nodes.scientificMethod).toBe(1);
     expect(state.researching).toBe(null);
     expect(startResearch(state, 'scientificMethod')).toBe(false); // one level only
-    expect(startResearch(state, 'metallurgy')).toBe(true);
+    expect(startResearch(state, 'mining')).toBe(true);
   });
 });
 
@@ -458,13 +461,13 @@ describe('land', () => {
   });
 
   it('finds land with Cartography and each Expedition that is kept for good, while the techs reset', () => {
-    const state = unlockAll(withNodes({ hut: 5, agriculture: 1, scientificMethod: 1, navigation: 1, library: 1 }));
+    const state = unlockAll(withNodes({ hut: 5, agriculture: 1, writing: 1, navigation: 1, library: 1 }));
     expect(startResearch(state, 'cartography')).toBe(true);
-    pour(state, 120);
+    pour(state, ageCost(2, 4));
     for (let i = 0; i < 3; i++) {
-      state.resources.food = 1000; // each expedition needs its own supplies
+      state.resources.food = 5000; // each expedition needs its own supplies, more each time
       expect(startResearch(state, 'expedition')).toBe(true);
-      pour(state, 1000 * 1.3 ** i);
+      pour(state, ageCost(4, 3) * 1.3 ** i);
     }
     expect(state.nodes.expedition).toBe(3);
     expect(land(state)).toBe(20 + 1 + 3 * 5);
@@ -478,30 +481,30 @@ describe('land', () => {
     expect(state.nodes.cartography).toBe(0); // the techs reset...
     expect(state.nodes.expedition).toBe(0);
     expect(land(state)).toBe(36); // ...but the land they found stays
-    withNodes({ scientificMethod: 1 }, state);
+    withNodes({ writing: 1 }, state);
     expect(startResearch(state, 'cartography')).toBe(true);
-    pour(state, 120);
+    pour(state, ageCost(2, 4));
     expect(land(state)).toBe(37); // and mapping again finds more
   });
 });
 
 describe('repeatable research', () => {
   it('lets Cartography be researched 10 times, 1 land each, doubling in price', () => {
-    const state = unlockAll(withNodes({ scientificMethod: 1, library: 1 }));
-    state.resources.research = 1e9;
+    const state = unlockAll(withNodes({ writing: 1, library: 1 }));
+    const first = ageCost(2, 4);
     expect(maxLevel('cartography')).toBe(10);
-    expect(nodeCost(state, 'cartography').research).toBe(120);
+    expect(nodeCost(state, 'cartography').research).toBe(first);
     expect(startResearch(state, 'cartography')).toBe(true);
-    pour(state, 120 * (2 ** 10 - 1)); // it costs only Research, so it stays the target level after level
+    pour(state, first * (2 ** 10 - 1)); // it costs only Research, so it stays the target level after level
     expect(state.nodes.cartography).toBe(10);
     expect(state.researching).toBe(null);
-    expect(nodeCost(state, 'cartography').research).toBe(120 * 2 ** 10);
+    expect(nodeCost(state, 'cartography').research).toBe(first * 2 ** 10);
     expect(startResearch(state, 'cartography')).toBe(false);
     expect(land(state)).toBe(20 + 10);
   });
 
   it('lets Rationalism be researched 10 times, stacking both its effects', () => {
-    const state = unlockAll(withNodes({ scientificMethod: 1, library: 1, rationalism: 9 }));
+    const state = unlockAll(withNodes({ writing: 1, library: 1, rationalism: 9 }));
     expect(startResearch(state, 'rationalism')).toBe(true);
     pour(state, 1e9);
     expect(state.nodes.rationalism).toBe(10);
@@ -804,7 +807,7 @@ describe('cross-world requirements', () => {
   it('needs both magic and science for Golem Works', () => {
     const state = unlockAll(withNodes({ blastFurnace: 1, runesmith: 1, animation: 1 }));
     expect(isNodeAvailable(state, 'golemWorks')).toBe(false);
-    state.nodes.automation = 1;
+    state.nodes.steamPower = 1;
     expect(isNodeAvailable(state, 'golemWorks')).toBe(true);
   });
 
@@ -963,18 +966,18 @@ describe('lumber camps', () => {
 
 describe('exploring', () => {
   it('needs Sailing and Navigation before any Expedition can set out', () => {
-    const state = unlockAll(withNodes({ library: 1, scientificMethod: 1, cartography: 1, engineering: 1 }));
+    const state = unlockAll(withNodes({ library: 1, writing: 1, cartography: 1, engineering: 1 }));
     Object.assign(state.resources, { food: 1e6, planks: 1e6, glass: 1e6 });
     expect(startResearch(state, 'expedition')).toBe(false);
-    expect(startResearch(state, 'navigation')).toBe(false); // needs Sailing and Optics
+    expect(startResearch(state, 'navigation')).toBe(false); // needs Sailing and Printing
     expect(startResearch(state, 'sailing')).toBe(true);
     pour(state, 1e6);
-    state.nodes.optics = 1;
+    state.nodes.printing = 1;
     expect(startResearch(state, 'navigation')).toBe(true);
     pour(state, 1e6);
     expect(startResearch(state, 'expedition')).toBe(true);
-    expect(state.resources.food).toBeCloseTo(1e6 - 500, 2);
-    pour(state, 1e6);
+    expect(state.resources.food).toBeCloseTo(1e6 - 1000, 2);
+    pour(state, ageCost(4, 3));
     // An Expedition also costs Food, so the next one waits for you to send it
     expect(state.nodes.expedition).toBe(1);
     expect(state.researching).toBe(null);
@@ -994,22 +997,18 @@ describe('research list', () => {
   it('lists only Lab techs whose tech prerequisites are researched, and drops finished ones', () => {
     const state = unlockAll(withNodes({ library: 1 }));
     expect(isResearchListed(state, 'scientificMethod')).toBe(true);
-    expect(isResearchListed(state, 'engineering')).toBe(false);
-    expect(isResearchListed(state, 'occultism')).toBe(true);
-    expect(isResearchListed(state, 'arcaneTheory')).toBe(false); // needs Occultism
-    state.nodes.occultism = 1;
-    expect(isResearchListed(state, 'arcaneTheory')).toBe(true);
+    expect(isResearchListed(state, 'writing')).toBe(true); // the goal of the age shows from the start
+    expect(isResearchListed(state, 'engineering')).toBe(false); // the next age is not open yet
+    expect(isResearchListed(state, 'occultism')).toBe(false); // a Medieval tech
+    expect(isResearchListed(state, 'mining')).toBe(false); // needs Scientific Method
     state.nodes.scientificMethod = 1;
     expect(isResearchListed(state, 'scientificMethod')).toBe(false);
     expect(isResearchListed(state, 'mining')).toBe(true);
-    expect(isResearchListed(state, 'geology')).toBe(false); // needs Mining
     state.nodes.mining = 1;
+    expect(isResearchListed(state, 'geology')).toBe(false); // needs Writing too
+    state.nodes.writing = 1;
     expect(isResearchListed(state, 'geology')).toBe(true);
-    expect(isResearchListed(state, 'engineering')).toBe(false); // needs Geology and Metallurgy
-    state.nodes.geology = 1;
-    expect(isResearchListed(state, 'engineering')).toBe(false);
-    state.nodes.metallurgy = 1;
-    expect(isResearchListed(state, 'engineering')).toBe(true);
+    expect(isResearchListed(state, 'engineering')).toBe(true); // the Classical age is open
     expect(isResearchListed(state, 'sanitation')).toBe(false); // needs Medicine and Engineering
     state.nodes.cartography = 3;
     expect(isResearchListed(state, 'cartography')).toBe(true); // 3 of 10
@@ -1018,23 +1017,22 @@ describe('research list', () => {
     expect(isResearchListed(state, 'scholar')).toBe(false); // buildings are listed as before
   });
 
-  it('lays the whole tree out in columns by depth', () => {
+  it('lays the tree out in one column per age, each ending in its capstone', () => {
     const cols = researchTreeColumns();
+    expect(cols).toHaveLength(9);
     const col = (id: NodeId) => cols.findIndex((c) => c.includes(id));
-    expect(col('scientificMethod')).toBe(0);
-    expect(col('occultism')).toBe(0);
     expect(col('settlements')).toBe(0);
-    expect(col('agriculture')).toBe(1);
-    expect(col('homebuilding')).toBe(1);
-    expect(col('currency')).toBe(1);
-    expect(col('arcaneTheory')).toBe(1);
-    expect(col('mining')).toBe(1);
-    expect(col('geology')).toBe(2); // after Mining
-    expect(col('engineering')).toBe(3); // after Geology and Metallurgy
-    expect(col('sailing')).toBe(4);
-    expect(col('navigation')).toBe(5); // after Sailing and Optics, both in column 4
-    expect(col('expedition')).toBe(6);
-    expect(cols.flat()).toHaveLength(new Set(cols.flat()).size);
+    expect(col('writing')).toBe(0);
+    expect(col('engineering')).toBe(1);
+    expect(col('occultism')).toBe(2);
+    expect(col('expedition')).toBe(3);
+    expect(col('artificialIntelligence')).toBe(8);
+    for (const c of cols) {
+      expect(NODES[c.at(-1)!].capstone).toBe(true);
+      expect(c.filter((id) => NODES[id].capstone)).toHaveLength(1);
+    }
+    const labTechs = NODE_ORDER.filter((id) => NODES[id].world === 'lab' && NODES[id].kind === 'tech');
+    expect(cols.flat().sort()).toEqual([...labTechs].sort());
   });
 });
 
@@ -1058,8 +1056,8 @@ describe('markets', () => {
   it('need Currency from the Lab', () => {
     const state = unlockAll(withNodes({ house: 1 }));
     expect(isNodeAvailable(state, 'market')).toBe(false);
-    expect(isResearchListed(state, 'currency')).toBe(false); // needs Settlements
-    state.nodes.settlements = 1;
+    expect(isResearchListed(state, 'currency')).toBe(false); // a Classical tech: needs Writing
+    state.nodes.writing = 1;
     expect(isResearchListed(state, 'currency')).toBe(true);
     state.nodes.currency = 1;
     expect(isNodeAvailable(state, 'market')).toBe(true);
@@ -1121,12 +1119,12 @@ describe('switching buildings off', () => {
 });
 
 describe('settlements', () => {
-  it('is a root research leading to Agriculture, Housing and Currency, and Houses need Housing', () => {
+  it('is a root research leading to Agriculture, Housing and Pottery, and Houses need Housing', () => {
     const state = unlockAll(withNodes({ sawmill: 1, kiln: 1 }));
     expect(isResearchListed(state, 'settlements')).toBe(true);
-    for (const id of ['agriculture', 'homebuilding', 'currency'] as NodeId[]) expect(isResearchListed(state, id)).toBe(false);
+    for (const id of ['agriculture', 'homebuilding', 'pottery'] as NodeId[]) expect(isResearchListed(state, id)).toBe(false);
     state.nodes.settlements = 1;
-    for (const id of ['agriculture', 'homebuilding', 'currency'] as NodeId[]) expect(isResearchListed(state, id)).toBe(true);
+    for (const id of ['agriculture', 'homebuilding', 'pottery'] as NodeId[]) expect(isResearchListed(state, id)).toBe(true);
     expect(isNodeAvailable(state, 'house')).toBe(false);
     state.nodes.homebuilding = 1;
     expect(isNodeAvailable(state, 'house')).toBe(true);
@@ -1281,9 +1279,9 @@ describe('research', () => {
   });
 
   it('pays other costs once when a tech is first picked, and keeps progress when you switch away', () => {
-    const state = unlockAll(withNodes({ scientificMethod: 1, mining: 1 }));
-    Object.assign(state.resources, { food: 200, stone: 100 });
-    expect(researchUpfrontCost(state, 'medicine')).toEqual({ food: 200 });
+    const state = unlockAll(withNodes({ scientificMethod: 1, mining: 1, writing: 1 }));
+    Object.assign(state.resources, { food: 300, stone: 200 });
+    expect(researchUpfrontCost(state, 'medicine')).toEqual({ food: 300 });
     expect(startResearch(state, 'medicine')).toBe(true);
     expect(state.resources.food).toBe(0);
     pour(state, 100);
@@ -1298,9 +1296,10 @@ describe('research', () => {
   });
 
   it('cannot start a tech whose other costs you cannot pay', () => {
-    const state = unlockAll(withNodes({ scientificMethod: 1 }));
-    expect(canStartResearch(state, 'medicine')).toBe(false); // 200 Food
-    state.resources.food = 200;
+    const state = unlockAll(withNodes({ writing: 1 }));
+    state.resources.food = 0;
+    expect(canStartResearch(state, 'medicine')).toBe(false); // 300 Food
+    state.resources.food = 300;
     expect(canStartResearch(state, 'medicine')).toBe(true);
   });
 
@@ -1362,7 +1361,7 @@ describe('mining', () => {
 
   it('puts Mining right after Scientific Method, and Geology after Mining', () => {
     expect(NODES.mining.requires).toEqual(['scientificMethod']);
-    expect(NODES.geology.requires).toEqual(['mining']);
+    expect(NODES.geology.requires).toEqual(['mining', 'writing']);
     expect(isResearchListed(unlockAll(withNodes({ scientificMethod: 1 })), 'mining')).toBe(true);
   });
 });
@@ -1844,5 +1843,94 @@ describe('libraries', () => {
     expect(buyNode(state, 'library')).toBe(true);
     completeConstruction(state, 'library');
     expect(grossRate(state, computeModifiers(state), 'research')).toBeCloseTo(1);
+  });
+});
+
+describe('ages of research', () => {
+  const researchAll = (state: GameState, age: number) => {
+    for (const id of ageTechs(age)) state.nodes[id] = Math.max(state.nodes[id], 1);
+  };
+
+  it('costs about 10 times as much in each age as in the one before', () => {
+    expect(ageCost(1, 0)).toBe(100);
+    expect(ageCost(2, 0)).toBe(1000);
+    expect(ageCost(9, 0)).toBe(1e10);
+    expect(nodeCost(createInitialState(), 'writing').research).toBe(ageCost(1, 9));
+    for (let age = 1; age <= 9; age++) {
+      for (const id of ageTechs(age)) expect(NODES[id].baseCost.research).toBeGreaterThanOrEqual(ageCost(age, 0));
+    }
+  });
+
+  it('needs every other tech of an age before its capstone, which opens the next age', () => {
+    const state = unlockAll(withNodes({ library: 1 }));
+    expect(currentAge(state)).toBe(1);
+    researchAll(state, 1);
+    state.nodes.writing = 0;
+    state.nodes.pottery = 0;
+    expect(isNodeAvailable(state, 'writing')).toBe(false); // Pottery is still missing
+    state.nodes.pottery = 1;
+    expect(isNodeAvailable(state, 'writing')).toBe(true);
+    expect(isResearchListed(state, 'metallurgy')).toBe(false);
+    state.nodes.writing = 1;
+    expect(currentAge(state)).toBe(2);
+    expect(isResearchListed(state, 'metallurgy')).toBe(true);
+    expect(isNodeAvailable(state, 'engineering')).toBe(false);
+  });
+
+  it('are all lost on a Lab reset', () => {
+    const state = unlockAll(withNodes({ library: 1 }));
+    researchAll(state, 1);
+    researchAll(state, 2);
+    state.runEarned.lab = 1e6;
+    resetWorld(state, 'lab');
+    expect(currentAge(state)).toBe(1);
+    expect(ageTechs(1).every((id) => state.nodes[id] === 0)).toBe(true);
+  });
+
+  it('earn an achievement for each age researched in full, kept through resets', () => {
+    const state = unlockAll(withNodes({ library: 1 }));
+    const before = computeModifiers(state).get('rate:research')?.mul ?? 1;
+    researchAll(state, 1);
+    checkAchievements(state);
+    expect(state.achievements).toContain('age1');
+    expect(computeModifiers(state).get('rate:research')?.mul).toBeCloseTo(before * 1.25 * 1.25 * 1.5);
+    expect(startPopulation(state)).toBe(3);
+    state.runEarned.lab = 1e6;
+    resetWorld(state, 'lab');
+    expect(state.achievements).toContain('age1');
+    expect(computeModifiers(state).get('rate:research')?.mul).toBeCloseTo(before * 1.25);
+  });
+});
+
+describe('late-age industry', () => {
+  it('turns Steel into Machine Parts, and Silicon, Plastics and Gold into Electronics', () => {
+    const state = unlockAll(withNodes({ machineShop: 1, chipFab: 1 }));
+    Object.assign(state.resources, { steel: 100, coal: 100, silicon: 100, plastics: 100, gold: 100 });
+    tick(state, 10);
+    expect(state.resources.machineParts).toBeCloseTo(1);
+    expect(state.resources.electronics).toBeCloseTo(0.5);
+    expect(state.resources.steel).toBeCloseTo(90);
+  });
+
+  it('pumps Oil from deposits that each Oil Well opens up', () => {
+    const state = unlockAll(createInitialState());
+    withNodes({ combustionEngine: 1 }, state);
+    Object.assign(state.resources, { steel: 1000, machineParts: 100 });
+    expect(buyNode(state, 'oilWell')).toBe(true);
+    completeConstruction(state, 'oilWell');
+    expect(depositMax(state, computeModifiers(state), 'oil')).toBe(10000);
+    expect(state.deposits.oil.left).toBe(10000);
+    state.population = 5;
+    assignJob(state, 'driller', 2);
+    tick(state, 10);
+    expect(state.resources.oil).toBeCloseTo(10 * 2 * (0.2 + 0.05) * 1.5, 1); // Combustion Engine: Realm production ×1.5
+  });
+
+  it('halves Warehouse spoilage with Railways', () => {
+    const state = withNodes({ warehouse: 1 });
+    state.resources.wood = 2000;
+    const spoil = decayRate(state, computeModifiers(state), 'wood');
+    withNodes({ railways: 1 }, state);
+    expect(decayRate(state, computeModifiers(state), 'wood')).toBeCloseTo(spoil / 2);
   });
 });
