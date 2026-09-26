@@ -768,6 +768,7 @@ button {
 
 .deposit {
   --fill: #3fa55b;
+  white-space: pre-line;
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 0.9em;

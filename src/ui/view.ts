@@ -635,12 +635,13 @@ export class GameView {
         continue;
       }
       let text = `${def.icon} ${def.name}: ${formatNumber(Math.min(d.left, max))} / ${formatNumber(max)} ${name}`;
-      if (refill > 0) {
-        text += ` · ${id === 'wood' ? 'regrows' : 'refills'} ${formatNumber(refill)}/s`;
-        if (def.pollutionSlows && smog >= 0.005) text += ` (pollution −${Math.round(smog * 100)}%)`;
-      }
       if (d.left < 1) {
         text += refill > 0 ? ` · used up: ${name} only comes as fast as it refills` : ` · used up: no more ${name} this run`;
+      }
+      // The refill rate gets a line of its own.
+      if (refill > 0) {
+        text += `\n↻ ${id === 'wood' ? 'Regrows' : 'Refills'} ${formatNumber(refill)} ${name}/s`;
+        if (def.pollutionSlows && smog >= 0.005) text += ` (pollution −${Math.round(smog * 100)}%)`;
       }
       setText(el, text);
       el.classList.toggle('attention', d.left < 1);
