@@ -1749,3 +1749,26 @@ describe('A Hundred Graves', () => {
     expect(state.runDeaths).toBe(0);
   });
 });
+
+describe('warehouse costs', () => {
+  it('need finer materials for each Warehouse, then grow from the last', () => {
+    const state = withNodes({});
+    expect(nodeCost(state, 'warehouse')).toEqual({ wood: 600, stone: 600 });
+    state.nodes.warehouse = 1;
+    expect(nodeCost(state, 'warehouse')).toEqual({ wood: 1500, stone: 1000, planks: 400 });
+    state.nodes.warehouse = 4;
+    expect(nodeCost(state, 'warehouse')).toEqual({ steel: 900, glass: 600 });
+    state.nodes.warehouse = 7;
+    const eighth = nodeCost(state, 'warehouse');
+    expect(eighth.steel).toBeCloseTo(1300 * 1.1);
+    expect(eighth.runestone).toBeCloseTo(500 * 1.1);
+  });
+
+  it('always fit within the storage the Warehouses before them give', () => {
+    for (let n = 0; n < 10; n++) {
+      const state = withNodes({ warehouse: n });
+      const mods = computeModifiers(state);
+      expect(costOverCap(nodeCost(state, 'warehouse', mods), mods)).toBe(null);
+    }
+  });
+});

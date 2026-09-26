@@ -730,10 +730,15 @@ function settleJobs(state: GameState) {
 
 export function nodeCost(state: GameState, id: NodeId, mods = computeModifiers(state)): Cost {
   const node = NODES[id];
-  const scale = Math.pow(node.costGrowth, state.nodes[id]) * getMul(mods, `cost:${node.world}`);
+  const level = state.nodes[id];
+  // A ladder of costs (each Warehouse needs finer materials) climbs a rung per level, then grows from the top one.
+  const ladder = node.levelCosts;
+  const rung = ladder && level > 0 ? Math.min(level, ladder.length) : 0;
+  const base = rung > 0 ? ladder![rung - 1]! : node.baseCost;
+  const scale = Math.pow(node.costGrowth, level - rung) * getMul(mods, `cost:${node.world}`);
   const cost: Cost = {};
-  for (const [r, base] of Object.entries(node.baseCost) as [ResourceId, number][]) {
-    cost[r] = base * scale;
+  for (const [r, amount] of Object.entries(base) as [ResourceId, number][]) {
+    cost[r] = amount * scale;
   }
   return cost;
 }

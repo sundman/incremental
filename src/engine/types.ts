@@ -160,6 +160,11 @@ export interface NodeDef {
   baseCost: Cost;
   /** Cost multiplier per level owned. Ignored for one-level nodes. */
   costGrowth: number;
+  /**
+   * A cost for each level after the first, when each needs different materials: `levelCosts[0]`
+   * is the 2nd level's. Past the end of the list, the last entry grows by `costGrowth` per level.
+   */
+  levelCosts?: Cost[];
   /** Build-time tier, 1 (seconds) to 6 (many minutes). See `TIER_SECONDS`. Lab techs ignore it: Research streams into them. */
   tier: 1 | 2 | 3 | 4 | 5 | 6;
   /** Omit for unlimited levels. Techs are always 1. */

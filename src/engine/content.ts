@@ -223,10 +223,19 @@ const nodeList: NodeDef[] = [
     kind: 'building',
     name: 'Warehouse',
     description:
-      'Stores as much again of every Realm resource as you start with. Goods kept here slowly spoil, faster the more Warehouses you have. Needs Warehousing.',
-    baseCost: { wood: 60, stone: 40 },
-    costGrowth: 1.4,
-    tier: 2,
+      'Stores as much again of every Realm resource as you start with. Each one needs finer materials than the last, and goods kept here slowly spoil, faster the more Warehouses you have. Needs Warehousing.',
+    // Each Warehouse needs finer materials than the last, and fits within the storage the ones before it give.
+    baseCost: { wood: 600, stone: 600 },
+    levelCosts: [
+      { wood: 1500, stone: 1000, planks: 400 },
+      { planks: 1200, bricks: 800 },
+      { bricks: 1500, iron: 600, glass: 400 },
+      { steel: 900, glass: 600 },
+      { steel: 1200, glass: 800, gold: 300 },
+      { steel: 1300, gold: 400, runestone: 500 },
+    ],
+    costGrowth: 1.1,
+    tier: 3,
     requires: ['warehousing'],
     effects: [
       { stat: 'storage:realm', kind: 'add', amount: 1 },
