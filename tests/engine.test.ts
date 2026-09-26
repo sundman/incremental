@@ -1513,10 +1513,10 @@ describe('warehouse decay', () => {
 });
 
 describe('parks', () => {
-  it('need Forestry from the Lab as well as a Well', () => {
-    const state = withNodes({ hut: 1, well: 1 });
+  it('need Environmental Science from the Lab as well as a Well', () => {
+    const state = withNodes({ hut: 1, well: 1, forestry: 1 });
     expect(isNodeAvailable(state, 'park')).toBe(false);
-    withNodes({ forestry: 1 }, state);
+    withNodes({ environmentalScience: 1 }, state);
     expect(isNodeAvailable(state, 'park')).toBe(true);
   });
 });
