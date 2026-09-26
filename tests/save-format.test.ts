@@ -170,12 +170,20 @@ describe('achievements in saves', () => {
 });
 
 describe('deposits from older saves', () => {
-  it('take the old fixed Stone and Clay sizes out, keeping what Rich Earth added', () => {
+  it('take the old fixed Stone and Clay sizes out, and the Rich Earth growth with them', () => {
     const old = { version: 1, deposits: { stone: { left: 45000, max: 51000, cut: 6000 }, clay: { left: 30000, max: 30000, cut: 0 } } };
     const loaded = deserialize(JSON.stringify(old));
-    expect(loaded.deposits.stone.max).toBe(1000);
+    expect(loaded.deposits.stone.max).toBe(0);
     expect(loaded.deposits.clay.max).toBe(0);
-    expect(deserialize(serialize(loaded)).deposits.stone.max).toBe(1000); // only once
+    expect(loaded.deposits.stone.left).toBe(45000); // what is in the ground is kept; each tick fits it to the Quarries
+  });
+
+  it('keep the forest\'s Rich Earth growth, which it still gets', () => {
+    const old = { version: 3, deposits: { wood: { left: 8000, max: 9000, cut: 0 }, stone: { left: 0, max: 700, cut: 0 } } };
+    const loaded = deserialize(JSON.stringify(old));
+    expect(loaded.deposits.wood.max).toBe(9000);
+    expect(loaded.deposits.stone.max).toBe(0);
+    expect(deserialize(serialize(loaded)).deposits.wood.max).toBe(9000);
   });
 });
 
@@ -187,7 +195,7 @@ describe('mine deposits from older saves', () => {
       deposits: { coal: { left: 15000, max: 20500, cut: 5000 } },
     };
     const loaded = deserialize(JSON.stringify(old));
-    expect(loaded.deposits.coal.max).toBe(500);
+    expect(loaded.deposits.coal.max).toBe(0); // Rich Earth growth on Coal is gone too
     expect(loaded.deposits.iron).toEqual({ left: 6000, max: 0, cut: 0 });
     expect(loaded.deposits.gold).toEqual({ left: 500, max: 0, cut: 0 });
   });

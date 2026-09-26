@@ -1643,7 +1643,7 @@ const metaList: MetaDef[] = [
   {
     id: 'richEarth',
     name: 'Rich Earth',
-    description: 'On a Realm reset, every deposit grows by 1% of what was gathered from it that run, per level.',
+    description: 'On a Realm reset, the forest grows by 1% of the Wood cut from it that run, per level.',
     baseCost: 1,
     costGrowth: 1.12,
     maxLevel: 50,

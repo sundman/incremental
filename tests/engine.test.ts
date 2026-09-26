@@ -425,15 +425,15 @@ describe('deposits', () => {
     expect(state.deposits.wood).toEqual({ left: 8000, max: 8000, cut: 0 });
   });
 
-  it('grows deposits on a Realm reset by 1% of what was gathered per Rich Earth level', () => {
+  it('grows only the forest on a Realm reset, by 1% of the Wood cut per Rich Earth level', () => {
     const state = createInitialState();
     state.meta.richEarth = 10;
     state.deposits.wood = { left: 3000, max: 8000, cut: 5000 };
-    state.deposits.stone = { left: 40000, max: 50000, cut: 10000 };
+    state.deposits.stone = { left: 0, max: 0, cut: 10000 };
     resetWorld(state, 'realm');
     expect(state.deposits.wood.max).toBeCloseTo(8500);
     expect(state.deposits.wood.left).toBeCloseTo(8500);
-    expect(state.deposits.stone.max).toBeCloseTo(51000);
+    expect(state.deposits.stone.max).toBe(0); // Stone only comes from Quarries
     resetWorld(state, 'lab'); // other worlds leave the deposits alone
     expect(state.deposits.wood.max).toBeCloseTo(8500);
   });

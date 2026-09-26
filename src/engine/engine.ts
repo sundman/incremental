@@ -26,8 +26,9 @@ import type { Cost, DepositId, Effect, GameState, JobId, LogEntry, MetaId, NodeI
 /**
  * 2: Stone and Clay deposits start empty and grow with each Quarry and Clay Pit.
  * 3: Coal does too, with each Coal Mine, and Iron and Gold become deposits opened by their mines.
+ * 4: Rich Earth only grows the forest.
  */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 /** How many chronicle lines are kept. */
 export const LOG_LIMIT = 50;
@@ -406,7 +407,8 @@ export function depositGrowthPerReset(state: GameState): number {
 /** How big a deposit will be after the next Realm reset. */
 export function nextDepositMax(state: GameState, deposit: DepositId): number {
   const d = state.deposits[deposit];
-  return d.max + depositGrowthPerReset(state) * d.cut;
+  // Rich Earth only grows the forest; the other deposits are opened up by buildings instead.
+  return deposit === 'wood' ? d.max + depositGrowthPerReset(state) * d.cut : d.max;
 }
 
 /** Upkeep being paid per second right now, at last tick's efficiency. */

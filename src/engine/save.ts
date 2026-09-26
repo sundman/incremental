@@ -74,7 +74,8 @@ function readDeposits(raw: Record<string, unknown>, fresh: GameState['deposits']
   const out = {} as GameState['deposits'];
   for (const id of DEPOSIT_ORDER) {
     const d = (id === 'wood' && !saved.wood ? legacyWood : (saved[id] ?? {})) as Record<string, unknown>;
-    const max = Math.max(0, num(d.max, fresh[id].max) - (oldStart[id] ?? 0));
+    // Before version 4, Rich Earth grew every deposit; only the forest keeps that growth.
+    const max = id !== 'wood' && version < 4 ? 0 : Math.max(0, num(d.max, fresh[id].max) - (oldStart[id] ?? 0));
     // What is left can be more than the base size (Quarries add to it); each tick keeps it within the real size.
     out[id] = { left: Math.max(0, num(d.left, max)), max, cut: Math.max(0, num(d.cut, 0)) };
   }

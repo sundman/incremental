@@ -932,12 +932,9 @@ export class GameView {
         world === 'realm' && isHordeActive(state) ? 'Also ends Summon Demons: only 2 survivors are left.' : '',
         world === 'realm'
           ? depositGrowthPerReset(state) > 0
-            ? `Deposits come back full and bigger by ${Math.round(depositGrowthPerReset(state) * 100)}% of what was gathered this run: ` +
-              DEPOSIT_ORDER.filter((d) => isResourceRevealed(state, d))
-                .map((d) => `${DEPOSITS[d].name} ${formatNumber(nextDepositMax(state, d))}`)
-                .join(', ') +
-              '.'
-            : 'Deposits come back full, at the same size (Rich Earth in the Echo shop makes them grow).'
+            ? `The forest comes back full and bigger by ${Math.round(depositGrowthPerReset(state) * 100)}% of the Wood cut this run: ` +
+              `${formatNumber(nextDepositMax(state, 'wood'))} Wood. Quarries, Clay Pits and mines are gone, and their deposits with them.`
+            : 'The forest comes back full, at the same size (Rich Earth in the Echo shop makes it grow). Quarries, Clay Pits and mines are gone, and their deposits with them.'
           : '',
         harms && !blocker ? `Clears ${harms} harmful effect${harms === 1 ? '' : 's'} on other worlds.` : '',
         kept.length ? `Keeps: ${kept.map((id) => NODES[id].name).join(', ')}.` : '',
